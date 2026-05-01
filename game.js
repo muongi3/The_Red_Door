@@ -1452,7 +1452,7 @@ function update(dt) {
             }
         } else if (b.state === 'teleport_start') {
             b.bodyY -= 15 * dt;
-            b.armLift += (-1.8 - b.armLift) * 0.1; // Giơ tay lên cao khi chìm xuống
+            b.armLift += (0 - b.armLift) * 0.1; // Chìm xuống đứng yên không giơ tay làm gì
             if (b.skillCD > 1.0) {
                 b.targetPos = V3.create(p.pos.x, 0, p.pos.z);
                 b.targetPos.y = getHeight(b.targetPos.x, b.targetPos.z);
@@ -2176,11 +2176,13 @@ function draw() {
                 lift = b.armLift; // Cả hai tay giơ lên khi chìm xuống
             }
 
-            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            // Gắn chặt tay vào vai (Kế thừa vị trí và góc nghiêng của thân)
+            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY, b.pos.z);
             mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
-            mArm = M4.multiply(mArm, M4.translation(side * 3.5, 0, forward)); // Đưa tay ra xa thân một chút
-            mArm = M4.multiply(mArm, M4.rotationX(lift));
-            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
+            mArm = M4.multiply(mArm, M4.rotationX(b.bodyRot)); // Thân gập, vai gập theo
+            mArm = M4.multiply(mArm, M4.translation(side * 3.5, 16, 0)); // Gắn chết vào khớp vai (Y=16, X=±3.5, Z=0)
+            mArm = M4.multiply(mArm, M4.rotationX(lift)); // Cử động cánh tay từ khớp vai
+            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale)); // Phóng to cánh tay từ khớp
 
             if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
             gl.uniformMatrix4fv(locs.model, false, mArm);
