@@ -1335,8 +1335,8 @@ function update(dt) {
             b.rotY += diff * 0.1;
 
         } else if (b.state === 'jump_start') {
-            b.bodyRot += (1.2 - b.bodyRot) * 0.1; // Cúi người lấy đà
-            b.armLift += (0 - b.armLift) * 0.1;
+            b.bodyRot += (0.4 - b.bodyRot) * 0.1; // Cúi người lấy đà hơi hơi thôi
+            b.armLift += (-1.2 - b.armLift) * 0.1; // Vung 2 tay ra sau lấy đà
             if (b.skillCD <= 0) {
                 const gravity = window.GAME_CONFIG.boss.skill3.gravity;
                 b.state = 'jumping';
@@ -1346,16 +1346,17 @@ function update(dt) {
                 const airTime = (v0y + Math.sqrt(v0y * v0y + 2 * gravity * dy)) / gravity;
                 b.vel.x = (b.targetPos.x - b.pos.x) / airTime;
                 b.vel.z = (b.targetPos.z - b.pos.z) / airTime;
-                b.armLift = 3.0; // Nhảy lên mới vung tay
+                b.armLift = 1.4; // Nhảy lên giơ 2 tay ra phía trước
+                b.bodyRot = 0.2; // Bay người thẳng, hơi đổ tới xíu
             }
         } else if (b.state === 'jumping') {
-            b.armLift = 3.0;
-            b.bodyRot = 0;
+            b.armLift = 1.4;
+            b.bodyRot = 0.2;
             b.vel.y -= window.GAME_CONFIG.boss.skill3.gravity * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
                 b.state = 'recover'; b.skillCD = 0.5;
-                b.bodyRot = 1.4; b.armLift = -0.5;
+                b.bodyRot = 0.6; b.armLift = 1.4; // Chạm đất tay chống đất, người hơi cúi (không quá thấp)
                 const dmgDist = window.GAME_CONFIG.boss.skill3.range;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
                 if (Math.sqrt(dx * dx + dz * dz) < dmgDist) {
@@ -1366,7 +1367,7 @@ function update(dt) {
                 STATE.shake = 10.0;
             }
         } else if (b.state === 'recover') {
-            b.bodyRot = 1.4; b.armLift = -0.5;
+            b.bodyRot = 0.6; b.armLift = 1.4;
             if (b.skillCD <= 0) {
                 b.state = 'fight';
                 b.skillCD = 1.0;
@@ -2160,10 +2161,9 @@ function draw() {
                 lift = Math.PI * 0.45;
                 forward = 1.5;
             }
-            // Skill 3: JUMP (Nhảy) - Hai tay hóa đỏ x2, giơ cao rồi đập xuống
-            else if (b.state === 'jumping') {
+            // Skill 3: JUMP (Nhảy dậm) - Cả 3 giai đoạn tay đều to và đỏ
+            else if (b.state === 'jump_start' || b.state === 'jumping' || b.state === 'recover') {
                 armScale = 2.0; armColor = [1.5, 0, 0];
-                lift = b.skillCD > 0.5 ? -Math.PI * 0.5 : Math.PI * 0.4;
             }
             // Skill 4: PILLAR (Cột máu) - Hai tay hóa đỏ, giơ thẳng lên trời
             else if (b.state === 'pillar_prepare') {
