@@ -1478,12 +1478,15 @@ function update(dt) {
                 }
             }
             if (b.skillCD <= 0) {
-                // [CHỈNH SỬA THỜI GIAN] Tổng thời gian từ lúc trồi lên đến khi kết thúc chiêu
-                b.state = 'teleport_strike'; b.skillCD = 3.0; // Đổi 3.0 thành số lớn hơn nếu muốn đánh chậm lại
+                // [YÊU CẦU] Dịch chuyển và quay mặt về phía người chơi
+                b.state = 'teleport_strike'; b.skillCD = 3.0; 
                 if (b.targetPos) {
                     b.pos.x = b.targetPos.x; b.pos.z = b.targetPos.z; b.pos.y = b.targetPos.y;
+                    // Quay mặt về phía người chơi ngay khi trồi lên
+                    const toP = V3.norm(V3.sub(p.pos, b.pos));
+                    b.rotY = Math.atan2(toP.x, toP.z);
                 }
-                b.bodyY = -15; b.bodyRot = 0; b.hasHit = false;
+                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false; // Chìm sâu hơn (-25)
                 if (b.fanMesh) deleteMesh(b.fanMesh);
                 const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
                 b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx, dz) - 1.2, arc: 2.4, r: 25 };
@@ -1609,6 +1612,8 @@ function update(dt) {
             spawnOiiaCat(); playBossSound(); showClickAnywhere(10000);
         }
         if (b.active) {
+            const bossHpContainer = document.getElementById('boss-hp-container');
+            if (bossHpContainer) bossHpContainer.style.display = 'block';
             document.getElementById('boss-hp-fill').style.width = (b.hp / b.maxHp) * 100 + '%';
         }
     }
@@ -2166,36 +2171,52 @@ function draw() {
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
 
-        // Boss Arms - HIỆU ỨNG TAY TÙY BIẾN THEO CHIÊU
+        // Boss Arms - HIỆU ỨNG TAY CÓ KHỚP KHUỶU (Elbow Joints)
         const drawArm = (side) => {
             let armScale = 1.0;
             let armColor = null;
-            let lift = b.armLift;
+            let lift = b.armLift || 0;
+            let elbowBase = Math.PI * 0.2; // Độ gập khuỷu tay tự nhiên
 
             if (b.state === 'jumping') {
                 armScale = 2.0; armColor = [1.5, 0, 0];
+                elbowBase = Math.PI * 0.5;
             } else if (b.state === 'pillar_prepare') {
-                armColor = [1.5, 0, 0]; // Đỏ lòng bàn tay
+                armColor = [1.5, 0, 0];
+                lift = -Math.PI * 0.7; // Giơ tay lên trời
+                elbowBase = -Math.PI * 0.1;
             } else if (b.state === 'teleport_strike') {
-                // Chỉ hóa đỏ x2 khi thực sự vung tay đập (skillCD < 0.5)
                 if (side === 1 && b.skillCD < 0.5) {
                     armScale = 2.0; armColor = [2, 0, 0];
+                    elbowBase = Math.PI * 0.1;
                 } else if (side === -1) {
-                    lift = -0.5; // Tay trái luôn hạ xuống cho tự nhiên
+                    lift = 0.5; elbowBase = Math.PI * 0.3;
                 }
-            } else if (b.state === 'dash_prepare' || b.state === 'dashing') {
-                armScale = 1.0; armColor = null;
+            } else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
+                lift = 0.8; elbowBase = Math.PI * 0.4;
             }
 
-            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
-            mArm = M4.multiply(mArm, M4.translation(side * 2.8, 0, 0));
-            if (!window.SPECTATOR_MODE) mArm = M4.multiply(mArm, M4.rotationX(lift));
-            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
+            // Shoulder Position
+            let mShoulder = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            mShoulder = M4.multiply(mShoulder, M4.rotationY(b.rotY || ang));
+            mShoulder = M4.multiply(mShoulder, M4.translation(side * 3, 0, 0));
+
+            // Upper Arm
+            let mUpper = M4.multiply(mShoulder, M4.rotationX(lift));
+            let mUpperRender = M4.multiply(mUpper, M4.translation(0, -3.5, 0));
+            mUpperRender = M4.multiply(mUpperRender, M4.scaling(0.8 * armScale, 4 * armScale, 0.8 * armScale));
 
             if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
-            gl.uniformMatrix4fv(locs.model, false, mArm);
-            gl.bindVertexArray(ASSETS.bossArm.vao);
+            gl.uniformMatrix4fv(locs.model, false, mUpperRender);
+            gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
+
+            // Elbow Joint -> Forearm
+            let mForearm = M4.multiply(mUpper, M4.translation(0, -7, 0));
+            mForearm = M4.multiply(mForearm, M4.rotationX(elbowBase));
+            let mForearmRender = M4.multiply(mForearm, M4.translation(0, -3.5, 0));
+            mForearmRender = M4.multiply(mForearmRender, M4.scaling(0.9 * armScale, 4.5 * armScale, 0.9 * armScale));
+
+            gl.uniformMatrix4fv(locs.model, false, mForearmRender);
             gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
             if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
         };
