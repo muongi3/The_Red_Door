@@ -2783,21 +2783,26 @@ document.addEventListener('visibilitychange', () => {
 function initPeer() {
     if (STATE.peer) return;
     
-    // 2. SỬ DỤNG MÃ ID V3 ỔN ĐỊNH TUYỆT ĐỐI
-    let hostId = localStorage.getItem('survival_host_id_v3') || ('srv-' + Math.random().toString(36).substr(2, 5));
-    localStorage.setItem('survival_host_id_v3', hostId);
+    // 1. THỐNG NHẤT MÃ ID (DÙNG LẠI PREFIX SURVIVAL CHO ĐỒNG BỘ)
+    let hostId = localStorage.getItem('survival_host_id_v4') || ('survival-' + Math.random().toString(36).substr(2, 6));
+    localStorage.setItem('survival_host_id_v4', hostId);
     
     const myId = window.SPECTATOR_MODE ? null : hostId;
     debug("📡 Đang mở cổng kết nối...");
 
+    // 2. CẤU HÌNH MẠNG SIÊU MẠNH (XUYÊN TƯỜNG LỬA)
     STATE.peer = new Peer(myId, {
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' },
                 { urls: 'stun:stun.services.mozilla.com' }
             ]
-        }
+        },
+        debug: 1
     });
 
     STATE.peer.on('open', (id) => {
@@ -2931,7 +2936,7 @@ function startLiveView(targetId) {
 }
 
 function sendLiveNotification(id) {
-    const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&v=16`;
+    const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&v=17`;
     const message = `👤 **${STATE.playerName}** đang trực tiếp!\n🔗 [BẤM VÀO ĐỂ XEM](${watchLink})`;
     fetch(WEBHOOK_URL, {
         method: 'POST',
@@ -2978,6 +2983,32 @@ window.startGame = function () {
     originalStartGame();
     initPeer();
 };
+
+// Cập nhật link vào nút Copy ở Menu (Gọi ngay để nút hoạt động trước khi bấm Bắt đầu)
+function setupCopyBtn() {
+    const copyBtn = document.getElementById('copy-link-btn');
+    if (copyBtn) {
+        copyBtn.onclick = () => {
+            if (!STATE.peer) initPeer();
+            let hostId = localStorage.getItem('survival_host_id_v4');
+            if (!hostId) {
+                hostId = 'survival-' + Math.random().toString(36).substr(2, 6);
+                localStorage.setItem('survival_host_id_v4', hostId);
+            }
+            const link = `https://muongi3.github.io/demo/?playerId=${hostId}&v=17`;
+            navigator.clipboard.writeText(link).then(() => {
+                copyBtn.innerText = "✅ ĐÃ SAO CHÉP!";
+                setTimeout(() => copyBtn.innerText = "🔗 SAO CHÉP LINK XEM", 2000);
+            }).catch(() => {
+                alert("Link của bác đây: " + link);
+            });
+        };
+    }
+}
+
+window.addEventListener('load', () => {
+    setupCopyBtn();
+});
 
 // Check for spectator URL parameter - ĐÃ GỘP VÀO EVENT LOAD Ở ĐẦU FILE
 /*
