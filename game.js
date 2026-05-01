@@ -2774,9 +2774,19 @@ function initPeer() {
     if (STATE.peer) return;
 
     // Quay lại dùng ID ngẫu nhiên để đảm bảo ổn định tuyệt đối
-    STATE.peer = new Peer();
+    STATE.peer = new Peer({
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' }
+            ]
+        }
+    });
+    debug("📡 Khởi tạo PeerJS...");
 
     STATE.peer.on('open', (id) => {
+        debug("✅ Peer Mở! ID: " + id);
         console.log('PeerJS ID:', id);
 
         if (!window.SPECTATOR_MODE) {
