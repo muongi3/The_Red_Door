@@ -309,7 +309,8 @@ void main() {
     
     vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor;
     
-    float fogFactor = 1.0 - exp(-vDist * 0.008);
+    // Giảm density từ 0.008 xuống 0.005 để nhìn rõ phía trước, tối dần về phía sau
+    float fogFactor = 1.0 - exp(-vDist * 0.005);
     fogFactor = clamp(fogFactor, 0.0, 1.0);
     
     float alpha = uIsWater ? 0.7 : 1.0;
