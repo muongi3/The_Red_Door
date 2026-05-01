@@ -415,8 +415,8 @@ canvas {
     100% { opacity: 1; transform: scale(1.5); }
 }
 
-/* --- UI CLEANUP v18.3 --- */
-#spectator-warning, #debug-console {
+/* --- UI CLEANUP v18.3.2 --- */
+#spectator-warning, #debug-console, #host-id-display {
     display: none !important;
 }
 

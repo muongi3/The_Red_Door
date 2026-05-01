@@ -113,9 +113,9 @@ window.addEventListener('load', () => {
     gl.canvas.width = window.innerWidth;
     gl.canvas.height = window.innerHeight;
     debug("🎨 Khởi tạo Graphics...");
-    initGraphics(); 
+    initGraphics();
     debug("📦 Khởi tạo Assets...");
-    initAssets();   
+    initAssets();
     debug("🚀 Game initialized successfully!");
 
     // KIỂM TRA LINK KHÁN GIẢ NGAY SAU KHI ĐỒ HỌA SẴN SÀNG
@@ -2333,8 +2333,10 @@ function playBossSound() {
 // -------------------------
 
 
-function resumeGame() { STATE.screen = 'game'; 
-document.getElementById('pause-menu').classList.add('hidden'); if (gl && gl.canvas) gl.canvas.requestPointerLock(); }
+function resumeGame() {
+    STATE.screen = 'game';
+    document.getElementById('pause-menu').classList.add('hidden'); if (gl && gl.canvas) gl.canvas.requestPointerLock();
+}
 
 function spawnOiiaCat() { OIIA_CAT.spawned = true; const cat = document.getElementById("hakariphonk-cat"), sound = document.getElementById("hakariphonk-sound"); cat.style.display = "block"; sound.currentTime = 0; sound.play(); }
 
@@ -2407,10 +2409,12 @@ window.addEventListener('load', () => {
 });
 
 // --- BỘ ĐIỀU KHIỂN MOBILE (TOUCH CONTROLS) & TỐI ƯU ---
-if (isMobile) {
-    STATE.config.botCount = 15;
+// --- CẤU HÌNH SỐ LƯỢNG BOT ---
+const savedBotCount = localStorage.getItem('botCount');
+if (savedBotCount) {
+    STATE.config.botCount = parseInt(savedBotCount);
 } else {
-    STATE.config.botCount = 25;
+    STATE.config.botCount = isMobile ? 15 : 25;
 }
 
 let joyActive = false, joyCenter = { x: 0, y: 0 };
@@ -2427,6 +2431,22 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (btnCloseGuide && guideModal) {
         btnCloseGuide.onclick = () => guideModal.classList.add('hidden');
+    }
+
+    // --- XỬ LÝ THANH CHỈNH BOT ---
+    const botSlider = document.getElementById('bot-count-slider');
+    const botVal = document.getElementById('bot-count-val');
+    if (botSlider && botVal) {
+        // Cập nhật giá trị hiển thị ban đầu
+        botSlider.value = STATE.config.botCount;
+        botVal.innerText = STATE.config.botCount;
+
+        botSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            botVal.innerText = val;
+            STATE.config.botCount = parseInt(val);
+            localStorage.setItem('botCount', val);
+        });
     }
 
     // --- XỬ LÝ DISCORD ---
@@ -2666,7 +2686,7 @@ let lastSyncTime = 0;
 const originalLoop = window.loop;
 window.loop = function (now) {
     if (typeof originalLoop === 'function') originalLoop(now);
-    
+
     if (STATE.screen === 'game' && !window.SPECTATOR_MODE) {
         if (now - lastSyncTime > 100) { // Đồng bộ mỗi 100ms
             if (typeof sendStateToSpectators === 'function') sendStateToSpectators();
