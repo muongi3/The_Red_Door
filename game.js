@@ -26,6 +26,30 @@ const V3 = {
     clone: (a) => ({ x: a.x, y: a.y, z: a.z })
 };
 
+window.STATE = {
+    screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
+    mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
+
+    player: { pos: null, vel: V3.create(0, 0, 0), hp: 600, maxHp: 1000, armor: 0, maxArmor: 500, grounded: false, weaponIdx: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 } },
+    weapons: [{ name: "Pistol", damage: 60, rate: 300, spread: 0.05, range: 50, ammo: 12, res: 129, type: 0 }, { name: "SMG", damage: 40, rate: 180, spread: 0.1, range: 40, ammo: 30, res: 90, type: 1 }, { name: "Sniper", damage: 100, rate: 1000, spread: 0.001, range: 200, ammo: 5, res: 10, type: 2 }],
+    lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 },
+    inputLocked: false,
+    bossTriggered: false,
+    isAiming: false,
+    aimLerp: 0,
+    boss: { active: false, pos: V3.create(0, 0, 0), vel: V3.create(0, 0, 0), hp: 8000, maxHp: 8000, state: 'idle', skillCD: 5, targetPos: null, shotCount: 0, skillIndex: 0, pillarSpots: [], armLift: 0, bodyY: 0, bodyRot: 0, fanMesh: null, hasHit: false },
+    startTime: 0,
+    gameEnded: false,
+    playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
+    enragedAnnounced: false,
+    hasExited: false,
+    isWatching: false,
+    isConnected: false,
+    peer: null,
+    spectatorConns: []
+};
+const STATE = window.STATE;
+
 // Hệ thống Debug cho Mobile
 // Hệ thống Debug Toàn cục
 window.debug = (msg) => {
@@ -743,31 +767,6 @@ function genTerrain() {
     return createMesh(V, N, C);
 }
 
-
-
-window.STATE = {
-    screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
-    mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
-
-    player: { pos: null, vel: V3.create(0, 0, 0), hp: 600, maxHp: 1000, armor: 0, maxArmor: 500, grounded: false, weaponIdx: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 } },
-    weapons: [{ name: "Pistol", damage: 60, rate: 300, spread: 0.05, range: 50, ammo: 12, res: 129, type: 0 }, { name: "SMG", damage: 40, rate: 180, spread: 0.1, range: 40, ammo: 30, res: 90, type: 1 }, { name: "Sniper", damage: 100, rate: 1000, spread: 0.001, range: 200, ammo: 5, res: 10, type: 2 }],
-    lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 },
-    inputLocked: false,
-    bossTriggered: false,
-    isAiming: false,
-    aimLerp: 0,
-    boss: { active: false, pos: V3.create(0, 0, 0), vel: V3.create(0, 0, 0), hp: 8000, maxHp: 8000, state: 'idle', skillCD: 5, targetPos: null, shotCount: 0, skillIndex: 0, pillarSpots: [], armLift: 0, bodyY: 0, bodyRot: 0, fanMesh: null, hasHit: false },
-    startTime: 0,
-    gameEnded: false,
-    playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
-    enragedAnnounced: false,
-    hasExited: false,
-    isWatching: false,
-    isConnected: false,
-    peer: null,
-    spectatorConns: []
-};
-const STATE = window.STATE;
 
 
 
