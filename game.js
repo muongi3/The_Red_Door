@@ -1171,7 +1171,7 @@ function update(dt) {
 
                 if (skill === 'chiêu 5') {
                     // [CHỈNH SỬA CHIÊU 5] Thời gian Boss "chìm" xuống (rặn chiêu)
-                    b.state = 'teleport_start'; b.skillCD = 1.5;
+                    b.state = 'teleport_start'; b.skillCD = 2;
                 } else if (skill === 'chiêu 4') {
                     // [CHỈNH SỬA CHIÊU 4] Thời gian Boss gồng tay (hiện vòng cảnh báo)
                     b.state = 'pillar_prepare'; b.skillCD = 2.5; b.pillarSpots = [];
@@ -1228,7 +1228,7 @@ function update(dt) {
             b.vel.y -= 50 * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
-                b.state = 'recover'; b.skillCD = 1.5; // Khóa tư thế 1.5s
+                b.state = 'recover'; b.skillCD = 0.5; // Khóa tư thế 1.5s
                 b.bodyRot = 1.4; b.armLift = -0.5;
                 const dmgDist = 25;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
@@ -1957,7 +1957,7 @@ function draw() {
     gl.disable(gl.BLEND);
     STATE.bots.forEach(b => {
         const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z, ang = Math.atan2(dx, dz);
-        
+
         const botCount = STATE.bots.length;
         const initialCount = STATE.config.botCount || 25;
         const isLv2 = botCount <= initialCount * 0.4;
