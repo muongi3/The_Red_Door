@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <!-- Chống lưu Cache trên điện thoại -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>Survival Island: Low Poly Royale</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <!-- Thêm ?v=2 để bắt trình duyệt tải lại file CSS mới -->
+    <link rel="stylesheet" href="style.css?v=3">
+</head>
+
+<body>
+    <!-- Cảnh báo xoay ngang điện thoại -->
+    <div id="portrait-warning">
+        <div style="font-size: 60px; margin-bottom: 20px; animation: rotatePhone 2s infinite;">📱</div>
+        <h2 style="color:#ffcc00; margin:0;">VUI LÒNG XOAY NGANG ĐIỆN THOẠI</h2>
+        <p style="font-size:16px; color:#ccc;">Game bắn súng không hỗ trợ màn hình dọc!</p>
+    </div>
+
+    <!-- Cảnh báo khán giả -->
+    <div id="spectator-warning" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 1000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #00ff00; text-align: center; box-shadow: 0 0 10px #00ff00;">🔴 ĐANG XEM TRỰC TIẾP...</div>
+
+    <!-- WebGL Canvas -->
+    <canvas id="glcanvas"></canvas>
+
+    <!-- Damage Overlay -->
+    <div id="damage-overlay"></div>
+    <div id="global-announcement"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer">
+        <!-- BỘ ĐIỀU KHIỂN MOBILE (FREE FIRE STYLE) -->
+        <div id="mobile-controls">
+            <div id="joystick-zone">
+                <div id="joystick-base"></div>
+                <div id="joystick-knob"></div>
+            </div>
+            <button id="btn-sprint">CHẠY</button>
+            <div id="touch-aim-zone"></div>
+            <div id="mobile-weapons">
+                <button class="weapon-btn active" data-idx="0">LỤC</button>
+                <button class="weapon-btn" data-idx="1">SMG</button>
+                <button class="weapon-btn" data-idx="2">TỈA</button>
+            </div>
+            <div class="action-buttons">
+                <button id="btn-reload">NẠP</button>
+                <button id="btn-aim">NGẮM</button>
+                <button id="btn-jump">NHẢY</button>
+                <button id="btn-shoot">BẮN</button>
+            </div>
+            <button id="btn-settings" style="position: absolute; top: 30px; right: 230px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; z-index: 1000; color: white; display: block; pointer-events: auto;">⚙️</button>
+        </div>
+
+        <div id="crosshair"></div>
+        <img id="hit-marker"
+            src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTAgMEw1MCA1ME01MCAwTDAgNTAiIHN0cm9rZT0icmVkIiBzdHJva2Utd2lkdGg9IjQiLz48L3N2Zz4="
+            width="20">
+
+        <div id="health-bar-container" class="hud-panel">
+            <div id="health-fill"></div>
+        </div>
+        <div id="armor-bar-container" class="hud-panel">
+            <div id="armor-fill"></div>
+        </div>
+
+        <div id="continue-text" class="continue-text hidden">
+            👆 BẤM CHUỘT ĐỂ TIẾP TỤC 👆
+        </div>
+
+        <div id="ammo-display" class="hud-panel">
+            <span id="ammo-current">30</span> / <span id="ammo-reserve">90</span>
+            <div id="weapon-name">ASSAULT RIFLE</div>
+        </div>
+
+        <div id="stats-display" class="hud-panel">
+            <div><span id="alive-count" style="color:#ffcc00">50</span></div>
+            <div><span id="kill-count">0</span></div>
+        </div>
+        
+        <div id="loot-legend" class="hud-panel">
+            <div style="font-size: 10px; color:#aaa; margin-bottom:5px">HỘP TIẾP TẾ</div>
+            <div><span style="color:#e6cc00">■</span> Nhận Đạn</div>
+            <div><span style="color:#00cc00">■</span> Hồi Máu</div>
+            <div><span style="color:#0066ff">■</span> Thêm Giáp</div>
+            <div><span style="color:#ff6600">■</span> Kỹ Năng</div>
+        </div>
+
+        <div id="settings-modal" class="hidden" style="background: transparent; pointer-events: none;">
+            <div class="feedback-content" style="width: 200px; padding: 10px; background: rgba(20,20,20,0.8); backdrop-filter: blur(5px); pointer-events: auto; margin-top: -100px; border-radius: 8px; border: 1px solid #555;">
+                <h3 style="font-size: 12px; margin-bottom: 3px;">⚙️ CÀI ĐẶT NÚT</h3>
+                <p style="color: #aaa; font-size: 9px; margin-bottom: 5px;">Chạm vào nút để chọn và kéo thanh trượt. Kéo thả để dời vị trí.</p>
+                <div style="margin-bottom: 10px; color: white; text-align: left;">
+                    <label for="hud-scale-slider" style="font-size: 10px;">Độ lớn: <span id="hud-scale-val">100%</span></label>
+                    <input type="range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 100%; height: 2px;">
+                </div>
+                <div style="margin-bottom: 15px; color: white; text-align: left;">
+                    <label for="sensitivity-slider" style="font-size: 10px;">Độ nhạy ngắm: <span id="sensitivity-val">1.0</span>x</label>
+                    <input type="range" id="sensitivity-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width: 100%; height: 2px;">
+                </div>
+                <div style="display:flex; gap:5px; justify-content:center;">
+                    <button id="btn-reset-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(255,0,0,0.4)">MẶC ĐỊNH</button>
+                    <button id="btn-cancel-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(100,100,100,0.4)">HỦY</button>
+                    <button id="btn-save-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(0,255,0,0.4)">LƯU</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="spectator-count" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-family:'Outfit'; font-size:16px; font-weight:bold; text-shadow:0 0 5px black; z-index:9999; display:none;">👁️ 0</div>
+        <button id="btn-copy-link" class="menu-btn" style="position:fixed; top:10px; right:10px; width:auto; padding: 8px 15px; font-size: 12px; background: rgba(0,255,150,0.4); z-index:9999; display:none;">📋 SAO CHÉP LINK</button>
+        <div id="interaction-msg" class="hud-panel">NHẤN [E] ĐỂ LOOT</div>
+
+        <div id="scope-overlay" class="scope-overlay">
+            <div class="scope-lens"></div>
+            <div class="scope-cross-h"></div>
+            <div class="scope-cross-v"></div>
+        </div>
+        <div id="pickup-msg" class="hud-panel">Picked up Item</div>
+
+        <div id="kill-feed" class="hud-panel"></div>
+
+        <!-- BOSS EVENT UI -->
+        <button id="kill-last-bot-btn" class="menu-btn primary" style="display: none; pointer-events: auto; position: absolute; top: 180px; left: 30px; font-size: 14px; padding: 10px 20px;">
+            💀 KILL LAST BOT 💀
+        </button>
+
+        <div id="boss-overlay" class="hidden"></div>
+        <div id="boss-container" class="hidden">
+            <div id="boss-visual">👹</div>
+            <h1 id="boss-msg">HAKARI ARRIVED!</h1>
+        </div>
+
+        <!-- BOSS HEALTH BAR -->
+        <div id="boss-hp-container" style="display:none; position:fixed; top:40px; left:50%; transform:translateX(-50%); width:70%; height:35px; background:rgba(0,0,0,0.8); border:3px solid #ff0000; z-index:100; box-shadow: 0 0 50px rgba(255,0,0,0.5);">
+            <div id="boss-hp-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #990000, #ff0000); transition:width 0.2s;"></div>
+            <div style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:4px; text-shadow:2px 2px 4px black; font-size:20px; letter-spacing:4px;">HAKARI: THE DIVINE CAT</div>
+        </div>
+
+        <div id="streak-msg" class="hud-panel">DOUBLE KILL!</div>
+
+        <div id="minimap-container" class="hud-panel">
+            <canvas id="minimap"></canvas>
+        </div>
+    </div>
+
+    <!-- Main Menu -->
+    <div id="main-menu" class="menu-screen">
+        <h1 class="menu-title">Survival Royale</h1>
+        <div style="margin-bottom: 25px;">
+            <input type="text" id="player-name-input" placeholder="NHẬP TÊN CỦA BẠN..." maxlength="15" 
+                   style="background: rgba(0,0,0,0.5); border: 2px solid #ffcc00; color: #fff; padding: 12px 25px; border-radius: 12px; font-family: 'Outfit', sans-serif; text-align: center; font-size: 18px; width: 280px; outline: none; box-shadow: 0 0 15px rgba(255,204,0,0.2);">
+        </div>
+        <button class="menu-btn primary" onclick="startGame()">Bắt đầu cuộc chơi</button>
+        <button id="btn-open-guide" class="menu-btn" style="background: rgba(255, 204, 0, 0.4); margin-top: 10px;">📖 HƯỚNG DẪN</button>
+        <button id="btn-open-feedback" class="menu-btn" style="background: rgba(0, 150, 255, 0.4); margin-top: 10px;">📝 GÓP Ý</button>
+        <button id="btn-join-discord" class="menu-btn" style="background: rgba(88, 101, 242, 0.4); margin-top: 10px;">💬 JOIN DISCORD</button>
+
+        <div class="menu-guide">
+            WASD: Di chuyển | SHIFT: Chạy nhanh | SPACE: Nhảy<br>
+            R: Nạp đạn | E: Nhặt đồ | 1/2/3: Đổi vũ khí
+        </div>
+        <div class="menu-update">Ver 0.4 Premium Edition</div>
+    </div>
+
+    <!-- SÁCH HƯỚNG DẪN -->
+    <div id="guide-modal" class="hidden">
+        <div class="guide-content">
+            <h2 style="color: #ffcc00; margin-bottom: 20px;">📖 SỔ TAY SINH TỒN</h2>
+            
+            <div class="guide-section">
+                <h3 style="color: #00ffcc;">📱 ĐIỀU KHIỂN TRÊN ĐIỆN THOẠI</h3>
+                <p>• <b>Nút tròn Trái</b>: Di chuyển | <b>Nút tròn Phải</b>: Vuốt để xoay góc nhìn</p>
+                <p>• <b>Nút NGẮM</b>: Bật ống ngắm | <b>Nút BẮN</b>: Khai hỏa</p>
+                <p>• <b>Nút NHẢY/NẠP</b>: Thực hiện hành động tương ứng</p>
+                <p>• <b>Hàng nút súng</b>: Đổi vũ khí nhanh</p>
+            </div>
+
+            <div class="guide-section">
+                <h3 style="color: #ffcc00;">💻 ĐIỀU KHIỂN TRÊN MÁY TÍNH</h3>
+                <p>• <b>WASD</b>: Di chuyển | <b>SHIFT</b>: Chạy nhanh | <b>SPACE</b>: Nhảy</p>
+                <p>• <b>Chuột Trái</b>: Bắn | <b>Chuột Phải</b>: Ngắm | <b>R</b>: Nạp đạn</p>
+                <p>• <b>Phím 1, 2, 3</b>: Đổi vũ khí | <b>Phím E</b>: Nhặt đồ</p>
+            </div>
+
+            <div class="guide-section">
+                <h3>🎯 MỤC TIÊU & CHIẾN THUẬT</h3>
+                <p>• Tiêu diệt quái vật để triệu hồi <b>BOSS HAKARI</b>.</p>
+                <p>• Nhặt hộp tiếp tế (Đạn, Máu, Giáp) để sinh tồn lâu hơn.</p>
+                <p>• <b>CHÚ Ý:</b> Khi quái còn 3 con, chúng sẽ hóa <b>CUỒNG BẠO</b> (Mạnh hơn rất nhiều).</p>
+                <p>• <b>NÉ CHIÊU:</b> Luôn để ý <b>VÙNG ĐỎ</b> trên đất để không bị Boss đập nát.</p>
+            </div>
+
+            <button id="close-guide-btn" class="menu-btn" style="margin-top: 15px; width: auto; padding: 10px 40px;">TÔI ĐÃ HIỂU</button>
+        </div>
+    </div>
+
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="menu-screen hidden" style="background: rgba(0,0,0,0.7);">
+        <h1 class="menu-title">PAUSED</h1>
+        <button class="menu-btn" onclick="resumeGame()">RESUME</button>
+        <button class="menu-btn" onclick="location.reload()">MAIN MENU</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="click-anywhere"></div>
+    <div id="game-over-screen" class="menu-screen hidden">
+        <h1 class="menu-title" id="end-title">VICTORY!!!!</h1>
+        <h2 style="color:white" id="end-stats">KILLS: 5</h2>
+        <button id="open-reward-btn" class="menu-btn hidden" onclick="openReward()">
+            🎁 QUAY THƯỞNG 🎁
+        </button>
+        <button id="play-again-btn" class="menu-btn" onclick="finishGameAndSendToDiscord()">
+            QUAY LẠI MENU
+        </button>
+
+    </div>
+
+    <!-- Reward Wheel Screen -->
+    <div id="reward-screen" class="menu-screen hidden">
+        <h1 class="menu-title">🎁 QUAY TRÚNG THƯỞNG 🎁</h1>
+
+        <div id="wheel-layout">
+            <div id="wheel-container">
+                <div id="wheel"></div>
+                <div id="wheel-pointer"></div>
+            </div>
+            <div id="reward-legend">
+                <div class="legend-item">
+                    <span class="legend-color red"></span>
+                    <span>CHÚC U MAY MẮN CHO LẦN SAU :PP</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color yellow"></span>
+                    <span>LÌ XÌ 15K</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color cyan"></span>
+                    <span>LÌ XÌ 5K</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color orange"></span>
+                    <span>LÌ XÌ 10K</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color green"></span>
+                    <span>LÌ XÌ cho 20K nè</span>
+                </div>
+            </div>
+            <div id="reward-footer-left">
+                cảnh báo:<br>quay dc gì phải chụp <br>nhen tránh khai gian XD.
+            </div>
+        </div>
+
+        <!-- Nút và Kết quả được bọc trong div để không che mất nhau -->
+        <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 15px; margin-top: 20px;">
+            <button class="menu-btn" id="spin-btn" onclick="spinWheel()">QUAY LIỀN</button>
+            <h2 id="reward-result" style="color:white; margin: 0; min-height: 40px; display: none;"></h2>
+            <button class="menu-btn" id="back-to-menu-btn" onclick="finishGameAndSendToDiscord()" style="background: #444; display: none;">QUAY LẠI MENU</button>
+        </div>
+    </div>
+
+
+
+
+
+    <!-- External Game Logic -->
+    <!-- THÙNG GÓP Ý -->
+    <div id="feedback-modal" class="hidden">
+        <div class="feedback-content">
+            <h3>📝 GÓP Ý & BÁO LỖI</h3>
+            <textarea id="feedback-text" placeholder="Bác gặp lỗi gì hay muốn thêm tính năng gì cứ ghi vào đây nhé..."></textarea>
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:15px">
+                <button id="close-feedback-btn" class="menu-btn" style="width:auto; padding: 10px 20px; font-size: 16px;">ĐÓNG</button>
+                <button id="send-feedback-btn" class="menu-btn" style="width:auto; padding: 10px 20px; font-size: 16px; background: rgba(0,255,0,0.3)">GỬI</button>
+            </div>
+        </div>
+    </div>
+    
+
+
+
+    <!-- PeerJS for Live View -->
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <!-- Thêm ?v=3 để bắt trình duyệt tải lại file JS mới -->
+    <script src="game.js?v=3"></script>
+
+    <!-- OIIA CAT Assets -->
+    <img id="hakariphonk-cat" src="hakariphonk.png" alt="hakariphonk cat">
+    <audio id="hakariphonk-sound" src="hakariphonk.mp3" preload="auto"></audio>
+
+    <div id="click-anywhere"></div>
+</body>
+
+</html>
