@@ -421,35 +421,63 @@ function genCharMesh(color, isHorror = false, isEnraged = false, isFinal = false
         // --- BOT KINH DỊ (PALE CREEPER) ---
         const pale = [0.85, 0.85, 0.85];
         const blood = [0.4, 0, 0];
+        const brightBlood = [0.7, 0, 0];
+
         // Thân dài, gầy guộc
         push(getCube(pale, 0.4, 1.2, 0.2, 0, 0.6, 0));
+        
+        // Vết máu trên thân (MỚI - Lv1 đã có máu)
+        push(getCube(blood, 0.15, 0.4, 0.05, 0.05, 0.6, 0.11)); // Vết máu loang lổ trên ngực
+        if (isEnraged || isFinal) {
+            push(getCube(blood, 0.25, 0.6, 0.06, -0.05, 0.5, 0.11)); // Thêm vết máu lớn hơn cho Lv2, Lv3
+        }
+
         // Thêm xương sườn nhô ra (kinh dị hơn)
         for (let i = 0; i < 3; i++) {
-            push(getCube(pale, 0.45, 0.05, 0.25, 0, 0.8 + i * 0.15, 0.1));
+            const ribCol = isFinal ? blood : pale; // Lv3 xương sườn đẫm máu
+            push(getCube(ribCol, 0.45, 0.05, 0.25, 0, 0.8 + i * 0.15, 0.1));
         }
 
         // Đầu biến dạng to hơn chút
         push(getCube(pale, 0.4, 0.5, 0.4, 0, 1.35, 0));
+        
+        // Vết máu trên đầu (MỚI)
+        push(getCube(blood, 0.1, 0.2, 0.41, 0.15, 1.45, 0)); // Máu chảy từ đỉnh đầu xuống
+        if (isFinal) {
+            push(getCube(blood, 0.42, 0.1, 0.42, 0, 1.58, 0)); // Lv3 cả đầu đẫm máu
+        }
+
         // Mắt đỏ rực to phát sáng
         push(getCube([1, 0, 0], 0.15, 0.15, 0.05, -0.15, 1.45, 0.21));
         push(getCube([1, 0, 0], 0.15, 0.15, 0.05, 0.15, 1.45, 0.21));
 
         // Miệng máu đáng sợ
         push(getCube([0, 0, 0], 0.25, 0.15, 0.05, 0, 1.25, 0.21));
-        push(getCube(blood, 0.3, 0.05, 0.05, 0, 1.15, 0.21));
+        push(getCube(brightBlood, 0.3, 0.08, 0.05, 0, 1.18, 0.21)); // Máu tươi từ miệng
 
         if (isEnraged || isFinal) {
             // CUỒNG BẠO: 2 tay giơ thẳng lên trước (Z hướng tới người chơi)
-            push(getCube(isFinal ? [0.6, 0, 0] : pale, 0.1, 0.1, 1.0, -0.3, 1.1, 0.4));
-            push(getCube(isFinal ? [0.6, 0, 0] : pale, 0.1, 0.1, 1.0, 0.3, 1.1, 0.4));
+            const armCol = isFinal ? [0.6, 0, 0] : pale;
+            push(getCube(armCol, 0.1, 0.1, 1.0, -0.3, 1.1, 0.4));
+            push(getCube(armCol, 0.1, 0.1, 1.0, 0.3, 1.1, 0.4));
+            
+            // Máu dính trên tay (MỚI)
+            push(getCube(blood, 0.12, 0.12, 0.6, -0.3, 1.1, 0.5));
+            push(getCube(blood, 0.12, 0.12, 0.6, 0.3, 1.1, 0.5));
+
             push(getCube(blood, 0.2, 0.8, 0.2, 0, 0.8, 0.1)); // Dính máu trên ngực
             // Móng vuốt chĩa về trước
-            push(getCube(blood, 0.05, 0.05, 0.3, -0.3, 1.1, 0.9));
-            push(getCube(blood, 0.05, 0.05, 0.3, 0.3, 1.1, 0.9));
+            push(getCube(brightBlood, 0.05, 0.05, 0.4, -0.3, 1.1, 1.0)); // Móng vuốt đỏ rực dài hơn
+            push(getCube(brightBlood, 0.05, 0.05, 0.4, 0.3, 1.1, 1.0));
         } else {
             // THƯỜNG: Tay dài chạm đất
-            push(getCube(isFinal ? [0.6, 0, 0] : pale, 0.1, 1.0, 0.1, -0.3, 0.5, 0));
-            push(getCube(isFinal ? [0.6, 0, 0] : pale, 0.1, 1.0, 0.1, 0.3, 0.5, 0));
+            push(getCube(pale, 0.1, 1.0, 0.1, -0.3, 0.5, 0));
+            push(getCube(pale, 0.1, 1.0, 0.1, 0.3, 0.5, 0));
+            
+            // Vết máu trên tay thường (MỚI)
+            push(getCube(blood, 0.11, 0.5, 0.11, -0.3, 0.3, 0));
+            push(getCube(blood, 0.11, 0.5, 0.11, 0.3, 0.3, 0));
+
             // Móng vuốt chạm đất
             push(getCube(blood, 0.05, 0.4, 0.05, -0.3, -0.2, 0));
             push(getCube(blood, 0.05, 0.4, 0.05, 0.3, -0.2, 0));
