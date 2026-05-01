@@ -25,12 +25,6 @@
         <p style="font-size:16px; color:#ccc;">Game bắn súng không hỗ trợ màn hình dọc!</p>
     </div>
 
-    <!-- Cảnh báo khán giả -->
-    <div id="spectator-warning"
-        style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #0f0; padding: 15px 30px; border-radius: 30px; z-index: 10000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #0f0; text-align: center; box-shadow: 0 0 20px #0f0;">
-        <div id="spec-status">📡 ĐANG KHỞI TẠO...</div>
-    </div>
-
 
     <div id="debug-console"
         style="position:fixed; top:80px; left:10px; width:180px; max-height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-size:9px; font-family:monospace; pointer-events:none; z-index:10000; overflow-y:auto; padding:5px; border:1px solid #0f0; display:none;">
@@ -130,9 +124,7 @@
             </div>
         </div>
 
-        <div id="spectator-count"
-            style="position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-family:'Outfit'; font-size:16px; font-weight:bold; text-shadow:0 0 5px black; z-index:9999; display:none;">
-            👁️ 0</div>
+
 
         <div id="interaction-msg" class="hud-panel">NHẤN [E] ĐỂ LOOT</div>
 
@@ -192,7 +184,7 @@
                 style="width: 100%; cursor: pointer; accent-color: #ffcc00; background: transparent;">
         </div>
         <button class="menu-btn primary" onclick="startGame()">Bắt đầu cuộc chơi</button>
-        <button id="copy-link-btn" class="menu-btn" style="display: none;">🔗 SAO CHÉP LINK XEM</button>
+
         <button id="btn-open-guide" class="menu-btn" style="background: rgba(255, 204, 0, 0.4); margin-top: 10px;">📖
             HƯỚNG DẪN</button>
         <button id="btn-open-feedback" class="menu-btn" style="background: rgba(0, 150, 255, 0.4); margin-top: 10px;">📝
@@ -326,8 +318,7 @@
 
 
 
-    <!-- PeerJS for Live View -->
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
     <script src="game.js?v=18.5.8"></script>
     <script src="spectator.js?v=18.5.1"></script>
 

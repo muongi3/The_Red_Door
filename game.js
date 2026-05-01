@@ -3,15 +3,6 @@ const isMobile = window.matchMedia("(max-width: 800px), (pointer: coarse)").matc
 const isFacebookApp = /FBAN|FBAV|Messenger/i.test(navigator.userAgent);
 
 // 1. NHẬN DIỆN VAI TRÒ NGAY LẬP TỨC
-const urlParams = new URLSearchParams(window.location.search);
-const GLOBAL_WATCH_ID = urlParams.get('playerId') || urlParams.get('spectate') || urlParams.get('watch');
-window.SPECTATOR_MODE = !!GLOBAL_WATCH_ID;
-
-if (isFacebookApp && window.SPECTATOR_MODE) {
-    alert("⚠️ LỖI: Trình duyệt Facebook chặn kết nối! Bác hãy bấm dấu 3 chấm góc trên -> chọn 'Mở bằng trình duyệt' (Chrome/Safari) để xem nhé!");
-}
-
-
 
 const V3 = {
     create: (x = 0, y = 0, z = 0) => ({ x, y, z }),
@@ -212,22 +203,7 @@ window.addEventListener('load', () => {
     initAssets();
     debug("🚀 Game initialized successfully!");
 
-    // KIỂM TRA LINK KHÁN GIẢ NGAY SAU KHI ĐỒ HỌA SẴN SÀNG
-    if (GLOBAL_WATCH_ID) {
-        debug("🔍 Chế độ: KHÁN GIẢ | Mục tiêu: " + GLOBAL_WATCH_ID);
-        // Kiểm tra xem spectator.js đã nạp xong chưa
-        if (typeof startLiveView === 'function') {
-            startLiveView(GLOBAL_WATCH_ID);
-        } else {
-            window.debug("⚠️ Đang đợi hệ thống mạng...");
-            setTimeout(() => {
-                if (typeof startLiveView === 'function') startLiveView(GLOBAL_WATCH_ID);
-                else window.debug("❌ LỖI: spectator.js không tải được!");
-            }, 500);
-        }
-    } else {
-        debug("🔍 Chế độ: NGƯỜI CHƠI (HOST)");
-    }
+    debug("🔍 Chế độ: NGƯỜI CHƠI (HOST)");
 });
 
 const VS_SOURCE = `#version 300 es
@@ -989,53 +965,13 @@ function startGame() {
         }
     }
 
-    // Khởi động P2P cho khán giả (spectator.js)
-    if (typeof initPeer === 'function') initPeer();
     gl.canvas.requestPointerLock(); requestAnimationFrame(window.loop);
 
 
 }
 
-// === HÀM KÍCH HOẠT BOSS ===
-function triggerBossEvent() {
-    STATE.bossTriggered = true;
-    const b = STATE.boss;
-    b.active = true;
-    b.hp = window.GAME_CONFIG.boss.hp;
-    b.maxHp = window.GAME_CONFIG.boss.hp;
-    b.state = 'fight';
-    b.skillCD = 3; // Chờ 3s trước khi ra chiêu đầu tiên
-    b.skillIndex = 0;
-    b.skillSequence = null;
-    b.armLift = 0; b.bodyY = 0; b.bodyRot = 0;
-    b.hasHit = false;
-    b.pillarSpots = [];
-    b.fanMesh = null; b.indicatorMesh = null; b.dashMesh = null;
-    b.curLiftL = 0; b.curLiftR = 0; b.curScaleL = 1; b.curScaleR = 1;
-    // Spawn gần người chơi
-    const p = STATE.player;
-    const spawnAngle = Math.random() * Math.PI * 2;
-    const spawnDist = 40;
-    b.pos.x = p.pos.x + Math.cos(spawnAngle) * spawnDist;
-    b.pos.z = p.pos.z + Math.sin(spawnAngle) * spawnDist;
-    b.pos.y = getHeight(b.pos.x, b.pos.z);
-    b.rotY = Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z);
-
-    // Hiển thị UI
-    const hpContainer = document.getElementById('boss-hp-container');
-    if (hpContainer) hpContainer.style.display = 'block';
-
-    // Hiệu ứng spawn
-    spawnParticles(b.pos, 100, [1, 0, 0], 2.0);
-    STATE.shake = 5;
-
-    // Nhạc Boss (nếu có)
-    const audio = document.getElementById('hakariphonk-sound');
-    if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
-}
-
 function update(dt) {
-    if (STATE.screen === 'pause' || STATE.inputLocked || window.SPECTATOR_MODE) return;
+    if (STATE.screen === 'pause' || STATE.inputLocked) return;
     STATE.shake *= 0.9;
     if (STATE.player.damageFlash > 0) STATE.player.damageFlash -= dt;
     const prevCount = STATE.bots.length;
@@ -1284,10 +1220,10 @@ function update(dt) {
     if (closeLoot) {
         let pickedName = "";
         if (closeLoot.type === 0) { STATE.weapons[p.weaponIdx].res += 30; pickedName = "NHẬN ĐẠN"; }
-        else if (closeLoot.type === 1) {
-            p.hp = Math.min(p.maxHp, p.hp + 200);
+        else if (closeLoot.type === 1) { 
+            p.hp = Math.min(p.maxHp, p.hp + 200); 
             p.damageFlash = 0; // [YÊU CẦU] Ăn máu thì hết đỏ ngay
-            pickedName = "HỒI MÁU";
+            pickedName = "HỒI MÁU"; 
         }
         else if (closeLoot.type === 2) { p.armor = Math.min(p.maxArmor, p.armor + 150); pickedName = "NHẬN GIÁP"; }
         else if (closeLoot.type === 3) {
@@ -1418,8 +1354,7 @@ function update(dt) {
             b.vel.y -= window.GAME_CONFIG.boss.skill3.gravity * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
-                // Giữ tư thế đập xuống 0.5s rồi mới vào 'recover'
-                b.state = 'recover'; b.skillCD = 1.5; // 0.5s giữ + 1s chờ
+                b.state = 'recover'; b.skillCD = 0.5;
                 b.bodyRot = 1.4; b.armLift = -0.5;
                 const dmgDist = window.GAME_CONFIG.boss.skill3.range;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
@@ -1431,10 +1366,10 @@ function update(dt) {
                 STATE.shake = 10.0;
             }
         } else if (b.state === 'recover') {
-            b.bodyRot = 1.4; b.armLift = -0.5; // Giữ tư thế đập
+            b.bodyRot = 1.4; b.armLift = -0.5;
             if (b.skillCD <= 0) {
                 b.state = 'fight';
-                b.skillCD = 1.0; // Nghỉ 1s sau khi đập xuống
+                b.skillCD = 1.0;
             }
         } else if (b.state === 'dash_prepare') {
             const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
@@ -1517,21 +1452,18 @@ function update(dt) {
                 }
             }
             if (b.skillCD <= 0) {
-                // [CHIÊU 5] Trồi ra SAU LƯNG người chơi
-                const behindDist = 5; // Trồi lên cách người chơi 5m phía sau
-                const pFwd = V3.norm(V3.sub(p.pos, b.pos)); // Hướng người chơi nhìn vào boss
-                const behindX = p.pos.x - pFwd.x * behindDist;
-                const behindZ = p.pos.z - pFwd.z * behindDist;
-                b.state = 'teleport_strike'; b.skillCD = 3.5;
-                b.pos.x = behindX; b.pos.z = behindZ;
-                b.pos.y = getHeight(behindX, behindZ);
-                // Quay mặt vào người chơi
-                const toP2 = V3.norm(V3.sub(p.pos, b.pos));
-                b.rotY = Math.atan2(toP2.x, toP2.z);
-                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false;
+                // [YÊU CẦU] Dịch chuyển và quay mặt về phía người chơi
+                b.state = 'teleport_strike'; b.skillCD = 3.0; 
+                if (b.targetPos) {
+                    b.pos.x = b.targetPos.x; b.pos.z = b.targetPos.z; b.pos.y = b.targetPos.y;
+                    // Quay mặt về phía người chơi ngay khi trồi lên
+                    const toP = V3.norm(V3.sub(p.pos, b.pos));
+                    b.rotY = Math.atan2(toP.x, toP.z);
+                }
+                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false; // Chìm sâu hơn (-25)
                 if (b.fanMesh) deleteMesh(b.fanMesh);
-                const dx5 = p.pos.x - b.pos.x, dz5 = p.pos.z - b.pos.z;
-                b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx5, dz5) - 1.2, arc: 2.4, r: 25 };
+                const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
+                b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx, dz) - 1.2, arc: 2.4, r: 25 };
                 b.fanMesh = genTerrainFanMesh(b.fanMeshParams.x, b.fanMeshParams.z, b.fanMeshParams.ang, b.fanMeshParams.arc, b.fanMeshParams.r);
             }
         } else if (b.state === 'teleport_strike') {
@@ -1553,7 +1485,7 @@ function update(dt) {
             } else {
                 b.armLift += (-1.0 - b.armLift) * 0.4;
                 b.bodyRot += (1.4 - b.bodyRot) * 0.2; // Cúi người cực thấp khi đập xuống
-
+                
                 if (!b.hasHit) {
                     const d = V3.dist(b.pos, p.pos);
                     // Kiểm tra hướng và tầm đánh (Hình quạt)
@@ -2016,14 +1948,7 @@ const GRASS_PATCHES = []; for (let i = 0; i < (isMobile ? 30 : 200); i++) { cons
 function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     const p = STATE.player;
-    if (!p || !p.pos) {
-        // Nếu là khán giả và chưa có dữ liệu, vẽ màn hình chờ
-        if (window.SPECTATOR_MODE) {
-            gl.clearColor(0.1, 0.1, 0.1, 1.0);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-        }
-        return;
-    }
+    if (!p || !p.pos) return;
 
     // CHUYỂN ĐỔI KHÔNG KHÍ: Chiều tà (Bot) vs Kinh dị (Boss)
     let fogCol = [0.6, 0.3, 0.2]; // Trả lại màu cam chiều tà mặc định (u ám)
@@ -2037,13 +1962,13 @@ function draw() {
         fogCol = [0.6 + intensity * 0.3, 0.2, 0.2]; // Tăng mạnh độ sáng sương mù
         bgCol = [0.4 + skyPulse, 0.1, 0.1];         // Tăng mạnh độ sáng bầu trời
         // CSS filter: Trả lại độ tối u ám cũ
-        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = intensity > 0.4 ? `contrast(${140 + intensity * 60}%) brightness(${0.7 - intensity * 0.25})` : 'brightness(0.7) contrast(1.2)';
-        if (!isMobile && !window.SPECTATOR_MODE && intensity > 0.6) STATE.shake += intensity * 0.2;
+        if (!isMobile) document.body.style.filter = intensity > 0.4 ? `contrast(${140 + intensity * 60}%) brightness(${0.7 - intensity * 0.25})` : 'brightness(0.7) contrast(1.2)';
+        if (!isMobile && intensity > 0.6) STATE.shake += intensity * 0.2;
     } else {
         // GIAI ĐOẠN CHIỀU TÀ (Trả lại độ tối u ám)
         fogCol = [0.6, 0.3, 0.2];
         bgCol = [0.7, 0.4, 0.3];
-        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = 'brightness(0.7) contrast(1.2)';
+        if (!isMobile) document.body.style.filter = 'brightness(0.7) contrast(1.2)';
     }
 
     gl.clearColor(bgCol[0], bgCol[1], bgCol[2], 1.0);
@@ -2098,14 +2023,12 @@ function draw() {
     if (STATE.boss && STATE.boss.active) {
         gl.uniform1i(locs.isSky, false);
         const moonPos = { x: eye.x + 200, y: eye.y + 180, z: eye.z - 400 };
-        if (!window.SPECTATOR_MODE) {
-            gl.enable(gl.BLEND);
-            gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-            const pulse = 0.9 + Math.sin(Date.now() * 0.001) * 0.1;
-            gl.uniform3f(locs.fogColor, 0.4 * pulse, 0, 0);
-            drawMeshActual(ASSETS.bloodMoon, moonPos, 100, 0);
-            gl.disable(gl.BLEND);
-        }
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+        const pulse = 0.9 + Math.sin(Date.now() * 0.001) * 0.1;
+        gl.uniform3f(locs.fogColor, 0.4 * pulse, 0, 0);
+        drawMeshActual(ASSETS.bloodMoon, moonPos, 100, 0);
+        gl.disable(gl.BLEND);
         gl.uniform3f(locs.fogColor, 2.0, 0, 0);
         drawMeshActual(ASSETS.bloodMoon, moonPos, 80, 0);
         gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
@@ -2117,8 +2040,7 @@ function draw() {
     gl.uniformMatrix4fv(locs.model, false, M4.identity()); gl.bindVertexArray(ASSETS.ground.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.ground.count);
     gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform1i(locs.isWater, true); gl.uniformMatrix4fv(locs.model, false, M4.identity()); gl.bindVertexArray(ASSETS.water.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.water.count); gl.uniform1i(locs.isWater, false); gl.disable(gl.BLEND);
     const drawShadow = (pos, size) => { let h = getHeight(pos.x, pos.z) + 0.05, m = M4.translation(pos.x, h, pos.z); m = M4.multiply(m, M4.scaling(size, 0.01, size)); gl.uniformMatrix4fv(locs.model, false, m); gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count); };
-    // Shadow: bỏ cho mobile VÀ khán giả
-    if (!isMobile && !window.SPECTATOR_MODE) {
+    if (!isMobile) {
         gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA); gl.uniform3f(locs.fogColor, 0, 0, 0);
         STATE.bots.forEach(b => drawShadow(b.pos, 1.5)); drawShadow(p.pos, 1.5);
         gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
@@ -2138,7 +2060,7 @@ function draw() {
 
         if (b.isEvolvingLv3) {
             const pulse = (Math.sin(performance.now() * 0.05) > 0) ? 2.0 : 0.0;
-            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5);
+            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5); 
             drawPos.x += (Math.random() - 0.5) * 0.4;
             drawPos.z += (Math.random() - 0.5) * 0.4;
             scale = 1.0 + (2.0 - Math.max(0, b.evolveTimer)) * 0.5;
@@ -2157,8 +2079,8 @@ function draw() {
         if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
     });
     STATE.barrels.forEach(b => drawMeshActual(ASSETS.barrel, b.pos, 3, 0));
-    // Grass: khán giả bỏ hoàn toàn để tiết kiệm draw call
-    if (!window.SPECTATOR_MODE && GRASS_PATCHES.length > 0) { gl.disable(gl.CULL_FACE); GRASS_PATCHES.forEach(g => drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0)); gl.enable(gl.CULL_FACE); }
+    // Grass:
+    if (GRASS_PATCHES.length > 0) { gl.disable(gl.CULL_FACE); GRASS_PATCHES.forEach(g => drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0)); gl.enable(gl.CULL_FACE); }
     STATE.pads.forEach(p => drawMeshActual(ASSETS.pad, p.pos, 2, 0));
 
     // Vẽ vật cản (Cây, Nhà, Xe)
@@ -2176,18 +2098,16 @@ function draw() {
         drawMeshActual(mesh, { x: l.pos.x, y: l.pos.y + Math.sin(performance.now() / 200) * 0.2, z: l.pos.z }, 0.5, performance.now() / 1000);
     });
 
-    // Effects & Boss Indicators (Disable for spectators to prevent crash/lag)
-    if (!window.SPECTATOR_MODE) {
-        STATE.projectiles.forEach(p => {
-            if (p.isBoss) drawMeshActual(ASSETS.bossProj, p.pos, 1, 0);
-            else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
-        });
-        STATE.particles.forEach(p => {
-            gl.uniform3f(locs.fogColor, p.color[0], p.color[1], p.color[2]);
-            drawMeshActual(ASSETS.crate, p.pos, 0.2 * p.life, 0);
-        });
-        gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
-    }
+    // Effects & Boss Indicators
+    STATE.projectiles.forEach(p => {
+        if (p.isBoss) drawMeshActual(ASSETS.bossProj, p.pos, 1, 0);
+        else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
+    });
+    STATE.particles.forEach(p => {
+        gl.uniform3f(locs.fogColor, p.color[0], p.color[1], p.color[2]);
+        drawMeshActual(ASSETS.crate, p.pos, 0.2 * p.life, 0);
+    });
+    gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
 
     // Boss Rendering
     if (STATE.boss && STATE.boss.active) {
@@ -2198,7 +2118,7 @@ function draw() {
         // Boss Body (Static for spectators)
         let mBody = M4.translation(b.pos.x, b.pos.y + b.bodyY, b.pos.z);
         mBody = M4.multiply(mBody, M4.rotationY(b.rotY || ang));
-        if (!window.SPECTATOR_MODE) mBody = M4.multiply(mBody, M4.rotationX(b.bodyRot));
+        mBody = M4.multiply(mBody, M4.rotationX(b.bodyRot));
         gl.uniformMatrix4fv(locs.model, false, mBody);
         gl.bindVertexArray(ASSETS.bossBody.vao);
         gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossBody.count);
@@ -2213,169 +2133,95 @@ function draw() {
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
 
-        // === BOSS ARM ANIMATION - FIX CRASH + YÊU CẦU MỚI ===
-        {
-            const bT = performance.now();
-            const breathe = Math.sin(bT * 0.002) * 0.08;
+        // Boss Arms - HIỆU ỨNG TAY TÙY BIẾN CHO CẢ 5 SKILL
+        const drawArm = (side) => {
+            let armScale = 1.0;
+            let armColor = null;
+            let lift = b.armLift || 0;
+            let forward = 0;
 
-            let tLL = breathe, tLR = breathe;
-            let tSL = 1.0, tSR = 1.0;
-            let cL = null, cR = null;
-            let lspd = 6;
-
-            if (b.state === 'fight' || b.state === 'idle') {
-                const sw = Math.sin(bT * 0.004) * 0.2;
-                tLL = sw + breathe; tLR = -sw + breathe;
-            }
-            // Skill 1: DASH - Boss đứng yên như khúc gỗ, hai tay xuôi
-            else if (b.state === 'dash_prepare') {
-                tLL = 0; tLR = 0; lspd = 12;
-            }
-            else if (b.state === 'dashing') {
-                // Tay đưa về sau khi lướt
-                tLL = -Math.PI * 0.3; tLR = -Math.PI * 0.3; lspd = 25;
-            }
-            // Skill 2: SHOOT - tay thường, hiệu ứng ngực
+            // Skill 1: DASH (Lướt) - Hai tay đưa về phía trước
+            if (b.state === 'dash_prepare' || b.state === 'dashing') {
+                lift = Math.PI * 0.4;
+                forward = 2;
+            } 
+            // Skill 2: SHOOT (Bắn) - Hai tay đưa về phía trước nhắm bắn
             else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
-                tLL = 0.15; tLR = 0.15; lspd = 7;
+                lift = Math.PI * 0.45;
+                forward = 1.5;
             }
-            // Skill 3: NHẢY - cúi người lấy đà
-            else if (b.state === 'jump_start') {
-                tLL = 0.3; tLR = 0.3;
-                tSL = 1.3; tSR = 1.3;
-                cL = [1.2, 0, 0]; cR = [1.2, 0, 0];
-                lspd = 5;
-            }
-            // Skill 3: TRÊN KHÔNG - hai tay đỏ x2 giơ lên trời
+            // Skill 3: JUMP (Nhảy) - Hai tay hóa đỏ x2, giơ cao rồi đập xuống
             else if (b.state === 'jumping') {
-                tLL = -Math.PI * 0.85; tLR = -Math.PI * 0.85;
-                tSL = 2.0; tSR = 2.0;
-                cL = [2, 0, 0]; cR = [2, 0, 0];
-                lspd = 10;
+                armScale = 2.0; armColor = [1.5, 0, 0];
+                lift = b.skillCD > 0.5 ? -Math.PI * 0.5 : Math.PI * 0.4;
             }
-            // Skill 3: ĐẨP XUỐNG - giữ tư thế cúi đập 0.5s
-            else if (b.state === 'recover') {
-                tLL = Math.PI * 0.65; tLR = Math.PI * 0.65;
-                tSL = 1.8; tSR = 1.8;
-                cL = [2, 0, 0]; cR = [2, 0, 0];
-                lspd = 35;
-            }
-            // Skill 4: PILLAR - hai tay giơ lên trời (bình thường)
+            // Skill 4: PILLAR (Cột máu) - Hai tay hóa đỏ, giơ thẳng lên trời
             else if (b.state === 'pillar_prepare') {
-                tLL = -Math.PI * 0.75; tLR = -Math.PI * 0.75;
-                lspd = 3;
+                armColor = [1.5, 0, 0];
+                lift = -Math.PI * 0.7; // Giơ tay lên trời vừa phải
             }
-            else if (b.state === 'pillar_active') {
-                tLL = Math.PI * 0.3; tLR = Math.PI * 0.3; lspd = 5;
-            }
-            // Skill 5: TELEPORT - chìm xuống giơ tay
-            else if (b.state === 'teleport_start') {
-                tLL = -Math.PI * 0.6; tLR = -Math.PI * 0.6; lspd = 4;
-            }
-            // Skill 5: TELEPORT STRIKE - tay PHẢI x2 giơ lên 1.5s rồi đập
+            // Skill 5: TELEPORT STRIKE (Chìm/Trồi đập) - Tay phải hóa đỏ x2 đập cực mạnh
             else if (b.state === 'teleport_strike') {
-                if (b.skillCD > 2.0) { // Trồi lên, giơ tay phải
-                    tLL = 0.15; tLR = -Math.PI * 0.65;
-                    tSR = 1.4; cR = [2, 0, 0]; lspd = 8;
-                } else if (b.skillCD > 0.5) { // Giữ giơ tay phải 1.5s + run rẩy
-                    const tr = Math.sin(bT * 0.07) * 0.08;
-                    tLL = 0.15 + tr; tLR = -Math.PI * 0.85 + tr;
-                    tSR = 1.8; cR = [2.5, 0, 0]; lspd = 20;
-                } else { // Đập xuống cực nhanh
-                    tLL = 0.15; tLR = Math.PI * 0.65;
-                    tSR = 2.0; cR = [3, 0, 0]; lspd = 40;
+                if (side === 1) { // Tay phải
+                    armColor = [2.0, 0, 0];
+                    if (b.skillCD > 0.5) { // Giai đoạn trồi lên
+                        armScale = 1.3; lift = -Math.PI * 0.6;
+                    } else { // Giai đoạn đập
+                        armScale = 1.8; lift = Math.PI * 0.4;
+                    }
+                } else { // Tay trái hạ xuống tự nhiên
+                    lift = 0.5;
                 }
+            } else if (b.state === 'teleport_start') {
+                lift = -Math.PI * 0.6; // Giơ tay khi chìm xuống
             }
 
-            if (b.curLiftL === undefined) { b.curLiftL = 0; b.curLiftR = 0; b.curScaleL = 1; b.curScaleR = 1; }
-            const lf = Math.min(1, lspd * dt);
-            b.curLiftL += (tLL - b.curLiftL) * lf;
-            b.curLiftR += (tLR - b.curLiftR) * lf;
-            b.curScaleL += (tSL - b.curScaleL) * lf;
-            b.curScaleR += (tSR - b.curScaleR) * lf;
+            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
+            mArm = M4.multiply(mArm, M4.translation(side * 3.5, 0, forward)); // Đưa tay ra xa thân một chút
+            mArm = M4.multiply(mArm, M4.rotationX(lift));
+            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
 
-            // Vẽ tay trái
-            if (cL) gl.uniform3f(locs.emitColor, cL[0], cL[1], cL[2]);
-            let mArmL = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mArmL = M4.multiply(mArmL, M4.rotationY(b.rotY || ang));
-            mArmL = M4.multiply(mArmL, M4.translation(-3.5, 0, 0));
-            mArmL = M4.multiply(mArmL, M4.rotationX(b.curLiftL));
-            mArmL = M4.multiply(mArmL, M4.scaling(b.curScaleL, b.curScaleL, b.curScaleL));
-            gl.uniformMatrix4fv(locs.model, false, mArmL);
+            if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
+            gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-            if (cL) gl.uniform3f(locs.emitColor, 0, 0, 0);
-
-            // Vẽ tay phải
-            if (cR) gl.uniform3f(locs.emitColor, cR[0], cR[1], cR[2]);
-            let mArmR = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mArmR = M4.multiply(mArmR, M4.rotationY(b.rotY || ang));
-            mArmR = M4.multiply(mArmR, M4.translation(3.5, 0, 0));
-            mArmR = M4.multiply(mArmR, M4.rotationX(b.curLiftR));
-            mArmR = M4.multiply(mArmR, M4.scaling(b.curScaleR, b.curScaleR, b.curScaleR));
-            gl.uniformMatrix4fv(locs.model, false, mArmR);
-            gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-            if (cR) gl.uniform3f(locs.emitColor, 0, 0, 0);
-
-            // Lòng bàn tay đỏ chỉ khi Skill 4 - đặt ở đầu mỷi tay
-            if (b.state === 'pillar_prepare') {
-                gl.uniform3f(locs.emitColor, 2, 0, 0);
-                // Vẽ lòng tay trái (cuối cánh tay trái)
-                let mPalmL = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-                mPalmL = M4.multiply(mPalmL, M4.rotationY(b.rotY || ang));
-                mPalmL = M4.multiply(mPalmL, M4.translation(-3.5, 0, 0)); // vị trí vai trái
-                mPalmL = M4.multiply(mPalmL, M4.rotationX(b.curLiftL || 0));
-                mPalmL = M4.multiply(mPalmL, M4.translation(0, 8, 0)); // cuối cánh tay
-                mPalmL = M4.multiply(mPalmL, M4.scaling(1.8, 1.8, 1.8));
-                gl.uniformMatrix4fv(locs.model, false, mPalmL);
-                gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
-                // Vẽ lòng tay phải
-                let mPalmR = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-                mPalmR = M4.multiply(mPalmR, M4.rotationY(b.rotY || ang));
-                mPalmR = M4.multiply(mPalmR, M4.translation(3.5, 0, 0)); // vị trí vai phải
-                mPalmR = M4.multiply(mPalmR, M4.rotationX(b.curLiftR || 0));
-                mPalmR = M4.multiply(mPalmR, M4.translation(0, 8, 0)); // cuối cánh tay
-                mPalmR = M4.multiply(mPalmR, M4.scaling(1.8, 1.8, 1.8));
-                gl.uniformMatrix4fv(locs.model, false, mPalmR);
-                gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
-                gl.uniform3f(locs.emitColor, 0, 0, 0);
-            }
-        }
+            if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
+        };
+        drawArm(-1); drawArm(1);
 
         // Ground Indicators - ONLY FOR PLAYER
-        if (!window.SPECTATOR_MODE) {
-            gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-            gl.depthMask(false); gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
-            gl.uniform3f(locs.fogColor, 0.6 + Math.sin(Date.now() * 0.015) * 0.4, 0, 0);
+        gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.depthMask(false); gl.disable(gl.DEPTH_TEST); gl.disable(gl.CULL_FACE);
+        gl.uniform3f(locs.fogColor, 0.6 + Math.sin(Date.now() * 0.015) * 0.4, 0, 0);
 
-            if (b.indicatorMesh) {
-                gl.uniformMatrix4fv(locs.model, false, M4.identity());
-                gl.bindVertexArray(b.indicatorMesh.vao);
-                gl.drawArrays(gl.TRIANGLES, 0, b.indicatorMesh.count);
-            }
-            if (b.fanMesh && b.state === 'teleport_strike' && b.skillCD > 0.8) {
-                gl.uniformMatrix4fv(locs.model, false, M4.identity());
-                gl.bindVertexArray(b.fanMesh.vao);
-                gl.drawArrays(gl.TRIANGLES, 0, b.fanMesh.count);
-            }
-            if (b.dashMesh && (b.state === 'dash_prepare' || b.state === 'dashing' || b.state === 'shoot_prepare')) {
-                gl.uniformMatrix4fv(locs.model, false, M4.identity());
-                gl.bindVertexArray(b.dashMesh.vao);
-                gl.drawArrays(gl.TRIANGLES, 0, b.dashMesh.count);
-            }
-            b.pillarSpots.forEach(s => {
-                if (!s.active && s.mesh) {
-                    gl.uniformMatrix4fv(locs.model, false, M4.identity());
-                    gl.bindVertexArray(s.mesh.vao);
-                    gl.drawArrays(gl.TRIANGLES, 0, s.mesh.count);
-                } else if (s.active) {
-                    gl.uniform3f(locs.fogColor, 1, 0, 0);
-                    const mMat = M4.multiply(M4.translation(s.x, s.h - 1, s.z), M4.scaling(4, 25, 4));
-                    gl.uniformMatrix4fv(locs.model, false, mMat);
-                    gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
-                }
-            });
-            gl.depthMask(true); gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.disable(gl.BLEND);
+        if (b.indicatorMesh) {
+            gl.uniformMatrix4fv(locs.model, false, M4.identity());
+            gl.bindVertexArray(b.indicatorMesh.vao);
+            gl.drawArrays(gl.TRIANGLES, 0, b.indicatorMesh.count);
         }
+        if (b.fanMesh && b.state === 'teleport_strike' && b.skillCD > 0.8) {
+            gl.uniformMatrix4fv(locs.model, false, M4.identity());
+            gl.bindVertexArray(b.fanMesh.vao);
+            gl.drawArrays(gl.TRIANGLES, 0, b.fanMesh.count);
+        }
+        if (b.dashMesh && (b.state === 'dash_prepare' || b.state === 'dashing' || b.state === 'shoot_prepare')) {
+            gl.uniformMatrix4fv(locs.model, false, M4.identity());
+            gl.bindVertexArray(b.dashMesh.vao);
+            gl.drawArrays(gl.TRIANGLES, 0, b.dashMesh.count);
+        }
+        b.pillarSpots.forEach(s => {
+            if (!s.active && s.mesh) {
+                gl.uniformMatrix4fv(locs.model, false, M4.identity());
+                gl.bindVertexArray(s.mesh.vao);
+                gl.drawArrays(gl.TRIANGLES, 0, s.mesh.count);
+            } else if (s.active) {
+                gl.uniform3f(locs.fogColor, 1, 0, 0);
+                const mMat = M4.multiply(M4.translation(s.x, s.h - 1, s.z), M4.scaling(4, 25, 4));
+                gl.uniformMatrix4fv(locs.model, false, mMat);
+                gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
+            }
+        });
+        gl.depthMask(true); gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.disable(gl.BLEND);
 
 
         // RESET TRẠNG THÁI RENDER
@@ -2512,7 +2358,7 @@ function updateHUD() {
     if (overlay) {
         if (p.damageFlash > 0) {
             const hpRatio = 1.0 - (p.hp / p.maxHp);
-            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4);
+            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4); 
             overlay.style.display = 'block';
             overlay.style.opacity = Math.min(0.6, intensity);
             overlay.style.background = `radial-gradient(circle, transparent 20%, rgba(${150 + hpRatio * 105}, 0, 0, 0.7) 100%)`;
@@ -3063,29 +2909,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 
 
-// initPeer() được gọi trực tiếp trong startGame() — bridge cũ đã xóa
 
-// Sync Logic for Host (Gọi đến các hàm trong spectator.js)
-let lastSyncTime = 0;
-const originalLoop = window.loop;
-window.loop = function (now) {
-    if (typeof originalLoop === 'function') originalLoop(now);
-
-    if (STATE.screen === 'game' && !window.SPECTATOR_MODE) {
-        if (now - lastSyncTime > 100) { // Đồng bộ mỗi 100ms
-            if (typeof sendStateToSpectators === 'function') sendStateToSpectators();
-            lastSyncTime = now;
-        }
-    }
-};
-
-const originalFireWeapon = window.fireWeapon;
-window.fireWeapon = function (shooter, rot, weapon, isPlayer, dirOverride) {
-    if (typeof originalFireWeapon === 'function') originalFireWeapon(shooter, rot, weapon, isPlayer, dirOverride);
-    if (isPlayer && !window.SPECTATOR_MODE) {
-        if (typeof sendStateToSpectators === 'function') sendStateToSpectators('shoot');
-    }
-};
 
 
 

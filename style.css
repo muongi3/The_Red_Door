@@ -1044,29 +1044,6 @@ canvas {
     #health-bar-container { left: 40px !important; bottom: 20px !important; width: 180px !important; }
 }
 
-/* Spectator Mode: Ẩn controls + noise, GIỮ HUD cơ bản để xem trận */
-body.spectator-mode #mobile-controls,
-body.spectator-mode #crosshair,
-body.spectator-mode #minimap-container,
-body.spectator-mode #loot-legend,
-body.spectator-mode #pickup-msg,
-body.spectator-mode #interaction-msg,
-body.spectator-mode #streak-msg,
-body.spectator-mode #continue-text,
-body.spectator-mode #boss-overlay,
-body.spectator-mode #boss-container,
-body.spectator-mode #kill-feed,
-body.spectator-mode #scope-overlay {
-    display: none !important;
-}
-/* Khán giả thấy HP / đạn / số kill / boss HP */
-body.spectator-mode #ui-layer { display: block !important; pointer-events: none; }
-body.spectator-mode #health-bar-container,
-body.spectator-mode #armor-bar-container,
-body.spectator-mode #ammo-display,
-body.spectator-mode #stats-display,
-body.spectator-mode #boss-hp-container { display: block !important; }
-
 /* SÁCH HƯỚNG DẪN STYLES */
 #guide-modal {
     position: fixed;
@@ -1125,14 +1102,3 @@ body.spectator-mode #boss-hp-container { display: block !important; }
     .guide-section p { font-size: 12px; }
 }
 
-/* --- SPECTATOR UI CLEANUP --- */
-.spectator-mode #settings-btn, 
-.spectator-mode #joystick-container, 
-.spectator-mode #btn-shoot-container, 
-.spectator-mode #btn-jump-container, 
-.spectator-mode #btn-scope-container {
-    display: none !important;
-}
-.spectator-mode #ui-layer {
-    pointer-events: none;
-}
