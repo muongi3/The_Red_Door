@@ -2648,15 +2648,8 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- GAME INITIALIZATION ---
-const originalStartGame = startGame;
-window.startGame = function () {
-    originalStartGame();
-    // Khởi tạo mạng (được định nghĩa trong spectator.js)
-    if (typeof initPeer === 'function') initPeer();
-};
 
-}
+
 
 // --- GAME INITIALIZATION & NETWORKING BRIDGE ---
 // Đảm bảo chỉ khởi tạo một lần
