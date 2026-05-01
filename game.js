@@ -64,42 +64,44 @@ window.GAME_CONFIG = {
         // CHIÊU 1: LƯỚT (DASH) - Boss lao thẳng vào người chơi
         skill1: {
             damage: 400,      // Sát thương khi bị tông trúng.
-            prepareTime: 1.0, // [RẶN CHIÊU] Thời gian đứng rung lắc gồng trước khi lướt. Tăng -> Dễ né.
-            activeTime: 0.8,  // Thời gian trong khi lướt.
+            prepareTime: 1.0, // [THỜI GIAN RẶN] Boss rung lắc trước khi phóng đi. Tăng -> Dễ né hơn.
+            activeTime: 0.8,  // Thời gian Boss lướt đi trên mặt đất.
             speed: 110,       // Tốc độ lướt. Tăng -> Boss lướt như tia chớp.
-            width: 8          // Độ rộng vùng sát thương. Tăng -> Khó né hơn.
+            width: 8          // Độ rộng vùng sát thương của vệt lướt.
         },
         // CHIÊU 2: ĐẠI BÁC (SHOOT) - Boss nhắm laser và bắn chuỗi đạn
         skill2: {
             damage: 200,      // Sát thương mỗi viên đạn.
-            prepareTime: 1.0, // [RẶN CHIÊU] Thời gian Boss gồng tay nhắm laser.
+            prepareTime: 1.0, // [THỜI GIAN RẶN] Thời gian laser nhắm bắn trước khi xả đạn.
             shotCount: 15,    // Số lượng đạn bắn ra mỗi đợt.
-            interval: 0.1,    // Thời gian giữa mỗi viên đạn. Giảm -> Đạn xả như mưa.
+            interval: 0.1,    // Thời gian giữa mỗi viên đạn (giây).
             speed: 100,       // Tốc độ bay của đạn.
         },
         // CHIÊU 3: NHẢY DẬM (JUMP/SLAM) - Boss nhảy lên và dậm mạnh xuống đất
         skill3: {
             damage: 600,      // Sát thương khi Boss dậm trúng.
-            prepareTime: 2.0, // [RẶN CHIÊU] Thời gian Boss khuỵu người lấy đà nhảy.
+            prepareTime: 2.0, // [THỜI GIAN RẶN] Boss vung tay lấy đà trước khi nhảy.
+            recoverTime: 0.5, // [THỜI GIAN NGHỈ] Boss đứng im sau khi dậm đất xong.
             range: 25,        // Tầm nổ của cú dậm. Tăng -> Vùng ảnh hưởng rộng hơn.
-            jumpPower: 45,    // Độ cao cú nhảy.
-            gravity: 50       // Trọng lực kéo Boss xuống. Tăng -> Boss rơi xuống nhanh hơn.
+            jumpPower: 45,    // Độ cao cú nhảy (Lực bay).
+            gravity: 50       // Trọng lực kéo Boss xuống.
         },
         // CHIÊU 4: CỘT MÁU (CRIMSON PILLARS) - Triệu hồi các cột lửa từ dưới đất
         skill4: {
             damage: 300,      // Sát thương mỗi cột lửa.
-            prepareTime: 2.5, // [RẶN CHIÊU] Thời gian giơ tay triệu hồi vòng đỏ cảnh báo.
-            count: 20,        // Số lượng cột lửa triệu hồi. Tăng -> Kín bản đồ.
+            prepareTime: 2.5, // [THỜI GIAN RẶN] Boss giơ tay triệu hồi vòng cảnh báo.
+            count: 20,        // Số lượng cột lửa triệu hồi.
             pillarRange: 9,   // Bán kính nổ của mỗi cột.
             pillarTimer: 2.0  // Thời gian cột nổ từ lúc hiện cảnh báo.
         },
         // CHIÊU 5: DỊCH CHUYỂN (TELEPORT STRIKE) - Boss chìm xuống đất và trồi lên đập
         skill5: {
             damage: 400,      // Sát thương cú đập khi trồi lên.
-            prepareTime: 2.0, // Thời gian Boss chìm xuống đất và di chuyển ẩn mình.
-            chargeTime: 1.5,  // [RẶN CHIÊU] Thời gian Boss trồi lên và gồng chờ trước khi đập.
-            activeTime: 3.0,  // Tổng thời gian Boss hiện thân đập đất (trồi lên + gồng + đập).
-            range: 40         // Tầm đập của chiêu này. Tăng -> Rất khó né.
+            prepareTime: 2.0, // [THỜI GIAN RẶN 1] Boss từ từ chìm xuống đất.
+            activeTime: 3.0,  // [TỔNG THỜI GIAN] Boss ở dưới đất và trồi lên đập.
+            emergeTime: 0.5,  // [THỜI GIAN TRỒI] Thời gian để Boss nhô lên mặt đất.
+            strikeDelay: 1.5, // [THỜI GIAN RẶN 2] Thời gian gồng (rặn) sau khi nhô lên rồi mới đập.
+            range: 40         // Tầm đập của chiêu này.
         }
     },
 
@@ -1356,7 +1358,7 @@ function update(dt) {
                 }
             } else {
                 const isRage = b.hp < b.maxHp * 0.4;
-                const speed = isRage ? 15 : window.GAME_CONFIG.bot.speedLv1; // Dùng tốc độ bot cơ bản cho Boss lúc thường
+                const speed = isRage ? 15 : window.GAME_CONFIG.bot.baseSpeed; // Dùng tốc độ bot cơ bản cho Boss lúc thường
 
                 const dir = V3.norm(V3.sub(p.pos, b.pos));
                 b.pos.x += dir.x * speed * dt; b.pos.z += dir.z * speed * dt;
@@ -1398,7 +1400,7 @@ function update(dt) {
             b.vel.y -= window.GAME_CONFIG.boss.skill3.gravity * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
-                b.state = 'recover'; b.skillCD = 0.5;
+                b.state = 'recover'; b.skillCD = window.GAME_CONFIG.boss.skill3.recoverTime;
                 b.bodyRot = 0.6; b.armLift = -0.2; // Chạm đất tay chống đất phía trước (-0.2), người hơi cúi (0.6)
                 const dmgDist = window.GAME_CONFIG.boss.skill3.range;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
@@ -1464,6 +1466,7 @@ function update(dt) {
             }
             if (b.skillCD <= 0) {
                 b.state = 'pillar_active';
+                // Sử dụng pillarTimer làm thời gian tồn tại của cột máu
                 b.skillCD = window.GAME_CONFIG.boss.skill4.pillarTimer;
                 b.armLift = 0;
                 b.bodyRot = 0.5;
@@ -1494,10 +1497,11 @@ function update(dt) {
             }
         } else if (b.state === 'teleport_start') {
             b.bodyY -= 15 * dt;
-            b.armLift += (0 - b.armLift) * 0.1;
+            b.armLift += (0 - b.armLift) * 0.1; // Chìm xuống đứng yên không giơ tay làm gì
             if (b.skillCD > 1.0) {
                 b.targetPos = V3.create(p.pos.x, 0, p.pos.z);
                 b.targetPos.y = getHeight(b.targetPos.x, b.targetPos.z);
+
                 b.indicatorUpdateTimer = (b.indicatorUpdateTimer || 0) - dt;
                 if (b.indicatorUpdateTimer <= 0) {
                     if (b.indicatorMesh) deleteMesh(b.indicatorMesh);
@@ -1508,34 +1512,29 @@ function update(dt) {
             }
             if (b.skillCD <= 0) {
                 // [YÊU CẦU] Dịch chuyển và quay mặt về phía người chơi
-                b.state = 'teleport_strike'; b.skillCD = window.GAME_CONFIG.boss.skill5.activeTime; 
+                b.state = 'teleport_strike'; b.skillCD = 3.0;
                 if (b.targetPos) {
                     b.pos.x = b.targetPos.x; b.pos.z = b.targetPos.z; b.pos.y = b.targetPos.y;
                     // Quay mặt về phía người chơi ngay khi trồi lên
                     const toP = V3.norm(V3.sub(p.pos, b.pos));
                     b.rotY = Math.atan2(toP.x, toP.z);
-                } 
-                b.bodyY = -15; b.bodyRot = 0; b.hasHit = false; // Chìm xuống độ sâu vừa phải (-15)
+                }
+                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false; // Chìm sâu hơn (-25)
                 if (b.fanMesh) deleteMesh(b.fanMesh);
                 const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
                 b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx, dz) - 1.2, arc: 2.4, r: 25 };
                 b.fanMesh = genTerrainFanMesh(b.fanMeshParams.x, b.fanMeshParams.z, b.fanMeshParams.ang, b.fanMeshParams.arc, b.fanMeshParams.r);
             }
         } else if (b.state === 'teleport_strike') {
-            const total = window.GAME_CONFIG.boss.skill5.activeTime;
-            const emergeTime = 0.5; // Cố định 0.5s để ngoi lên
-            const chargeTime = window.GAME_CONFIG.boss.skill5.chargeTime;
+            const config = window.GAME_CONFIG.boss.skill5;
+            const emergeThreshold = config.activeTime - config.emergeTime;
+            const strikeThreshold = emergeThreshold - config.strikeDelay;
 
-            // 1. THỜI GIAN TRỒI LÊN
-            if (b.skillCD > total - emergeTime) {
+            if (b.skillCD > emergeThreshold) {
                 b.bodyY += 40 * dt; if (b.bodyY > 0) b.bodyY = 0;
-                b.armLift += (-1.8 - b.armLift) * 0.1; // Tay giơ cao chuẩn bị đập
-
-                // 2. THỜI GIAN GỒNG CHỜ (RẶN)
-            } else if (b.skillCD > total - emergeTime - chargeTime) {
+                b.armLift += (-1.8 - b.armLift) * 0.1;
+            } else if (b.skillCD > strikeThreshold) {
                 b.armLift = -1.8;
-
-                // 3. VUNG TAY ĐẬP XUỐNG
             } else {
                 b.armLift += (-0.2 - b.armLift) * 0.4; // Tay phải đập thẳng xuống chạm đất phía trước
                 b.bodyRot += (0.6 - b.bodyRot) * 0.2; // Hơi cúi người thôi
@@ -1549,8 +1548,8 @@ function update(dt) {
                     spawnParticles({ x: handX, y: b.pos.y + 10, z: handZ }, 5, [1, 0, 0], 1.5);
                 }
 
-                // 4. THỜI ĐIỂM GÂY SÁT THƯƠNG: Khoảng 0.15s sau khi bắt đầu vung tay đập
-                if (b.skillCD < (total - emergeTime - chargeTime - 0.15) && !b.hasHit) {
+                // 4. THỜI ĐIỂM GÂY SÁT THƯƠNG: Khoảng 0.15s sau khi bắt đầu đập
+                if (b.skillCD < (strikeThreshold - 0.15) && !b.hasHit) {
                     // Hiệu ứng đất gãy, vỡ vụn tại vị trí tay đập
                     spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 100, [0.8, 0.4, 0.1], 3.0); // Bụi đất cam
                     spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 150, [0.2, 0.2, 0.2], 2.0); // Đá vỡ vụn xám
@@ -2210,9 +2209,9 @@ function draw() {
             else if (b.state === 'teleport_strike') {
                 if (side === 1) { // Tay phải
                     armColor = [2.0, 0, 0];
-                    const chargeThreshold = window.GAME_CONFIG.boss.skill5.activeTime - 0.5;
-                    armScale = b.skillCD > chargeThreshold ? 1.3 : 1.8;
-                    lift = b.armLift; // Sử dụng giá trị b.armLift từ AI (mượt mà)
+                    const strikeThreshold = window.GAME_CONFIG.boss.skill5.activeTime - window.GAME_CONFIG.boss.skill5.emergeTime - window.GAME_CONFIG.boss.skill5.strikeDelay;
+                    armScale = b.skillCD > strikeThreshold ? 1.3 : 1.8;
+                    lift = b.armLift; // Sử dụng giá trị b.armLift từ AI (mượt màng)
                 } else { // Tay trái hạ xuống tự nhiên
                     lift = 0.5; // Hơi đưa ra sau lưng
                 }
