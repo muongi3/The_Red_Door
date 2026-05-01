@@ -1410,18 +1410,27 @@ function update(dt) {
                 }
                 if (ok) {
                     const mesh = genTerrainFollowMesh(tx, tz, window.GAME_CONFIG.boss.skill4.pillarRange);
-                    b.pillarSpots.push({ x: tx, z: tz, h: getHeight(tx, tz), active: false, hasHit: false, timer: window.GAME_CONFIG.boss.skill4.pillarTimer, mesh: mesh });
+                    // Dùng timer nhỏ ngẫu nhiên để các cột máu trồi lên liên tiếp thay vì cùng lúc
+                    b.pillarSpots.push({ x: tx, z: tz, h: getHeight(tx, tz), active: false, hasHit: false, timer: Math.random() * 0.5, mesh: mesh });
                 }
             }
-            if (b.skillCD <= 0) { b.state = 'pillar_active'; b.skillCD = 1.0; b.armLift = 0; b.bodyRot = 0.5; }
+            if (b.skillCD <= 0) { 
+                b.state = 'pillar_active'; 
+                // Sử dụng pillarTimer làm thời gian tồn tại của cột máu
+                b.skillCD = window.GAME_CONFIG.boss.skill4.pillarTimer; 
+                b.armLift = 0; 
+                b.bodyRot = 0.5; 
+            }
         } else if (b.state === 'pillar_active') {
             b.bodyRot += (0 - b.bodyRot) * 0.1;
             b.pillarSpots.forEach(s => {
-                s.timer -= dt;
-                if (s.timer <= 0 && !s.active) {
-                    s.active = true; s.activeTimer = 1.0;
-                    spawnParticles({ x: s.x, y: s.h, z: s.z }, 50, [1, 0, 0], 1.5);
-                    STATE.shake = 1.5;
+                if (!s.active) {
+                    s.timer -= dt;
+                    if (s.timer <= 0) {
+                        s.active = true; 
+                        spawnParticles({ x: s.x, y: s.h, z: s.z }, 50, [1, 0, 0], 1.5);
+                        STATE.shake = 1.5;
+                    }
                 }
                 if (s.active && !s.hasHit) {
                     const d = Math.sqrt((p.pos.x - s.x) ** 2 + (p.pos.z - s.z) ** 2);
@@ -1532,12 +1541,13 @@ function update(dt) {
             b.pos.x += (Math.random() - 0.5) * 0.4; b.pos.z += (Math.random() - 0.5) * 0.4;
             // HIỆU ỨNG: Tia laser nhắm bắn
             const targetPoint = V3.add(p.pos, { x: 0, y: 1.5, z: 0 });
-            const spawnPoint = V3.add(b.pos, { x: 0, y: 12, z: 0 });
+            // Tính toạ độ ngực chính xác (giống mChest trong draw: y=16, z=3)
+            const spawnPoint = V3.create(b.pos.x + Math.sin(b.rotY) * 3, b.pos.y + (b.bodyY || 0) + 16, b.pos.z + Math.cos(b.rotY) * 3);
             const dir = V3.norm(V3.sub(targetPoint, spawnPoint));
             const ang = Math.atan2(dir.x, dir.z);
             if (b.dashMesh) gl.deleteVertexArray(b.dashMesh.vao);
             // Dùng mesh của chiêu 1 nhưng cực mảnh (0.2) để làm tia laser
-            b.dashMesh = genTerrainDashMesh(b.pos.x, b.pos.z, ang, 0.4, 200);
+            b.dashMesh = genTerrainDashMesh(spawnPoint.x, spawnPoint.z, ang, 0.4, 200);
 
             if (b.skillCD <= 0) {
                 b.state = 'shooting'; b.skillCD = 0.15; b.shotCount = 15; // Bắn nhanh hơn (0.15s) và nhiều hơn (8 viên)
@@ -1546,7 +1556,7 @@ function update(dt) {
             b.bodyY = Math.sin(Date.now() * 0.1) * 0.3; // Giật lùi nhẹ khi bắn
             if (b.skillCD <= 0) {
                 const targetPoint = V3.add(p.pos, { x: 0, y: 1.5, z: 0 });
-                const spawnPoint = V3.add(b.pos, { x: 0, y: 12, z: 0 });
+                const spawnPoint = V3.create(b.pos.x + Math.sin(b.rotY) * 3, b.pos.y + (b.bodyY || 0) + 16, b.pos.z + Math.cos(b.rotY) * 3);
                 const dir = V3.norm(V3.sub(targetPoint, spawnPoint));
                 // [CHỈNH SỬA CHIÊU 2] Sát thương mỗi viên đạn (Bác vừa chỉnh xuống 200)
                 STATE.projectiles.push({ pos: spawnPoint, dir: dir, dmg: window.GAME_CONFIG.boss.skill2.damage, speed: window.GAME_CONFIG.boss.skill2.speed, life: 3, isPlayer: false, dead: false, isBoss: true });
