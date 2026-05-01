@@ -909,12 +909,16 @@ function startGame() {
     if (minimap) { minimap.width = 200; minimap.height = 200; }
 
     for (let i = 0; i < STATE.config.botCount; i++) {
-        // Phân bổ bot rải rác khắp bản đồ, tránh tập trung quá gần người chơi
-        const angle = Math.random() * Math.PI * 2;
-        const dist = 40 + Math.random() * (MAP_SIZE * 0.45);
-        let x = Math.cos(angle) * dist;
-        let z = Math.sin(angle) * dist;
-        STATE.bots.push({ pos: V3.create(x, getHeight(x, z) + 1, z), hp: window.GAME_CONFIG.bot.baseHp, target: null, state: 'roam', nextMove: 0, fireCD: 0, id: i });
+        let x, z, y;
+        do {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 40 + Math.random() * (MAP_SIZE * 0.45);
+            x = Math.cos(angle) * dist;
+            z = Math.sin(angle) * dist;
+            y = getHeight(x, z);
+        } while (y <= -8.5); // Đảm bảo bot không spawn dưới nước
+
+        STATE.bots.push({ pos: V3.create(x, y + 1, z), hp: window.GAME_CONFIG.bot.baseHp, target: null, state: 'roam', nextMove: 0, fireCD: 0, id: i });
     }
     for (let i = 0; i < (isMobile ? 50 : 300); i++) {
         let x, z, y;
@@ -1163,6 +1167,16 @@ function update(dt) {
             }
         }
         else { bot.nextMove -= dt; if (bot.nextMove <= 0) { bot.targetDir = V3.create(Math.random() - 0.5, 0, Math.random() - 0.5); bot.nextMove = 2 + Math.random() * 3; } if (bot.targetDir) { bot.pos.x += bot.targetDir.x * 3 * dt; bot.pos.z += bot.targetDir.z * 3 * dt; } }
+
+        // [YÊU CẦU] Giới hạn bot không ra khỏi đảo (Bán kính 190m)
+        const dFromCenterSq = bot.pos.x * bot.pos.x + bot.pos.z * bot.pos.z;
+        if (dFromCenterSq > 190 * 190) {
+            const dFromCenter = Math.sqrt(dFromCenterSq);
+            const push = (dFromCenter - 190) / dFromCenter;
+            bot.pos.x -= bot.pos.x * push;
+            bot.pos.z -= bot.pos.z * push;
+            bot.targetDir = null; // Đổi hướng khi đụng biên đảo
+        }
 
         // Vật lý và Va chạm cho Bot
         for (let obs of STATE.obstacles) {
