@@ -900,7 +900,8 @@ function update(dt) {
         if (p.powerup.type === 1 || p.powerup.type === 3) dmgMult = 2.0;
     }
     if (STATE.keys['ShiftLeft']) speedMult *= 1.5;
-    const moveSpeed = (p.weaponIdx === 2 ? 6 : 10) * speedMult;
+    // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
+    const moveSpeed = (p.weaponIdx === 2 ? 5 : 8) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (V3.len(move) > 0) move = V3.norm(move);
 
@@ -1008,8 +1009,8 @@ function update(dt) {
 
         if (isLastBots || dist < 30) {
             const dir = V3.norm(V3.sub(p.pos, bot.pos));
-            // Tốc độ bằng người chơi khi cuồng bạo (12), bình thường đi bộ (5)
-            const speed = isLastBots ? 12 : 5;
+            // NERF TỐC ĐỘ BOT: Cuồng bạo 10, Bình thường 4
+            const speed = isLastBots ? 10 : 4;
             const dist2D = Math.sqrt(Math.pow(p.pos.x - bot.pos.x, 2) + Math.pow(p.pos.z - bot.pos.z, 2));
             if (dist2D > 1.5) {
                 bot.pos.x += dir.x * speed * dt;
@@ -1235,7 +1236,8 @@ function update(dt) {
         } else if (b.state === 'dashing') {
             b.armLift += (2.2 - b.armLift) * 0.2; // Tay duỗi thẳng về sau khi lướt
             b.bodyRot = 0.6; // Nghiêng hẳn người
-            b.pos.x += b.targetDir.x * 150 * dt; b.pos.z += b.targetDir.z * 150 * dt;
+            // NERF TỐC ĐỘ LƯỚT BOSS: 150 -> 110
+            b.pos.x += b.targetDir.x * 110 * dt; b.pos.z += b.targetDir.z * 110 * dt;
             b.pos.y = getHeight(b.pos.x, b.pos.z);
 
             // HIỆU ỨNG: Để lại bóng ma/khói đỏ khi lướt
@@ -2431,17 +2433,34 @@ window.addEventListener('load', () => {
     }
 });
 
-// --- BỘ ĐIỀU KHIỂN MOBILE (TOUCH CONTROLS) & TỐI ƯU ---
-if (isMobile) {
-    STATE.config.botCount = 15;
+// --- CẤU HÌNH SỐ LƯỢNG BOT (ĐÃ FIX OVERWRITE) ---
+const savedBotCount = localStorage.getItem('botCount');
+if (savedBotCount) {
+    STATE.config.botCount = parseInt(savedBotCount);
 } else {
-    STATE.config.botCount = 25;
+    STATE.config.botCount = isMobile ? 15 : 25;
 }
 
 let joyActive = false, joyCenter = { x: 0, y: 0 };
 let aimTouchId = null, lastAimPos = { x: 0, y: 0 };
 
 window.addEventListener('DOMContentLoaded', () => {
+    // --- XỬ LÝ THANH CHỈNH BOT ---
+    const botSlider = document.getElementById('bot-count-slider');
+    const botVal = document.getElementById('bot-count-val');
+    if (botSlider && botVal) {
+        botSlider.value = STATE.config.botCount;
+        botVal.innerText = STATE.config.botCount;
+        const updateBotVal = (e) => {
+            const val = e.target.value;
+            botVal.innerText = val;
+            STATE.config.botCount = parseInt(val);
+            localStorage.setItem('botCount', val);
+        };
+        botSlider.addEventListener('input', updateBotVal);
+        botSlider.addEventListener('change', updateBotVal);
+    }
+
     // --- XỬ LÝ SỔ TAY HƯỚNG DẪN ---
     const btnGuide = document.getElementById('btn-open-guide');
     const btnCloseGuide = document.getElementById('close-guide-btn');
