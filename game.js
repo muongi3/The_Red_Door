@@ -969,7 +969,7 @@ function update(dt) {
 
         if (proj.isPlayer) {
             // Hitbox quái thường (bot) - Nhắm vào tâm thân mình (y + 0.65)
-            STATE.bots.forEach(bot => { if (V3.dist(nextPos, V3.add(bot.pos, V3.create(0, 0.65, 0))) < (isMobile ? 2.5 : 1.0)) { bot.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0, 0]); proj.dead = true; } });
+            STATE.bots.forEach(bot => { if (!bot.isEvolvingLv3 && V3.dist(nextPos, V3.add(bot.pos, V3.create(0, 0.65, 0))) < (isMobile ? 2.5 : 1.0)) { bot.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0, 0]); proj.dead = true; } });
 
             // Hitbox Boss hình trụ
             if (STATE.boss && STATE.boss.active) {
@@ -1015,7 +1015,26 @@ function update(dt) {
         bot.isFinal = isEnragedLv3; // Cờ cho Lv3
 
         // TẦM PHÁT HIỆN: 40 đơn vị
-        if (isEnragedLv2 || isEnragedLv3 || dist < 40) {
+        if (isEnragedLv3 && !bot.hasEvolvedLv3) {
+            bot.hasEvolvedLv3 = true;
+            bot.isEvolvingLv3 = true;
+            bot.evolveTimer = 2.0; // Khựng 2 giây
+            playAudio('hit');
+        }
+
+        if (bot.isEvolvingLv3) {
+            bot.evolveTimer -= dt;
+            if (Math.random() < 0.4) {
+                spawnParticles(V3.add(bot.pos, V3.create((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2)), 2, [1.0, 0.2, 0.2]); 
+                spawnParticles(V3.add(bot.pos, V3.create((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2)), 1, [1.0, 0.8, 0.0]); 
+            }
+            if (bot.evolveTimer <= 0) {
+                bot.isEvolvingLv3 = false;
+                spawnParticles(bot.pos, 50, [1.0, 0.0, 0.0]); // Nổ hiệu ứng
+                STATE.shake = 3.0; // Rung màn hình
+                playAudio('shoot');
+            }
+        } else if (isEnragedLv2 || isEnragedLv3 || dist < 40) {
             const dir = V3.norm(V3.sub(p.pos, bot.pos));
             // TỐC ĐỘ: Lv2/Lv3 là 11, Bình thường là 5
             const speed = (isEnragedLv2 || isEnragedLv3) ? 11 : 5;
@@ -1487,7 +1506,7 @@ function update(dt) {
 
 }
 
-function createExplosion(pos) { STATE.shake = 0.5; playAudio('shoot'); spawnParticles(pos, 30, [1, 0.5, 0]); const range = 12; if (V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, 200); STATE.bots.forEach(b => { if (V3.dist(pos, b.pos) < range) b.hp -= 200; }); }
+function createExplosion(pos) { STATE.shake = 0.5; playAudio('shoot'); spawnParticles(pos, 30, [1, 0.5, 0]); const range = 12; if (V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, 200); STATE.bots.forEach(b => { if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) b.hp -= 200; }); }
 
 function fireWeapon(shooter, rot, weapon, isPlayer, dirOverride) {
     let dir; if (isPlayer) { const yaw = rot.y, pitch = rot.x; dir = V3.create(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)); } else dir = V3.norm(dirOverride);
@@ -1948,8 +1967,16 @@ function draw() {
 
         let mesh = ASSETS.bot;
         let scale = 1.0;
+        let drawPos = { ...b.pos };
 
-        if (isLv3) {
+        if (b.isEvolvingLv3) {
+            const pulse = (Math.sin(performance.now() * 0.05) > 0) ? 2.0 : 0.0;
+            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5); 
+            drawPos.x += (Math.random() - 0.5) * 0.4;
+            drawPos.z += (Math.random() - 0.5) * 0.4;
+            scale = 1.0 + (2.0 - Math.max(0, b.evolveTimer)) * 0.5;
+            mesh = ASSETS.botEnraged;
+        } else if (isLv3) {
             // [GIAI ĐOẠN 3] To gấp đôi và máu me
             mesh = ASSETS.botFinal;
             scale = 2.0;
@@ -1959,7 +1986,8 @@ function draw() {
             scale = 1.0;
         }
 
-        drawMeshActual(mesh, b.pos, scale, ang);
+        drawMeshActual(mesh, drawPos, scale, ang);
+        if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
     });
     STATE.barrels.forEach(b => drawMeshActual(ASSETS.barrel, b.pos, 3, 0));
     // Grass: khán giả bỏ hoàn toàn để tiết kiệm draw call
