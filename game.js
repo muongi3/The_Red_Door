@@ -900,7 +900,7 @@ function startGame() {
     STATE.startTime = Date.now(); STATE.gameEnded = false;
 
 
-    STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0;
+    STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
 
     STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = [];
     spun = false; document.getElementById("reward-result").innerText = ""; document.getElementById("reward-result").style.display = "none"; document.getElementById("wheel").style.transform = `rotate(0deg)`;
@@ -994,6 +994,7 @@ function startGame() {
 function update(dt) {
     if (STATE.screen === 'pause' || STATE.inputLocked || window.SPECTATOR_MODE) return;
     STATE.shake *= 0.9;
+    if (STATE.player.damageFlash > 0) STATE.player.damageFlash -= dt;
     const prevCount = STATE.bots.length;
 
     const p = STATE.player;
@@ -1230,7 +1231,11 @@ function update(dt) {
     if (closeLoot) {
         let pickedName = "";
         if (closeLoot.type === 0) { STATE.weapons[p.weaponIdx].res += 30; pickedName = "NHẬN ĐẠN"; }
-        else if (closeLoot.type === 1) { p.hp = Math.min(p.maxHp, p.hp + 200); pickedName = "HỒI MÁU"; }
+        else if (closeLoot.type === 1) { 
+            p.hp = Math.min(p.maxHp, p.hp + 200); 
+            p.damageFlash = 0; // [YÊU CẦU] Ăn máu thì hết đỏ ngay
+            pickedName = "HỒI MÁU"; 
+        }
         else if (closeLoot.type === 2) { p.armor = Math.min(p.maxArmor, p.armor + 150); pickedName = "NHẬN GIÁP"; }
         else if (closeLoot.type === 3) {
             const puType = Math.random() < 0.5 ? 0 : 1;
@@ -1626,6 +1631,8 @@ function takeDamage(p, amt) {
 
     if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
     playAudio('hit');
+
+    p.damageFlash = 1.0; // [YÊU CẦU] Nháy đỏ trong 1 giây
 
     // Hiệu ứng Horror khi trúng đòn
     document.body.classList.add('taking-damage');
@@ -2282,51 +2289,51 @@ function drawMinimap(p, bots) {
     const ctx = document.getElementById('minimap').getContext('2d'), w = ctx.canvas.width, h = ctx.canvas.height;
     ctx.clearRect(0, 0, w, h);
 
-    // Tỉ lệ để bản đồ bao quát vừa đủ MAP_SIZE (không dư không thiếu)
+    // [YÊU CẦU] Tăng độ sáng minimap bằng cách thêm nền và viền rõ hơn
+    ctx.fillStyle = "rgba(40, 40, 40, 0.7)"; // Nền tối xám để nổi bật các điểm sáng
+    ctx.fillRect(0, 0, w, h);
+
+    // Tỉ lệ để bản đồ bao quát vừa đủ MAP_SIZE
     const scale = w / MAP_SIZE;
     const cx = w / 2, cy = h / 2;
 
-    // Vẽ viền trắng sát ranh giới bản đồ (đường màu đen của container)
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-    ctx.lineWidth = 2;
+    // Vẽ viền trắng rõ nét
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+    ctx.lineWidth = 3;
     ctx.strokeRect(0, 0, w, h);
 
     // Vị trí người chơi và hướng nhìn
     const px = cx + p.pos.x * scale, py = cy + p.pos.z * scale, yaw = STATE.camera.rot.y;
 
-    // Vẽ mũi tên người chơi (Cải tiến để dễ nhìn hướng)
+    // Vẽ mũi tên người chơi sáng rực
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(yaw);
-    ctx.fillStyle = "#00ff88";
+    ctx.fillStyle = "#00ffaa";
     ctx.shadowBlur = 15;
-    ctx.shadowColor = "#00ff88";
+    ctx.shadowColor = "#00ffaa";
 
     ctx.beginPath();
-    ctx.moveTo(0, -10);   // Mũi nhọn hướng đi
-    ctx.lineTo(-7, 8);    // Cạnh trái
-    ctx.lineTo(0, 4);     // Điểm lõm ở đuôi (tạo hình mũi tên)
-    ctx.lineTo(7, 8);     // Cạnh phải
-    ctx.closePath();
+    ctx.moveTo(0, -12); ctx.lineTo(-8, 10); ctx.lineTo(0, 5); ctx.lineTo(8, 10); ctx.closePath();
     ctx.fill();
     ctx.restore();
 
-    // Vẽ quân địch (Chấm đỏ)
-    ctx.fillStyle = "#ff4444";
-    ctx.shadowBlur = 0;
+    // Vẽ quân địch (Chấm đỏ sáng)
+    ctx.fillStyle = "#ff5555";
     bots.forEach(b => {
         if (b.hp <= 0) return;
         const bx = cx + b.pos.x * scale, by = cy + b.pos.z * scale;
         ctx.beginPath();
-        ctx.arc(bx, by, 3, 0, Math.PI * 2);
+        ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
         ctx.fill();
     });
 
     if (STATE.boss && STATE.boss.active) {
         ctx.fillStyle = "#ff00ff";
+        ctx.shadowBlur = 10; ctx.shadowColor = "#ff00ff";
         const bx = cx + STATE.boss.pos.x * scale, by = cy + STATE.boss.pos.z * scale;
         ctx.beginPath();
-        ctx.arc(bx, by, 5, 0, Math.PI * 2);
+        ctx.arc(bx, by, 6, 0, Math.PI * 2);
         ctx.fill();
     }
 }
@@ -2344,6 +2351,21 @@ function showGlobalAnnouncement(text, duration = 3000) {
 
 function updateHUD() {
     const p = STATE.player, hpPercent = Math.max(0, (p.hp / p.maxHp) * 100), armorPercent = Math.max(0, (p.armor / p.maxArmor) * 100);
+
+    // [YÊU CẦU] Xử lý nháy đỏ khi mất máu
+    const overlay = document.getElementById('damage-overlay');
+    if (overlay) {
+        if (p.damageFlash > 0) {
+            const hpRatio = 1.0 - (p.hp / p.maxHp);
+            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4); 
+            overlay.style.display = 'block';
+            overlay.style.opacity = Math.min(0.6, intensity);
+            overlay.style.background = `radial-gradient(circle, transparent 20%, rgba(${150 + hpRatio * 105}, 0, 0, 0.7) 100%)`;
+        } else {
+            overlay.style.display = 'none';
+        }
+    }
+
     document.getElementById('health-fill').style.width = hpPercent + '%'; document.getElementById('armor-fill').style.width = armorPercent + '%';
     document.getElementById('ammo-current').innerText = STATE.weapons[p.weaponIdx].ammo; document.getElementById('ammo-reserve').innerText = STATE.weapons[p.weaponIdx].res;
     document.getElementById('weapon-name').innerText = STATE.weapons[p.weaponIdx].name.toUpperCase();
