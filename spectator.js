@@ -24,33 +24,15 @@ function initPeer() {
     const myId = window.SPECTATOR_MODE ? undefined : hostId;
     debug("📡 Đang khởi động mạng v18...");
 
-    // Dùng PeerJS Cloud server chính chủ (ổn định hơn 0.peerjs.com)
+    // Khởi tạo PeerJS với cấu hình STUN mặc định, bỏ qua TURN để tránh treo ICE gathering
     STATE.peer = new Peer(myId, {
-        host: '0.peerjs.com',
-        port: 443,
-        path: '/',
-        secure: true,
         config: {
             iceServers: [
-                // STUN servers (Google)
                 { urls: 'stun:stun.l.google.com:19302' },
                 { urls: 'stun:stun1.l.google.com:19302' },
-                // TURN server miễn phí (openrelay) để vượt NAT/firewall
-                {
-                    urls: 'turn:openrelay.metered.ca:80',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                },
-                {
-                    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-                    username: 'openrelayproject',
-                    credential: 'openrelayproject'
-                }
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
             ],
             iceCandidatePoolSize: 10,
             sdpSemantics: 'unified-plan'
@@ -146,15 +128,15 @@ function startLiveView(targetId) {
         updateSpecStatus("📡 ĐANG BẮT TAY KẾT NỐI...");
         debug("🔗 Thử kết nối tới: " + targetId);
         
-        const conn = STATE.peer.connect(targetId, { reliable: true });
+        const conn = STATE.peer.connect(targetId); // Bỏ reliable: true để tránh treo data channel
         
         const handshakeTimeout = setTimeout(() => {
             if (!STATE.isConnected) {
-                debug("⏳ Quá 25s không thấy phản hồi. Thử lại...");
+                debug("⏳ Quá 15s không thấy phản hồi. Thử lại...");
                 conn.close();
-                setTimeout(tryConnect, 3000);
+                setTimeout(tryConnect, 2000);
             }
-        }, 25000);
+        }, 15000); // Giảm timeout xuống 15s để thử lại nhanh hơn
 
         conn.on('open', () => {
             clearTimeout(handshakeTimeout);
