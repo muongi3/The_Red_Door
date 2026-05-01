@@ -689,7 +689,7 @@ const STATE = {
     screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
     mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
 
-    player: { pos: V3.create(0, 20, 0), vel: V3.create(0, 0, 0), hp: 600, maxHp: 1000, armor: 0, maxArmor: 500, grounded: false, weaponIdx: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 } },
+    player: { pos: null, vel: V3.create(0, 0, 0), hp: 600, maxHp: 1000, armor: 0, maxArmor: 500, grounded: false, weaponIdx: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 } },
     weapons: [{ name: "Pistol", damage: 60, rate: 300, spread: 0.05, range: 50, ammo: 12, res: 129, type: 0 }, { name: "SMG", damage: 40, rate: 180, spread: 0.1, range: 40, ammo: 30, res: 90, type: 1 }, { name: "Sniper", damage: 100, rate: 1000, spread: 0.001, range: 200, ammo: 5, res: 10, type: 2 }],
     lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 },
     inputLocked: false,
@@ -1828,7 +1828,14 @@ const GRASS_PATCHES = []; for (let i = 0; i < 200; i++) { const x = Math.sin(i *
 function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
     const p = STATE.player;
-    if (!p || !p.pos) return; // Không vẽ nếu chưa có dữ liệu người chơi
+    if (!p || !p.pos) {
+        // Nếu là khán giả và chưa có dữ liệu, vẽ màn hình chờ
+        if (window.SPECTATOR_MODE) {
+            gl.clearColor(0.1, 0.1, 0.1, 1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT);
+        }
+        return;
+    }
 
     // CHUYỂN ĐỔI KHÔNG KHÍ: Chiều tà (Bot) vs Kinh dị (Boss)
     let fogCol = [0.6, 0.3, 0.2]; // Màu cam chiều tà mặc định
@@ -2774,6 +2781,7 @@ function startLiveView(targetId) {
     if (!targetId) return;
     window.SPECTATOR_MODE = true;
     STATE.isWatching = true;
+    document.body.classList.add('spectator-mode');
 
     // Ẩn menu ngay lập tức để không bị kẹt
     const mainMenu = document.getElementById('main-menu');
