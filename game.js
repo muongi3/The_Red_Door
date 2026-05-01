@@ -996,6 +996,44 @@ function startGame() {
 
 }
 
+// === HÀM KÍCH HOẠT BOSS ===
+function triggerBossEvent() {
+    STATE.bossTriggered = true;
+    const b = STATE.boss;
+    b.active = true;
+    b.hp = window.GAME_CONFIG.boss.hp;
+    b.maxHp = window.GAME_CONFIG.boss.hp;
+    b.state = 'fight';
+    b.skillCD = 3; // Chờ 3s trước khi ra chiêu đầu tiên
+    b.skillIndex = 0;
+    b.skillSequence = null;
+    b.armLift = 0; b.bodyY = 0; b.bodyRot = 0;
+    b.hasHit = false;
+    b.pillarSpots = [];
+    b.fanMesh = null; b.indicatorMesh = null; b.dashMesh = null;
+    b.curLiftL = 0; b.curLiftR = 0; b.curScaleL = 1; b.curScaleR = 1;
+    // Spawn gần người chơi
+    const p = STATE.player;
+    const spawnAngle = Math.random() * Math.PI * 2;
+    const spawnDist = 40;
+    b.pos.x = p.pos.x + Math.cos(spawnAngle) * spawnDist;
+    b.pos.z = p.pos.z + Math.sin(spawnAngle) * spawnDist;
+    b.pos.y = getHeight(b.pos.x, b.pos.z);
+    b.rotY = Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z);
+
+    // Hiển thị UI
+    const hpContainer = document.getElementById('boss-hp-container');
+    if (hpContainer) hpContainer.style.display = 'block';
+
+    // Hiệu ứng spawn
+    spawnParticles(b.pos, 100, [1, 0, 0], 2.0);
+    STATE.shake = 5;
+
+    // Nhạc Boss (nếu có)
+    const audio = document.getElementById('hakariphonk-sound');
+    if (audio) { audio.currentTime = 0; audio.play().catch(() => {}); }
+}
+
 function update(dt) {
     if (STATE.screen === 'pause' || STATE.inputLocked || window.SPECTATOR_MODE) return;
     STATE.shake *= 0.9;
@@ -1246,10 +1284,10 @@ function update(dt) {
     if (closeLoot) {
         let pickedName = "";
         if (closeLoot.type === 0) { STATE.weapons[p.weaponIdx].res += 30; pickedName = "NHẬN ĐẠN"; }
-        else if (closeLoot.type === 1) { 
-            p.hp = Math.min(p.maxHp, p.hp + 200); 
+        else if (closeLoot.type === 1) {
+            p.hp = Math.min(p.maxHp, p.hp + 200);
             p.damageFlash = 0; // [YÊU CẦU] Ăn máu thì hết đỏ ngay
-            pickedName = "HỒI MÁU"; 
+            pickedName = "HỒI MÁU";
         }
         else if (closeLoot.type === 2) { p.armor = Math.min(p.maxArmor, p.armor + 150); pickedName = "NHẬN GIÁP"; }
         else if (closeLoot.type === 3) {
@@ -1515,7 +1553,7 @@ function update(dt) {
             } else {
                 b.armLift += (-1.0 - b.armLift) * 0.4;
                 b.bodyRot += (1.4 - b.bodyRot) * 0.2; // Cúi người cực thấp khi đập xuống
-                
+
                 if (!b.hasHit) {
                     const d = V3.dist(b.pos, p.pos);
                     // Kiểm tra hướng và tầm đánh (Hình quạt)
@@ -2100,7 +2138,7 @@ function draw() {
 
         if (b.isEvolvingLv3) {
             const pulse = (Math.sin(performance.now() * 0.05) > 0) ? 2.0 : 0.0;
-            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5); 
+            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5);
             drawPos.x += (Math.random() - 0.5) * 0.4;
             drawPos.z += (Math.random() - 0.5) * 0.4;
             scale = 1.0 + (2.0 - Math.max(0, b.evolveTimer)) * 0.5;
@@ -2278,23 +2316,25 @@ function draw() {
             gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
             if (cR) gl.uniform3f(locs.emitColor, 0, 0, 0);
 
-            // Lòng bàn tay đỏ cho Skill 4 (chỉ lòng bàn tay, không phải nguyên tay)
+            // Lòng bàn tay đỏ chỉ khi Skill 4 - đặt ở đầu mỷi tay
             if (b.state === 'pillar_prepare') {
                 gl.uniform3f(locs.emitColor, 2, 0, 0);
-                // Lòng tay trái
+                // Vẽ lòng tay trái (cuối cánh tay trái)
                 let mPalmL = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
                 mPalmL = M4.multiply(mPalmL, M4.rotationY(b.rotY || ang));
-                mPalmL = M4.multiply(mPalmL, M4.translation(-3.5, 7 * b.curScaleL, 0));
-                mPalmL = M4.multiply(mPalmL, M4.rotationX(b.curLiftL));
-                mPalmL = M4.multiply(mPalmL, M4.scaling(1.5, 1.5, 1.5));
+                mPalmL = M4.multiply(mPalmL, M4.translation(-3.5, 0, 0)); // vị trí vai trái
+                mPalmL = M4.multiply(mPalmL, M4.rotationX(b.curLiftL || 0));
+                mPalmL = M4.multiply(mPalmL, M4.translation(0, 8, 0)); // cuối cánh tay
+                mPalmL = M4.multiply(mPalmL, M4.scaling(1.8, 1.8, 1.8));
                 gl.uniformMatrix4fv(locs.model, false, mPalmL);
                 gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
-                // Lòng tay phải
+                // Vẽ lòng tay phải
                 let mPalmR = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
                 mPalmR = M4.multiply(mPalmR, M4.rotationY(b.rotY || ang));
-                mPalmR = M4.multiply(mPalmR, M4.translation(3.5, 7 * b.curScaleR, 0));
-                mPalmR = M4.multiply(mPalmR, M4.rotationX(b.curLiftR));
-                mPalmR = M4.multiply(mPalmR, M4.scaling(1.5, 1.5, 1.5));
+                mPalmR = M4.multiply(mPalmR, M4.translation(3.5, 0, 0)); // vị trí vai phải
+                mPalmR = M4.multiply(mPalmR, M4.rotationX(b.curLiftR || 0));
+                mPalmR = M4.multiply(mPalmR, M4.translation(0, 8, 0)); // cuối cánh tay
+                mPalmR = M4.multiply(mPalmR, M4.scaling(1.8, 1.8, 1.8));
                 gl.uniformMatrix4fv(locs.model, false, mPalmR);
                 gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
                 gl.uniform3f(locs.emitColor, 0, 0, 0);
@@ -2472,7 +2512,7 @@ function updateHUD() {
     if (overlay) {
         if (p.damageFlash > 0) {
             const hpRatio = 1.0 - (p.hp / p.maxHp);
-            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4); 
+            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4);
             overlay.style.display = 'block';
             overlay.style.opacity = Math.min(0.6, intensity);
             overlay.style.background = `radial-gradient(circle, transparent 20%, rgba(${150 + hpRatio * 105}, 0, 0, 0.7) 100%)`;
