@@ -2860,10 +2860,8 @@ function initPeer() {
 function startLiveView(targetId) {
     if (!targetId) return;
     
-    // ĐẢM BẢO PEER ĐÃ ĐƯỢC KHỞI TẠO CHO KHÁN GIẢ
-    if (!STATE.peer) {
-        initPeer();
-    }
+    // KHÔNG GỌI INITPEER Ở ĐÂY NỮA, ĐỂ STARTLIVEVIEW TỰ XỬ LÝ Ở DƯỚI
+
 
     window.SPECTATOR_MODE = true;
     STATE.isWatching = true;
@@ -2898,7 +2896,8 @@ function startLiveView(targetId) {
             }
         }, 30000);
 
-        const conn = STATE.peer.connect(targetId);
+        debug("📡 Bắt đầu bắt tay (Handshake) với: " + targetId);
+        const conn = STATE.peer.connect(targetId, { reliable: true });
         
         conn.on('open', () => {
             clearTimeout(connectionTimeout);
@@ -2979,12 +2978,17 @@ function startLiveView(targetId) {
     };
 
     if (STATE.peer && STATE.peer.open) {
+        debug("🚀 Peer đã mở, tiến hành kết nối...");
         connectToPlayer();
     } else {
+        debug("⏳ Chờ Peer mở trước khi kết nối...");
         initPeer();
-        STATE.peer.on('open', connectToPlayer);
+        STATE.peer.once('open', () => {
+            debug("✅ Peer đã mở, bắt đầu kết nối với Player...");
+            connectToPlayer();
+        });
         STATE.peer.on('error', (err) => {
-            console.error("Peer error:", err);
+            debug("❌ LỖI PEER: " + err.type);
             if (specWarning) specWarning.innerText = "❌ LỖI PEER: " + err.type;
         });
     }
