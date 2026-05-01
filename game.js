@@ -2248,10 +2248,10 @@ window.addEventListener('keydown', e => {
     // Toggle chuột bằng phím Ctrl
     if (e.code === 'ControlLeft' || e.code === 'ControlRight') {
         if (STATE.screen === 'game') {
-            if (document.pointerLockElement === gl.canvas) {
+            if (gl && gl.canvas && document.pointerLockElement === gl.canvas) {
                 document.exitPointerLock();
             } else {
-                gl.canvas.requestPointerLock();
+                if (gl && gl.canvas) gl.canvas.requestPointerLock();
             }
         }
     }
@@ -2272,6 +2272,7 @@ window.addEventListener('mouseup', e => {
 window.addEventListener('mousemove', e => {
     if (STATE.inputLocked) return;
     if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
+    if (!gl || !gl.canvas) return;
     if (document.pointerLockElement === gl.canvas) {
         // Sử dụng kẹp (clamp) thay vì bỏ qua lệnh để vuốt nhanh vẫn mượt mà
         const mx = Math.max(-150, Math.min(150, e.movementX));
@@ -2405,7 +2406,8 @@ function playBossSound() {
 // -------------------------
 
 
-function resumeGame() { STATE.screen = 'game'; document.getElementById('pause-menu').classList.add('hidden'); gl.canvas.requestPointerLock(); }
+function resumeGame() { STATE.screen = 'game'; 
+document.getElementById('pause-menu').classList.add('hidden'); if (gl && gl.canvas) gl.canvas.requestPointerLock(); }
 
 function spawnOiiaCat() { OIIA_CAT.spawned = true; const cat = document.getElementById("hakariphonk-cat"), sound = document.getElementById("hakariphonk-sound"); cat.style.display = "block"; sound.currentTime = 0; sound.play(); }
 
@@ -2462,8 +2464,10 @@ function checkOrientation() {
     }
 }
 window.onresize = () => {
-    gl.canvas.width = window.innerWidth;
-    gl.canvas.height = window.innerHeight;
+    if (gl && gl.canvas) {
+        gl.canvas.width = window.innerWidth;
+        gl.canvas.height = window.innerHeight;
+    }
     checkOrientation();
 };
 window.addEventListener('load', checkOrientation);
