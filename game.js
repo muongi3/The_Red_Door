@@ -1515,7 +1515,7 @@ function update(dt) {
                     const toP = V3.norm(V3.sub(p.pos, b.pos));
                     b.rotY = Math.atan2(toP.x, toP.z);
                 } 
-                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false; // Chìm sâu hơn (-25)
+                b.bodyY = -15; b.bodyRot = 0; b.hasHit = false; // Chìm xuống độ sâu vừa phải (-15)
                 if (b.fanMesh) deleteMesh(b.fanMesh);
                 const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
                 b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx, dz) - 1.2, arc: 2.4, r: 25 };
