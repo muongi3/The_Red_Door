@@ -1964,8 +1964,8 @@ function draw() {
     }
 
     // CHUYỂN ĐỔI KHÔNG KHÍ: Chiều tà (Bot) vs Kinh dị (Boss)
-    let fogCol = [0.85, 0.55, 0.45]; // Tăng mạnh độ sáng chiều tà
-    let bgCol = [0.95, 0.65, 0.55];  // Bầu trời buổi chiều sáng hơn
+    let fogCol = [0.6, 0.3, 0.2]; // Trả lại màu cam chiều tà mặc định (u ám)
+    let bgCol = [0.7, 0.4, 0.3];  // Trả lại bầu trời buổi chiều cũ
 
     if (STATE.boss && STATE.boss.active) {
         const dist = V3.dist(p.pos, STATE.boss.pos);
@@ -1974,14 +1974,14 @@ function draw() {
         const skyPulse = 0.05 + Math.sin(Date.now() * 0.0015) * 0.04;
         fogCol = [0.6 + intensity * 0.3, 0.2, 0.2]; // Tăng mạnh độ sáng sương mù
         bgCol = [0.4 + skyPulse, 0.1, 0.1];         // Tăng mạnh độ sáng bầu trời
-        // CSS filter: Giữ độ sáng cao hơn
-        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = intensity > 0.4 ? `contrast(${120 + intensity * 30}%) brightness(${1.0 - intensity * 0.15})` : 'brightness(1.0) contrast(1.1)';
+        // CSS filter: Trả lại độ tối u ám cũ
+        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = intensity > 0.4 ? `contrast(${140 + intensity * 60}%) brightness(${0.7 - intensity * 0.25})` : 'brightness(0.7) contrast(1.2)';
         if (!isMobile && !window.SPECTATOR_MODE && intensity > 0.6) STATE.shake += intensity * 0.2;
     } else {
-        // GIAI ĐOẠN CHIỀU TÀ (Hết bị tối hui)
-        fogCol = [0.6, 0.4, 0.3];
+        // GIAI ĐOẠN CHIỀU TÀ (Trả lại độ tối u ám)
+        fogCol = [0.6, 0.3, 0.2];
         bgCol = [0.7, 0.4, 0.3];
-        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = 'brightness(1.0) contrast(1.1)';
+        if (!isMobile && !window.SPECTATOR_MODE) document.body.style.filter = 'brightness(0.7) contrast(1.2)';
     }
 
     gl.clearColor(bgCol[0], bgCol[1], bgCol[2], 1.0);
