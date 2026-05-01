@@ -2,15 +2,13 @@ let canClickContinue = false;
 const isMobile = window.matchMedia("(max-width: 800px), (pointer: coarse)").matches;
 const isFacebookApp = /FBAN|FBAV|Messenger/i.test(navigator.userAgent);
 
-// KIỂM TRA CHẾ ĐỘ KHÁN GIẢ NGAY LẬP TỨC (TRƯỚC KHI LOAD BẤT KỲ THỨ GÌ)
+// 1. NHẬN DIỆN VAI TRÒ NGAY LẬP TỨC
 const urlParams = new URLSearchParams(window.location.search);
 const GLOBAL_WATCH_ID = urlParams.get('playerId') || urlParams.get('spectate') || urlParams.get('watch');
-if (GLOBAL_WATCH_ID) {
-    window.SPECTATOR_MODE = true;
-}
+window.SPECTATOR_MODE = !!GLOBAL_WATCH_ID;
 
 if (isFacebookApp && window.SPECTATOR_MODE) {
-    alert("⚠️ CẢNH BÁO: Trình duyệt Facebook/Messenger thường chặn kết nối game. Bác hãy bấm vào dấu 3 chấm ở góc trên và chọn 'MỞ BẰNG TRÌNH DUYỆT' (Chrome/Safari) để xem được nhé!");
+    alert("⚠️ LỖI: Trình duyệt Facebook chặn kết nối! Bác hãy bấm dấu 3 chấm góc trên -> chọn 'Mở bằng trình duyệt' (Chrome/Safari) để xem nhé!");
 }
 
 
@@ -2785,26 +2783,41 @@ document.addEventListener('visibilitychange', () => {
 function initPeer() {
     if (STATE.peer) return;
     
-    // TẠO ID CỐ ĐỊNH CHO MÁY CHỦ ĐỂ LINK KHÔNG BỊ CHẾT KHI F5
-    let persistentId = localStorage.getItem('game_peer_id');
+    // 2. KHÓA CHẾT ID VĨNH CỬU CHO HOST
+    let persistentId = localStorage.getItem('game_peer_id_v2');
     if (!persistentId) {
-        persistentId = 'survival-' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('game_peer_id', persistentId);
+        persistentId = 'survival-' + Math.random().toString(36).substr(2, 6);
+        localStorage.setItem('game_peer_id_v2', persistentId);
     }
     
-    // Nếu là khán giả, dùng ID ngẫu nhiên. Nếu là Host, dùng ID vĩnh cửu.
-    const peerId = window.SPECTATOR_MODE ? null : persistentId;
+    // Khán giả dùng ID ngẫu nhiên, Host dùng ID vĩnh cửu
+    const myId = window.SPECTATOR_MODE ? null : persistentId;
 
-    debug("📡 Khởi tạo PeerJS (" + (peerId ? "Host" : "Spec") + ")...");
-    STATE.peer = new Peer(peerId);
+    debug("📡 Khởi tạo mạng (" + (myId ? "Máy chủ" : "Khán giả") + ")...");
+    
+    STATE.peer = new Peer(myId, {
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun.services.mozilla.com' }
+            ]
+        }
+    });
 
     STATE.peer.on('open', (id) => {
-        debug("✅ Peer Mở! ID: " + id);
+        debug("✅ Mạng đã mở! ID của bác: " + id);
         console.log('PeerJS ID:', id);
 
         if (!window.SPECTATOR_MODE) {
-            const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&t=${Date.now()}`;
-            const message = `👤 **${STATE.playerName}** đã vào game!\n🔗 [XEM TRỰC TIẾP TẠI ĐÂY](${watchLink})`;
+            // HIỆN ID LÊN MÀN HÌNH ĐỂ BÁC KIỂM TRA
+            const idTag = document.createElement('div');
+            idTag.style = "position:fixed; top:5px; left:5px; color:#0f0; font-size:10px; z-index:10000; font-family:monospace; background:rgba(0,0,0,0.5); padding:2px 5px; border-radius:5px";
+            idTag.innerText = "HOST ID: " + id;
+            document.body.appendChild(idTag);
+
+            const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&v=15`;
+            const message = `👤 **${STATE.playerName}** đang trực tiếp!\n🔗 [BẤM VÀO ĐỂ XEM](${watchLink})`;
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
