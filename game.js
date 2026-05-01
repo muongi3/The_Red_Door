@@ -2196,16 +2196,16 @@ function draw() {
             // Skill 4: PILLAR (Cột máu) - Hai tay hóa đỏ, giơ thẳng lên trời
             else if (b.state === 'pillar_prepare') {
                 armColor = [1.5, 0, 0];
-                lift = -Math.PI * 0.8;
+                lift = -Math.PI * 0.7; // Giơ tay lên trời vừa phải
             }
             // Skill 5: TELEPORT STRIKE (Chìm/Trồi đập) - Tay phải hóa đỏ x2 đập cực mạnh
             else if (b.state === 'teleport_strike') {
                 if (side === 1) { // Tay phải
                     armColor = [2.0, 0, 0];
                     if (b.skillCD > 0.5) { // Giai đoạn trồi lên
-                        armScale = 1.5; lift = -Math.PI * 0.6;
+                        armScale = 1.3; lift = -Math.PI * 0.6;
                     } else { // Giai đoạn đập
-                        armScale = 2.5; lift = Math.PI * 0.4;
+                        armScale = 1.8; lift = Math.PI * 0.4;
                     }
                 } else { // Tay trái hạ xuống tự nhiên
                     lift = 0.5;
@@ -2216,7 +2216,7 @@ function draw() {
 
             let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
             mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
-            mArm = M4.multiply(mArm, M4.translation(side * 2.8, 0, forward));
+            mArm = M4.multiply(mArm, M4.translation(side * 3.5, 0, forward)); // Đưa tay ra xa thân một chút
             mArm = M4.multiply(mArm, M4.rotationX(lift));
             mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
 
