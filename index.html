@@ -8,7 +8,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    
+
     <title>Survival Island: Low Poly Royale</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,12 +26,15 @@
     </div>
 
     <!-- Cảnh báo khán giả -->
-    <div id="spectator-warning" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #0f0; padding: 15px 30px; border-radius: 30px; z-index: 10000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #0f0; text-align: center; box-shadow: 0 0 20px #0f0;">
+    <div id="spectator-warning"
+        style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #0f0; padding: 15px 30px; border-radius: 30px; z-index: 10000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #0f0; text-align: center; box-shadow: 0 0 20px #0f0;">
         <div id="spec-status">📡 ĐANG KHỞI TẠO...</div>
     </div>
 
 
-    <div id="debug-console" style="position:fixed; top:80px; left:10px; width:180px; max-height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-size:9px; font-family:monospace; pointer-events:none; z-index:10000; overflow-y:auto; padding:5px; border:1px solid #0f0; display:none;"></div>
+    <div id="debug-console"
+        style="position:fixed; top:80px; left:10px; width:180px; max-height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-size:9px; font-family:monospace; pointer-events:none; z-index:10000; overflow-y:auto; padding:5px; border:1px solid #0f0; display:none;">
+    </div>
     <canvas id="glcanvas"></canvas>
 
     <!-- Damage Overlay -->
@@ -59,7 +62,8 @@
                 <button id="btn-jump">NHẢY</button>
                 <button id="btn-shoot">BẮN</button>
             </div>
-            <button id="btn-settings" style="position: absolute; top: 30px; right: 230px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; z-index: 1000; color: white; display: block; pointer-events: auto;">⚙️</button>
+            <button id="btn-settings"
+                style="position: absolute; top: 30px; right: 230px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; z-index: 1000; color: white; display: block; pointer-events: auto;">⚙️</button>
         </div>
 
         <div id="crosshair"></div>
@@ -87,7 +91,7 @@
             <div><span id="alive-count" style="color:#ffcc00">50</span></div>
             <div><span id="kill-count">0</span></div>
         </div>
-        
+
         <div id="loot-legend" class="hud-panel">
             <div style="font-size: 10px; color:#aaa; margin-bottom:5px">HỘP TIẾP TẾ</div>
             <div><span style="color:#e6cc00">■</span> Nhận Đạn</div>
@@ -97,26 +101,38 @@
         </div>
 
         <div id="settings-modal" class="hidden" style="background: transparent; pointer-events: none;">
-            <div class="feedback-content" style="width: 200px; padding: 10px; background: rgba(20,20,20,0.8); backdrop-filter: blur(5px); pointer-events: auto; margin-top: -100px; border-radius: 8px; border: 1px solid #555;">
+            <div class="feedback-content"
+                style="width: 200px; padding: 10px; background: rgba(20,20,20,0.8); backdrop-filter: blur(5px); pointer-events: auto; margin-top: -100px; border-radius: 8px; border: 1px solid #555;">
                 <h3 style="font-size: 12px; margin-bottom: 3px;">⚙️ CÀI ĐẶT NÚT</h3>
-                <p style="color: #aaa; font-size: 9px; margin-bottom: 5px;">Chạm vào nút để chọn và kéo thanh trượt. Kéo thả để dời vị trí.</p>
+                <p style="color: #aaa; font-size: 9px; margin-bottom: 5px;">Chạm vào nút để chọn và kéo thanh trượt. Kéo
+                    thả để dời vị trí.</p>
                 <div style="margin-bottom: 10px; color: white; text-align: left;">
-                    <label for="hud-scale-slider" style="font-size: 10px;">Độ lớn: <span id="hud-scale-val">100%</span></label>
-                    <input type="range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0" style="width: 100%; height: 2px;">
+                    <label for="hud-scale-slider" style="font-size: 10px;">Độ lớn: <span
+                            id="hud-scale-val">100%</span></label>
+                    <input type="range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+                        style="width: 100%; height: 2px;">
                 </div>
                 <div style="margin-bottom: 15px; color: white; text-align: left;">
-                    <label for="sensitivity-slider" style="font-size: 10px;">Độ nhạy ngắm: <span id="sensitivity-val">1.0</span>x</label>
-                    <input type="range" id="sensitivity-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width: 100%; height: 2px;">
+                    <label for="sensitivity-slider" style="font-size: 10px;">Độ nhạy ngắm: <span
+                            id="sensitivity-val">1.0</span>x</label>
+                    <input type="range" id="sensitivity-slider" min="0.1" max="5.0" step="0.1" value="1.0"
+                        style="width: 100%; height: 2px;">
                 </div>
                 <div style="display:flex; gap:5px; justify-content:center;">
-                    <button id="btn-reset-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(255,0,0,0.4)">MẶC ĐỊNH</button>
-                    <button id="btn-cancel-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(100,100,100,0.4)">HỦY</button>
-                    <button id="btn-save-hud" class="menu-btn" style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(0,255,0,0.4)">LƯU</button>
+                    <button id="btn-reset-hud" class="menu-btn"
+                        style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(255,0,0,0.4)">MẶC
+                        ĐỊNH</button>
+                    <button id="btn-cancel-hud" class="menu-btn"
+                        style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(100,100,100,0.4)">HỦY</button>
+                    <button id="btn-save-hud" class="menu-btn"
+                        style="width:auto; padding: 5px 8px; font-size: 9px; background: rgba(0,255,0,0.4)">LƯU</button>
                 </div>
             </div>
         </div>
 
-        <div id="spectator-count" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-family:'Outfit'; font-size:16px; font-weight:bold; text-shadow:0 0 5px black; z-index:9999; display:none;">👁️ 0</div>
+        <div id="spectator-count"
+            style="position:fixed; top:10px; left:50%; transform:translateX(-50%); color:white; font-family:'Outfit'; font-size:16px; font-weight:bold; text-shadow:0 0 5px black; z-index:9999; display:none;">
+            👁️ 0</div>
 
         <div id="interaction-msg" class="hud-panel">NHẤN [E] ĐỂ LOOT</div>
 
@@ -130,7 +146,8 @@
         <div id="kill-feed" class="hud-panel"></div>
 
         <!-- BOSS EVENT UI -->
-        <button id="kill-last-bot-btn" class="menu-btn primary" style="display: none; pointer-events: auto; position: absolute; top: 180px; left: 30px; font-size: 14px; padding: 10px 20px;">
+        <button id="kill-last-bot-btn" class="menu-btn primary"
+            style="display: none; pointer-events: auto; position: absolute; top: 180px; left: 30px; font-size: 14px; padding: 10px 20px;">
             💀 KILL LAST BOT 💀
         </button>
 
@@ -141,9 +158,14 @@
         </div>
 
         <!-- BOSS HEALTH BAR -->
-        <div id="boss-hp-container" style="display:none; position:fixed; top:40px; left:50%; transform:translateX(-50%); width:70%; height:35px; background:rgba(0,0,0,0.8); border:3px solid #ff0000; z-index:100; box-shadow: 0 0 50px rgba(255,0,0,0.5);">
-            <div id="boss-hp-fill" style="width:100%; height:100%; background:linear-gradient(90deg, #990000, #ff0000); transition:width 0.2s;"></div>
-            <div style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:4px; text-shadow:2px 2px 4px black; font-size:20px; letter-spacing:4px;">HAKARI: THE DIVINE CAT</div>
+        <div id="boss-hp-container"
+            style="display:none; position:fixed; top:40px; left:50%; transform:translateX(-50%); width:70%; height:35px; background:rgba(0,0,0,0.8); border:3px solid #ff0000; z-index:100; box-shadow: 0 0 50px rgba(255,0,0,0.5);">
+            <div id="boss-hp-fill"
+                style="width:100%; height:100%; background:linear-gradient(90deg, #990000, #ff0000); transition:width 0.2s;">
+            </div>
+            <div
+                style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:4px; text-shadow:2px 2px 4px black; font-size:20px; letter-spacing:4px;">
+                HAKARI: THE DIVINE CAT</div>
         </div>
 
         <div id="streak-msg" class="hud-panel">DOUBLE KILL!</div>
@@ -157,20 +179,24 @@
     <div id="main-menu" class="menu-screen">
         <h1 class="menu-title">Survival Royale</h1>
         <div style="margin-bottom: 25px;">
-            <input type="text" id="player-name-input" placeholder="NHẬP TÊN CỦA BẠN..." maxlength="15" 
-                   style="background: rgba(0,0,0,0.5); border: 2px solid #ffcc00; color: #fff; padding: 12px 25px; border-radius: 12px; font-family: 'Outfit', sans-serif; text-align: center; font-size: 18px; width: 280px; outline: none; box-shadow: 0 0 15px rgba(255,204,0,0.2);">
+            <input type="text" id="player-name-input" placeholder="NHẬP TÊN CỦA BẠN..." maxlength="15"
+                style="background: rgba(0,0,0,0.5); border: 2px solid #ffcc00; color: #fff; padding: 12px 25px; border-radius: 12px; font-family: 'Outfit', sans-serif; text-align: center; font-size: 18px; width: 280px; outline: none; box-shadow: 0 0 15px rgba(255,204,0,0.2);">
         </div>
-        <div style="margin: 0 auto 25px auto; width: 280px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,204,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-            <div style="color: #ffcc00; font-weight: bold; font-family: 'Outfit', sans-serif; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">
+        <div
+            style="margin: 0 auto 25px auto; width: 280px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 15px; border: 1px solid rgba(255,204,0,0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            <div
+                style="color: #ffcc00; font-weight: bold; font-family: 'Outfit', sans-serif; font-size: 14px; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">
                 Số lượng Bot: <span id="bot-count-val" style="font-size: 18px; color: #fff;">25</span>
             </div>
-            <input type="range" id="bot-count-slider" min="1" max="100" value="25" 
-                   style="width: 100%; cursor: pointer; accent-color: #ffcc00; background: transparent;">
+            <input type="range" id="bot-count-slider" min="5" max="100" value="25"
+                style="width: 100%; cursor: pointer; accent-color: #ffcc00; background: transparent;">
         </div>
         <button class="menu-btn primary" onclick="startGame()">Bắt đầu cuộc chơi</button>
         <button id="copy-link-btn" class="menu-btn" style="display: none;">🔗 SAO CHÉP LINK XEM</button>
-        <button id="btn-open-guide" class="menu-btn" style="background: rgba(255, 204, 0, 0.4); margin-top: 10px;">📖 HƯỚNG DẪN</button>
-        <button id="btn-open-feedback" class="menu-btn" style="background: rgba(0, 150, 255, 0.4); margin-top: 10px;">📝 GÓP Ý</button>
+        <button id="btn-open-guide" class="menu-btn" style="background: rgba(255, 204, 0, 0.4); margin-top: 10px;">📖
+            HƯỚNG DẪN</button>
+        <button id="btn-open-feedback" class="menu-btn" style="background: rgba(0, 150, 255, 0.4); margin-top: 10px;">📝
+            GÓP Ý</button>
         <button id="btn-join-discord" class="menu-btn" style="display: none;">💬 JOIN DISCORD</button>
 
         <div class="menu-guide">
@@ -184,7 +210,7 @@
     <div id="guide-modal" class="hidden">
         <div class="guide-content">
             <h2 style="color: #ffcc00; margin-bottom: 20px;">📖 SỔ TAY SINH TỒN</h2>
-            
+
             <div class="guide-section">
                 <h3 style="color: #00ffcc;">📱 ĐIỀU KHIỂN TRÊN ĐIỆN THOẠI</h3>
                 <p>• <b>Nút tròn Trái</b>: Di chuyển | <b>Nút tròn Phải</b>: Vuốt để xoay góc nhìn</p>
@@ -208,7 +234,8 @@
                 <p>• <b>NÉ CHIÊU:</b> Luôn để ý <b>VÙNG ĐỎ</b> trên đất để không bị Boss đập nát.</p>
             </div>
 
-            <button id="close-guide-btn" class="menu-btn" style="margin-top: 15px; width: auto; padding: 10px 40px;">TÔI ĐÃ HIỂU</button>
+            <button id="close-guide-btn" class="menu-btn" style="margin-top: 15px; width: auto; padding: 10px 40px;">TÔI
+                ĐÃ HIỂU</button>
         </div>
     </div>
 
@@ -261,19 +288,18 @@
                 </div>
                 <div class="legend-item">
                     <span class="legend-color green"></span>
-                    <span>LÌ XÌ cho 20K nè</span>
+                    <span>LÌ XÌ 20k</span>
                 </div>
-            </div>
-            <div id="reward-footer-left">
-                cảnh báo:<br>quay dc gì phải chụp <br>nhen tránh khai gian XD.
             </div>
         </div>
 
         <!-- Nút và Kết quả được bọc trong div để không che mất nhau -->
-        <div style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 15px; margin-top: 20px;">
+        <div
+            style="height: 160px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 15px; margin-top: 20px;">
             <button class="menu-btn" id="spin-btn" onclick="spinWheel()">QUAY LIỀN</button>
             <h2 id="reward-result" style="color:white; margin: 0; min-height: 40px; display: none;"></h2>
-            <button class="menu-btn" id="back-to-menu-btn" onclick="finishGameAndSendToDiscord()" style="background: #444; display: none;">QUAY LẠI MENU</button>
+            <button class="menu-btn" id="back-to-menu-btn" onclick="finishGameAndSendToDiscord()"
+                style="background: #444; display: none;">QUAY LẠI MENU</button>
         </div>
     </div>
 
@@ -286,20 +312,23 @@
     <div id="feedback-modal" class="hidden">
         <div class="feedback-content">
             <h3>📝 GÓP Ý & BÁO LỖI</h3>
-            <textarea id="feedback-text" placeholder="Bác gặp lỗi gì hay muốn thêm tính năng gì cứ ghi vào đây nhé..."></textarea>
+            <textarea id="feedback-text"
+                placeholder="Bác gặp lỗi gì hay muốn thêm tính năng gì cứ ghi vào đây nhé..."></textarea>
             <div style="display:flex; gap:10px; justify-content:center; margin-top:15px">
-                <button id="close-feedback-btn" class="menu-btn" style="width:auto; padding: 10px 20px; font-size: 16px;">ĐÓNG</button>
-                <button id="send-feedback-btn" class="menu-btn" style="width:auto; padding: 10px 20px; font-size: 16px; background: rgba(0,255,0,0.3)">GỬI</button>
+                <button id="close-feedback-btn" class="menu-btn"
+                    style="width:auto; padding: 10px 20px; font-size: 16px;">ĐÓNG</button>
+                <button id="send-feedback-btn" class="menu-btn"
+                    style="width:auto; padding: 10px 20px; font-size: 16px; background: rgba(0,255,0,0.3)">GỬI</button>
             </div>
         </div>
     </div>
-    
+
 
 
 
     <!-- PeerJS for Live View -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="game.js?v=18.5.1"></script>
+    <script src="game.js?v=18.5.5"></script>
     <script src="spectator.js?v=18.4.1"></script>
 
     <!-- OIIA CAT Assets -->

@@ -2171,53 +2171,58 @@ function draw() {
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
 
-        // Boss Arms - HIỆU ỨNG TAY CÓ KHỚP KHUỶU (Elbow Joints)
+        // Boss Arms - HIỆU ỨNG TAY TÙY BIẾN CHO CẢ 5 SKILL
         const drawArm = (side) => {
             let armScale = 1.0;
             let armColor = null;
             let lift = b.armLift || 0;
-            let elbowBase = Math.PI * 0.2; // Độ gập khuỷu tay tự nhiên
+            let forward = 0;
 
-            if (b.state === 'jumping') {
+            // Skill 1: DASH (Lướt) - Hai tay đưa về phía trước
+            if (b.state === 'dash_prepare' || b.state === 'dashing') {
+                lift = Math.PI * 0.4;
+                forward = 2;
+            } 
+            // Skill 2: SHOOT (Bắn) - Hai tay đưa về phía trước nhắm bắn
+            else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
+                lift = Math.PI * 0.45;
+                forward = 1.5;
+            }
+            // Skill 3: JUMP (Nhảy) - Hai tay hóa đỏ x2, giơ cao rồi đập xuống
+            else if (b.state === 'jumping') {
                 armScale = 2.0; armColor = [1.5, 0, 0];
-                elbowBase = Math.PI * 0.5;
-            } else if (b.state === 'pillar_prepare') {
+                lift = b.skillCD > 0.5 ? -Math.PI * 0.5 : Math.PI * 0.4;
+            }
+            // Skill 4: PILLAR (Cột máu) - Hai tay hóa đỏ, giơ thẳng lên trời
+            else if (b.state === 'pillar_prepare') {
                 armColor = [1.5, 0, 0];
-                lift = -Math.PI * 0.7; // Giơ tay lên trời
-                elbowBase = -Math.PI * 0.1;
-            } else if (b.state === 'teleport_strike') {
-                if (side === 1 && b.skillCD < 0.5) {
-                    armScale = 2.0; armColor = [2, 0, 0];
-                    elbowBase = Math.PI * 0.1;
-                } else if (side === -1) {
-                    lift = 0.5; elbowBase = Math.PI * 0.3;
+                lift = -Math.PI * 0.8;
+            }
+            // Skill 5: TELEPORT STRIKE (Chìm/Trồi đập) - Tay phải hóa đỏ x2 đập cực mạnh
+            else if (b.state === 'teleport_strike') {
+                if (side === 1) { // Tay phải
+                    armColor = [2.0, 0, 0];
+                    if (b.skillCD > 0.5) { // Giai đoạn trồi lên
+                        armScale = 1.5; lift = -Math.PI * 0.6;
+                    } else { // Giai đoạn đập
+                        armScale = 2.5; lift = Math.PI * 0.4;
+                    }
+                } else { // Tay trái hạ xuống tự nhiên
+                    lift = 0.5;
                 }
-            } else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
-                lift = 0.8; elbowBase = Math.PI * 0.4;
+            } else if (b.state === 'teleport_start') {
+                lift = -Math.PI * 0.6; // Giơ tay khi chìm xuống
             }
 
-            // Shoulder Position
-            let mShoulder = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mShoulder = M4.multiply(mShoulder, M4.rotationY(b.rotY || ang));
-            mShoulder = M4.multiply(mShoulder, M4.translation(side * 3, 0, 0));
-
-            // Upper Arm
-            let mUpper = M4.multiply(mShoulder, M4.rotationX(lift));
-            let mUpperRender = M4.multiply(mUpper, M4.translation(0, -3.5, 0));
-            mUpperRender = M4.multiply(mUpperRender, M4.scaling(0.8 * armScale, 4 * armScale, 0.8 * armScale));
+            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
+            mArm = M4.multiply(mArm, M4.translation(side * 2.8, 0, forward));
+            mArm = M4.multiply(mArm, M4.rotationX(lift));
+            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
 
             if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
-            gl.uniformMatrix4fv(locs.model, false, mUpperRender);
+            gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-
-            // Elbow Joint -> Forearm
-            let mForearm = M4.multiply(mUpper, M4.translation(0, -7, 0));
-            mForearm = M4.multiply(mForearm, M4.rotationX(elbowBase));
-            let mForearmRender = M4.multiply(mForearm, M4.translation(0, -3.5, 0));
-            mForearmRender = M4.multiply(mForearmRender, M4.scaling(0.9 * armScale, 4.5 * armScale, 0.9 * armScale));
-
-            gl.uniformMatrix4fv(locs.model, false, mForearmRender);
-            gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
             if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
         };
         drawArm(-1); drawArm(1);
