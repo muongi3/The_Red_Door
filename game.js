@@ -886,8 +886,8 @@ function update(dt) {
         }
 
         // Sửa lỗi Bức tường tàng hình (Giới hạn ranh giới bản đồ)
-        p.pos.x = Math.max(-180, Math.min(180, p.pos.x));
-        p.pos.z = Math.max(-180, Math.min(180, p.pos.z));
+        p.pos.x = Math.max(-200, Math.min(200, p.pos.x));
+        p.pos.z = Math.max(-200, Math.min(200, p.pos.z));
     }
     p.vel.y -= 25 * dt; p.pos.y += p.vel.y * dt;
     let floorH = getHeight(p.pos.x, p.pos.z);
@@ -2784,7 +2784,10 @@ function initPeer() {
         console.error('PeerJS Global Error:', err);
         const specWarning = document.getElementById('spectator-warning');
         if (specWarning && window.SPECTATOR_MODE) {
-            specWarning.innerText = "❌ LỖI KẾT NỐI: " + err.type;
+            let errorMsg = "❌ LỖI KẾT NỐI";
+            if (err.type === 'peer-unavailable') errorMsg = "❌ LỖI: NGƯỜI CHƠI ĐÃ THOÁT HOẶC ĐỔI LINK";
+            if (err.type === 'network') errorMsg = "❌ LỖI: MẠNG YẾU / KHÔNG CÓ KẾT NỐI";
+            specWarning.innerHTML = `${errorMsg} <button onclick="location.reload()" style="background:#ff3366; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
         }
     });
 }
@@ -2846,7 +2849,7 @@ function startLiveView(targetId) {
 
         conn.on('error', (err) => {
             console.error("Connection error:", err);
-            if (specWarning) specWarning.innerText = "❌ LỖI: " + err;
+            if (specWarning) specWarning.innerHTML = `❌ LỖI KẾT NỐI... <button onclick="location.reload()" style="background:#ff3366; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
         });
     };
 
