@@ -269,6 +269,7 @@ in float vY;
 uniform vec3 uCamPos;
 uniform vec3 uSunDir;
 uniform vec3 uFogColor;
+uniform vec3 uEmitColor;
 uniform float uTime;
 uniform bool uIsWater;
 uniform bool uIsSky;
@@ -306,7 +307,7 @@ void main() {
     float rim = 1.0 - max(dot(V, N), 0.0);
     rim = pow(rim, 4.0) * 0.4;
     
-    vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim);
+    vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor;
     
     float fogFactor = 1.0 - exp(-vDist * 0.008);
     fogFactor = clamp(fogFactor, 0.0, 1.0);
@@ -339,6 +340,7 @@ function initGraphics() {
         camPos: gl.getUniformLocation(prog, "uCamPos"),
         sunDir: gl.getUniformLocation(prog, "uSunDir"),
         fogColor: gl.getUniformLocation(prog, "uFogColor"),
+        emitColor: gl.getUniformLocation(prog, "uEmitColor"),
         instanced: gl.getUniformLocation(prog, "uInstanced"),
         time: gl.getUniformLocation(prog, "uTime"),
         isWater: gl.getUniformLocation(prog, "uIsWater"),
@@ -1988,6 +1990,7 @@ function draw() {
     gl.uniform3f(locs.camPos, eye.x, eye.y, eye.z);
     gl.uniform3f(locs.sunDir, 0.5, 0.8, 0.3);
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
+    gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive color
     gl.uniform1f(locs.time, performance.now() / 1000);
 
     const drawMeshActual = (mesh, pos, scale = 1, rotY = 0) => {
@@ -2122,11 +2125,11 @@ function draw() {
         // Hiệu ứng tụ năng lượng ở ngực (Chiêu 2)
         if (b.state === 'shoot_prepare' || b.state === 'shooting') {
             const pulse = 0.8 + Math.sin(performance.now() * 0.02) * 0.2;
-            gl.uniform3f(locs.fogColor, 2.0, 0.8, 0); // Cam rực
+            gl.uniform3f(locs.emitColor, 1.5, 0.6, 0); // Cam rực (Emissive)
             let mChest = M4.multiply(mBody, M4.translation(0, 16, 3));
             mChest = M4.multiply(mChest, M4.scaling(3 * pulse, 3 * pulse, 3 * pulse));
             drawMeshRaw(ASSETS.crate, mChest);
-            gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
 
         // Boss Arms - HIỆU ỨNG TAY TÙY BIẾN THEO CHIÊU
@@ -2136,17 +2139,16 @@ function draw() {
             let lift = b.armLift;
 
             if (b.state === 'jumping') {
-                armScale = 2.0; armColor = [2, 0, 0];
+                armScale = 2.0; armColor = [1.5, 0, 0];
             } else if (b.state === 'pillar_prepare') {
-                armColor = [2, 0, 0]; // Đỏ lòng bàn tay (cả tay đỏ cho ngầu)
+                armColor = [1.5, 0, 0]; // Đỏ lòng bàn tay
             } else if (b.state === 'teleport_strike') {
                 if (side === 1) { // Chỉ tay phải to và đỏ khi đập
-                    armScale = 2.0; armColor = [2, 0, 0];
+                    armScale = 2.0; armColor = [1.5, 0, 0];
                 } else {
                     lift = -0.5; // Tay trái hạ xuống cho tự nhiên
                 }
             } else if (b.state === 'dash_prepare' || b.state === 'dashing') {
-                // Chiêu 1 không đỏ, không to
                 armScale = 1.0; armColor = null;
             }
 
@@ -2156,11 +2158,11 @@ function draw() {
             if (!window.SPECTATOR_MODE) mArm = M4.multiply(mArm, M4.rotationX(lift));
             mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
 
-            if (armColor) gl.uniform3f(locs.fogColor, armColor[0], armColor[1], armColor[2]);
+            if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
             gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao);
             gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-            if (armColor) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
+            if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
         };
         drawArm(-1); drawArm(1);
 
