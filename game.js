@@ -2772,9 +2772,19 @@ document.addEventListener('visibilitychange', () => {
 // --- LIVE VIEW (SPECTATOR MODE) ---
 function initPeer() {
     if (STATE.peer) return;
+    
+    // TẠO ID CỐ ĐỊNH CHO MÁY CHỦ ĐỂ LINK KHÔNG BỊ CHẾT KHI F5
+    let persistentId = localStorage.getItem('game_peer_id');
+    if (!persistentId) {
+        persistentId = 'survival-' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('game_peer_id', persistentId);
+    }
+    
+    // Nếu là khán giả, chúng ta vẫn dùng ID ngẫu nhiên của PeerJS để tránh trùng với máy chủ
+    const peerId = window.SPECTATOR_MODE ? null : persistentId;
 
-    // Quay lại dùng ID ngẫu nhiên để đảm bảo ổn định tuyệt đối
-    STATE.peer = new Peer({
+    debug("📡 Khởi tạo PeerJS (" + (peerId ? "Host" : "Spec") + ")...");
+    STATE.peer = new Peer(peerId, {
         config: {
             iceServers: [
                 { urls: 'stun:stun.l.google.com:19302' },
@@ -2783,7 +2793,6 @@ function initPeer() {
             ]
         }
     });
-    debug("📡 Khởi tạo PeerJS...");
 
     STATE.peer.on('open', (id) => {
         debug("✅ Peer Mở! ID: " + id);
@@ -2793,8 +2802,6 @@ function initPeer() {
             // Thêm mã timestamp ngẫu nhiên để ép trình duyệt tải lại code mới nhất (giống Ctrl+F5)
             const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&t=${Date.now()}`;
             const message = `👤 **${STATE.playerName}** đã vào game!\n🔗 [XEM TRỰC TIẾP TẠI ĐÂY (CTRL+F5)](${watchLink})`;
-
-
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
@@ -2865,15 +2872,20 @@ function startLiveView(targetId) {
     }
 
     const connectToPlayer = () => {
+        if (targetId === STATE.peer.id) {
+            debug("⚠️ LỖI: Bác đang tự kết nối với chính mình!");
+            return;
+        }
         debug("🔗 Đang kết nối tới: " + targetId);
         console.log("Attempting connection to:", targetId);
         
-        // Thiết lập timeout nếu quá 15 giây không kết nối được
+        // Tăng timeout lên 30 giây theo yêu cầu của bác
         const connectionTimeout = setTimeout(() => {
             if (!STATE.isConnected) {
-                debug("⏳ LỖI: Kết nối quá lâu (Timeout). Bác kiểm tra xem Máy chủ (Laptop) có còn mở tab game không?");
+                debug("⏳ LỖI: Kết nối quá lâu (30s Timeout).");
+                debug("👉 Bác kiểm tra xem Laptop đã nhấn 'BẮT ĐẦU' chưa?");
             }
-        }, 15000);
+        }, 30000);
 
         const conn = STATE.peer.connect(targetId);
         
