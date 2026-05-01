@@ -54,8 +54,19 @@ const M4 = {
     }
 };
 
-const gl = document.getElementById('glcanvas').getContext('webgl2');
-if (!gl) alert("WebGL2 required!");
+let gl;
+window.addEventListener('load', () => {
+    gl = document.getElementById('glcanvas').getContext('webgl2');
+    if (!gl) {
+        alert("Thiết bị của bác không hỗ trợ WebGL2. Vui lòng dùng trình duyệt khác!");
+        return;
+    }
+    // Cập nhật kích thước canvas ngay khi load
+    gl.canvas.width = window.innerWidth;
+    gl.canvas.height = window.innerHeight;
+    initAssets();
+    console.log("Game initialized successfully!");
+});
 
 const VS_SOURCE = `#version 300 es
 layout(location=0) in vec3 aPos;
@@ -2399,11 +2410,12 @@ function showClickAnywhere(delay = 10000) {
     }, delay);
 }
 
-window.onload = () => {
-    gl.canvas.width = window.innerWidth;
-    gl.canvas.height = window.innerHeight;
-    initAssets();
-};
+// window.onload đã được gộp vào addEventListener('load') ở trên
+// window.onload = () => {
+//     gl.canvas.width = window.innerWidth;
+//     gl.canvas.height = window.innerHeight;
+//     initAssets();
+// };
 
 
 
