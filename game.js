@@ -1380,7 +1380,8 @@ function update(dt) {
             b.vel.y -= window.GAME_CONFIG.boss.skill3.gravity * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
-                b.state = 'recover'; b.skillCD = 0.5;
+                // Giữ tư thế đập xuống 0.5s rồi mới vào 'recover'
+                b.state = 'recover'; b.skillCD = 1.5; // 0.5s giữ + 1s chờ
                 b.bodyRot = 1.4; b.armLift = -0.5;
                 const dmgDist = window.GAME_CONFIG.boss.skill3.range;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
@@ -1392,10 +1393,10 @@ function update(dt) {
                 STATE.shake = 10.0;
             }
         } else if (b.state === 'recover') {
-            b.bodyRot = 1.4; b.armLift = -0.5;
+            b.bodyRot = 1.4; b.armLift = -0.5; // Giữ tư thế đập
             if (b.skillCD <= 0) {
                 b.state = 'fight';
-                b.skillCD = 1.0;
+                b.skillCD = 1.0; // Nghỉ 1s sau khi đập xuống
             }
         } else if (b.state === 'dash_prepare') {
             const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
@@ -1478,18 +1479,21 @@ function update(dt) {
                 }
             }
             if (b.skillCD <= 0) {
-                // [YÊU CẦU] Dịch chuyển và quay mặt về phía người chơi
-                b.state = 'teleport_strike'; b.skillCD = 3.0; 
-                if (b.targetPos) {
-                    b.pos.x = b.targetPos.x; b.pos.z = b.targetPos.z; b.pos.y = b.targetPos.y;
-                    // Quay mặt về phía người chơi ngay khi trồi lên
-                    const toP = V3.norm(V3.sub(p.pos, b.pos));
-                    b.rotY = Math.atan2(toP.x, toP.z);
-                }
-                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false; // Chìm sâu hơn (-25)
+                // [CHIÊU 5] Trồi ra SAU LƯNG người chơi
+                const behindDist = 5; // Trồi lên cách người chơi 5m phía sau
+                const pFwd = V3.norm(V3.sub(p.pos, b.pos)); // Hướng người chơi nhìn vào boss
+                const behindX = p.pos.x - pFwd.x * behindDist;
+                const behindZ = p.pos.z - pFwd.z * behindDist;
+                b.state = 'teleport_strike'; b.skillCD = 3.5;
+                b.pos.x = behindX; b.pos.z = behindZ;
+                b.pos.y = getHeight(behindX, behindZ);
+                // Quay mặt vào người chơi
+                const toP2 = V3.norm(V3.sub(p.pos, b.pos));
+                b.rotY = Math.atan2(toP2.x, toP2.z);
+                b.bodyY = -25; b.bodyRot = 0; b.hasHit = false;
                 if (b.fanMesh) deleteMesh(b.fanMesh);
-                const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
-                b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx, dz) - 1.2, arc: 2.4, r: 25 };
+                const dx5 = p.pos.x - b.pos.x, dz5 = p.pos.z - b.pos.z;
+                b.fanMeshParams = { x: b.pos.x, z: b.pos.z, ang: Math.atan2(dx5, dz5) - 1.2, arc: 2.4, r: 25 };
                 b.fanMesh = genTerrainFanMesh(b.fanMeshParams.x, b.fanMeshParams.z, b.fanMeshParams.ang, b.fanMeshParams.arc, b.fanMeshParams.r);
             }
         } else if (b.state === 'teleport_strike') {
@@ -2171,152 +2175,131 @@ function draw() {
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
 
-        // === HỆ THỐNG ANIMATION TAY BOSS ===
-        // Mục tiêu: Mỗi chiêu có pose riêng, lerp mượt, không giật cục
-        const now = performance.now();
-        const breathe = Math.sin(now * 0.002) * 0.08; // Thở nhẹ khi idle
+        // === BOSS ARM ANIMATION - FIX CRASH + YÊU CẦU MỚI ===
+        {
+            const bT = performance.now();
+            const breathe = Math.sin(bT * 0.002) * 0.08;
 
-        // Tính toán target lift/scale cho từng cánh tay dựa theo state
-        let targetLiftL = breathe;
-        let targetLiftR = breathe;
-        let targetScaleL = 1.0;
-        let targetScaleR = 1.0;
-        let armColorL = null;
-        let armColorR = null;
-        let lerpSpeed = 6; // Tốc độ lerp (cao = mượt nhanh)
+            let tLL = breathe, tLR = breathe;
+            let tSL = 1.0, tSR = 1.0;
+            let cL = null, cR = null;
+            let lspd = 6;
 
-        if (b.state === 'fight' || b.state === 'idle' || b.state === 'recover') {
-            // Idle: tay đong đưa nhẹ theo nhịp đi
-            const swing = Math.sin(now * 0.004) * 0.2;
-            targetLiftL = swing + breathe;
-            targetLiftR = -swing + breathe;
-        }
-        else if (b.state === 'dash_prepare') {
-            // Skill 1: Chuẩn bị lướt - dang hai tay ra sau, cúi người
-            targetLiftL = -Math.PI * 0.5;
-            targetLiftR = -Math.PI * 0.5;
-            lerpSpeed = 8;
-        }
-        else if (b.state === 'dashing') {
-            // Skill 1: Đang lướt - hai tay ép sát vào người, đâm về phía trước
-            targetLiftL = Math.PI * 0.35;
-            targetLiftR = Math.PI * 0.35;
-            lerpSpeed = 20; // Chuyển rất nhanh khi lướt
-        }
-        else if (b.state === 'shoot_prepare') {
-            // Skill 2: Chuẩn bị bắn - giơ tay phải lên nhắm
-            targetLiftL = 0.2;
-            targetLiftR = Math.PI * 0.5;
-            armColorR = [1.2, 0.5, 0]; // Cam rực ở tay bắn
-            lerpSpeed = 7;
-        }
-        else if (b.state === 'shooting') {
-            // Skill 2: Đang bắn - rung tay theo từng phát
-            const recoil = Math.sin(now * 0.05) * 0.3;
-            targetLiftL = 0.2;
-            targetLiftR = Math.PI * 0.5 + recoil;
-            armColorR = [1.5, 0.6, 0];
-            lerpSpeed = 25;
-        }
-        else if (b.state === 'jump_start') {
-            // Skill 3: Lấy đà nhảy - hai tay hóa đỏ, kéo ra sau
-            targetLiftL = -Math.PI * 0.6;
-            targetLiftR = -Math.PI * 0.6;
-            targetScaleL = 1.5; targetScaleR = 1.5;
-            armColorL = [1.5, 0, 0]; armColorR = [1.5, 0, 0];
-            lerpSpeed = 6;
-        }
-        else if (b.state === 'jumping') {
-            // Skill 3: Trên không - hai tay hóa đỏ x2, giơ THẲNG lên trời
-            targetLiftL = -Math.PI * 0.8;
-            targetLiftR = -Math.PI * 0.8;
-            targetScaleL = 2.0; targetScaleR = 2.0;
-            armColorL = [2, 0, 0]; armColorR = [2, 0, 0];
-            lerpSpeed = 10;
-        }
-        else if (b.state === 'recover') {
-            // Skill 3: Vừa đập xuống - hai tay đập mạnh xuống đất
-            targetLiftL = Math.PI * 0.7;
-            targetLiftR = Math.PI * 0.7;
-            targetScaleL = 1.8; targetScaleR = 1.8;
-            armColorL = [2, 0, 0]; armColorR = [2, 0, 0];
-            lerpSpeed = 30; // Rất nhanh - cú đập mạnh
-        }
-        else if (b.state === 'pillar_prepare') {
-            // Skill 4: Triệu hồi cột - hai tay hóa đỏ, giơ dần lên trời
-            const raiseT = Math.min(1.0, (b.armLift || 0)); // dùng armLift như timer
-            targetLiftL = -Math.PI * 0.75;
-            targetLiftR = -Math.PI * 0.75;
-            armColorL = [1.5, 0, 0]; armColorR = [1.5, 0, 0];
-            lerpSpeed = 4; // Giơ tay từ từ, chậm rãi, uy lực
-        }
-        else if (b.state === 'pillar_active') {
-            // Skill 4: Cột đã nổ - hạ tay xuống
-            targetLiftL = Math.PI * 0.3;
-            targetLiftR = Math.PI * 0.3;
-            armColorL = [1, 0, 0]; armColorR = [1, 0, 0];
-            lerpSpeed = 5;
-        }
-        else if (b.state === 'teleport_start') {
-            // Skill 5: Chìm xuống - giơ tay lên khi chìm
-            targetLiftL = -Math.PI * 0.7;
-            targetLiftR = -Math.PI * 0.7;
-            lerpSpeed = 5;
-        }
-        else if (b.state === 'teleport_strike') {
-            if (b.skillCD > 2.5) {
-                // Giai đoạn trồi lên - tay phải hóa đỏ, giơ lên
-                targetLiftL = 0.3;
-                targetLiftR = -Math.PI * 0.7;
-                targetScaleR = 1.5;
-                armColorR = [2, 0, 0];
-                lerpSpeed = 10;
-            } else if (b.skillCD > 0.5) {
-                // Giai đoạn tụ lực - tay phải giơ thẳng lên trời, run rẩy
-                const tremble = Math.sin(now * 0.08) * 0.1;
-                targetLiftL = 0.2 + tremble;
-                targetLiftR = -Math.PI * 0.9 + tremble;
-                targetScaleR = 1.8;
-                armColorR = [2.5, 0, 0];
-                lerpSpeed = 15;
-            } else {
-                // Giai đoạn đập - tay phải VUNG MẠNH XUỐNG
-                targetLiftL = 0.3;
-                targetLiftR = Math.PI * 0.6;
-                targetScaleR = 2.2;
-                armColorR = [3, 0, 0];
-                lerpSpeed = 35; // Cực nhanh - cú đập sấm sét
+            if (b.state === 'fight' || b.state === 'idle') {
+                const sw = Math.sin(bT * 0.004) * 0.2;
+                tLL = sw + breathe; tLR = -sw + breathe;
+            }
+            // Skill 1: DASH - Boss đứng yên như khúc gỗ, hai tay xuôi
+            else if (b.state === 'dash_prepare') {
+                tLL = 0; tLR = 0; lspd = 12;
+            }
+            else if (b.state === 'dashing') {
+                // Tay đưa về sau khi lướt
+                tLL = -Math.PI * 0.3; tLR = -Math.PI * 0.3; lspd = 25;
+            }
+            // Skill 2: SHOOT - tay thường, hiệu ứng ngực
+            else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
+                tLL = 0.15; tLR = 0.15; lspd = 7;
+            }
+            // Skill 3: NHẢY - cúi người lấy đà
+            else if (b.state === 'jump_start') {
+                tLL = 0.3; tLR = 0.3;
+                tSL = 1.3; tSR = 1.3;
+                cL = [1.2, 0, 0]; cR = [1.2, 0, 0];
+                lspd = 5;
+            }
+            // Skill 3: TRÊN KHÔNG - hai tay đỏ x2 giơ lên trời
+            else if (b.state === 'jumping') {
+                tLL = -Math.PI * 0.85; tLR = -Math.PI * 0.85;
+                tSL = 2.0; tSR = 2.0;
+                cL = [2, 0, 0]; cR = [2, 0, 0];
+                lspd = 10;
+            }
+            // Skill 3: ĐẨP XUỐNG - giữ tư thế cúi đập 0.5s
+            else if (b.state === 'recover') {
+                tLL = Math.PI * 0.65; tLR = Math.PI * 0.65;
+                tSL = 1.8; tSR = 1.8;
+                cL = [2, 0, 0]; cR = [2, 0, 0];
+                lspd = 35;
+            }
+            // Skill 4: PILLAR - hai tay giơ lên trời (bình thường)
+            else if (b.state === 'pillar_prepare') {
+                tLL = -Math.PI * 0.75; tLR = -Math.PI * 0.75;
+                lspd = 3;
+            }
+            else if (b.state === 'pillar_active') {
+                tLL = Math.PI * 0.3; tLR = Math.PI * 0.3; lspd = 5;
+            }
+            // Skill 5: TELEPORT - chìm xuống giơ tay
+            else if (b.state === 'teleport_start') {
+                tLL = -Math.PI * 0.6; tLR = -Math.PI * 0.6; lspd = 4;
+            }
+            // Skill 5: TELEPORT STRIKE - tay PHẢI x2 giơ lên 1.5s rồi đập
+            else if (b.state === 'teleport_strike') {
+                if (b.skillCD > 2.0) { // Trồi lên, giơ tay phải
+                    tLL = 0.15; tLR = -Math.PI * 0.65;
+                    tSR = 1.4; cR = [2, 0, 0]; lspd = 8;
+                } else if (b.skillCD > 0.5) { // Giữ giơ tay phải 1.5s + run rẩy
+                    const tr = Math.sin(bT * 0.07) * 0.08;
+                    tLL = 0.15 + tr; tLR = -Math.PI * 0.85 + tr;
+                    tSR = 1.8; cR = [2.5, 0, 0]; lspd = 20;
+                } else { // Đập xuống cực nhanh
+                    tLL = 0.15; tLR = Math.PI * 0.65;
+                    tSR = 2.0; cR = [3, 0, 0]; lspd = 40;
+                }
+            }
+
+            if (b.curLiftL === undefined) { b.curLiftL = 0; b.curLiftR = 0; b.curScaleL = 1; b.curScaleR = 1; }
+            const lf = Math.min(1, lspd * dt);
+            b.curLiftL += (tLL - b.curLiftL) * lf;
+            b.curLiftR += (tLR - b.curLiftR) * lf;
+            b.curScaleL += (tSL - b.curScaleL) * lf;
+            b.curScaleR += (tSR - b.curScaleR) * lf;
+
+            // Vẽ tay trái
+            if (cL) gl.uniform3f(locs.emitColor, cL[0], cL[1], cL[2]);
+            let mArmL = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            mArmL = M4.multiply(mArmL, M4.rotationY(b.rotY || ang));
+            mArmL = M4.multiply(mArmL, M4.translation(-3.5, 0, 0));
+            mArmL = M4.multiply(mArmL, M4.rotationX(b.curLiftL));
+            mArmL = M4.multiply(mArmL, M4.scaling(b.curScaleL, b.curScaleL, b.curScaleL));
+            gl.uniformMatrix4fv(locs.model, false, mArmL);
+            gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
+            if (cL) gl.uniform3f(locs.emitColor, 0, 0, 0);
+
+            // Vẽ tay phải
+            if (cR) gl.uniform3f(locs.emitColor, cR[0], cR[1], cR[2]);
+            let mArmR = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+            mArmR = M4.multiply(mArmR, M4.rotationY(b.rotY || ang));
+            mArmR = M4.multiply(mArmR, M4.translation(3.5, 0, 0));
+            mArmR = M4.multiply(mArmR, M4.rotationX(b.curLiftR));
+            mArmR = M4.multiply(mArmR, M4.scaling(b.curScaleR, b.curScaleR, b.curScaleR));
+            gl.uniformMatrix4fv(locs.model, false, mArmR);
+            gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
+            if (cR) gl.uniform3f(locs.emitColor, 0, 0, 0);
+
+            // Lòng bàn tay đỏ cho Skill 4 (chỉ lòng bàn tay, không phải nguyên tay)
+            if (b.state === 'pillar_prepare') {
+                gl.uniform3f(locs.emitColor, 2, 0, 0);
+                // Lòng tay trái
+                let mPalmL = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+                mPalmL = M4.multiply(mPalmL, M4.rotationY(b.rotY || ang));
+                mPalmL = M4.multiply(mPalmL, M4.translation(-3.5, 7 * b.curScaleL, 0));
+                mPalmL = M4.multiply(mPalmL, M4.rotationX(b.curLiftL));
+                mPalmL = M4.multiply(mPalmL, M4.scaling(1.5, 1.5, 1.5));
+                gl.uniformMatrix4fv(locs.model, false, mPalmL);
+                gl.bindVertexArray(ASSETS.crate.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
+                // Lòng tay phải
+                let mPalmR = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
+                mPalmR = M4.multiply(mPalmR, M4.rotationY(b.rotY || ang));
+                mPalmR = M4.multiply(mPalmR, M4.translation(3.5, 7 * b.curScaleR, 0));
+                mPalmR = M4.multiply(mPalmR, M4.rotationX(b.curLiftR));
+                mPalmR = M4.multiply(mPalmR, M4.scaling(1.5, 1.5, 1.5));
+                gl.uniformMatrix4fv(locs.model, false, mPalmR);
+                gl.drawArrays(gl.TRIANGLES, 0, ASSETS.crate.count);
+                gl.uniform3f(locs.emitColor, 0, 0, 0);
             }
         }
-
-        // Khởi tạo biến lerp nếu chưa có
-        if (b.curLiftL === undefined) { b.curLiftL = 0; b.curLiftR = 0; b.curScaleL = 1; b.curScaleR = 1; }
-
-        // Lerp mượt về target
-        const lf = Math.min(1, lerpSpeed * dt);
-        b.curLiftL += (targetLiftL - b.curLiftL) * lf;
-        b.curLiftR += (targetLiftR - b.curLiftR) * lf;
-        b.curScaleL += (targetScaleL - b.curScaleL) * lf;
-        b.curScaleR += (targetScaleR - b.curScaleR) * lf;
-
-        // Vẽ 2 cánh tay
-        const drawArm = (side) => {
-            const lift  = side === -1 ? b.curLiftL : b.curLiftR;
-            const scale = side === -1 ? b.curScaleL : b.curScaleR;
-            const col   = side === -1 ? armColorL : armColorR;
-
-            let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
-            mArm = M4.multiply(mArm, M4.translation(side * 3.5, 0, 0));
-            mArm = M4.multiply(mArm, M4.rotationX(lift));
-            mArm = M4.multiply(mArm, M4.scaling(scale, scale, scale));
-
-            if (col) gl.uniform3f(locs.emitColor, col[0], col[1], col[2]);
-            gl.uniformMatrix4fv(locs.model, false, mArm);
-            gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-            if (col) gl.uniform3f(locs.emitColor, 0, 0, 0);
-        };
-        drawArm(-1); drawArm(1);
 
         // Ground Indicators - ONLY FOR PLAYER
         if (!window.SPECTATOR_MODE) {
