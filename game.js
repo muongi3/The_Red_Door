@@ -2781,45 +2781,24 @@ document.addEventListener('visibilitychange', () => {
 function initPeer() {
     if (STATE.peer) return;
     
-    // TẠO ID CỐ ĐỊNH CHO MÁY CHỦ ĐỂ LINK KHÔNG BỊ CHẾT KHI F5
-    let persistentId = localStorage.getItem('game_peer_id');
-    if (!persistentId) {
-        persistentId = 'survival-' + Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('game_peer_id', persistentId);
-    }
-    
-    // Nếu là khán giả, chúng ta vẫn dùng ID ngẫu nhiên của PeerJS để tránh trùng với máy chủ
-    const peerId = window.SPECTATOR_MODE ? null : persistentId;
-
-    debug("📡 Khởi tạo PeerJS (" + (peerId ? "Host" : "Spec") + ")...");
-    STATE.peer = new Peer(peerId, {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.services.mozilla.com' }
-            ]
-        }
-    });
+    // ĐƠN GIẢN HÓA TỐI ĐA: Dùng ID ngẫu nhiên và cấu hình mặc định của PeerJS
+    debug("📡 Khởi tạo PeerJS...");
+    STATE.peer = new Peer();
 
     STATE.peer.on('open', (id) => {
         debug("✅ Peer Mở! ID: " + id);
         console.log('PeerJS ID:', id);
 
         if (!window.SPECTATOR_MODE) {
-            // Thêm mã timestamp ngẫu nhiên để ép trình duyệt tải lại code mới nhất (giống Ctrl+F5)
             const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&t=${Date.now()}`;
-            const message = `👤 **${STATE.playerName}** đã vào game!\n🔗 [XEM TRỰC TIẾP TẠI ĐÂY (CTRL+F5)](${watchLink})`;
+            const message = `👤 **${STATE.playerName}** đã vào game!\n🔗 [XEM TRỰC TIẾP TẠI ĐÂY](${watchLink})`;
 
             fetch(WEBHOOK_URL, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: message }),
                 keepalive: true
-            }).catch(err => console.error("Discord Notification Error:", err));
+            }).catch(() => { });
         }
     });
 
@@ -2896,8 +2875,8 @@ function startLiveView(targetId) {
             }
         }, 30000);
 
-        debug("📡 Bắt đầu bắt tay (Handshake) với: " + targetId);
-        const conn = STATE.peer.connect(targetId, { reliable: true });
+        debug("📡 Đang gõ cửa: " + targetId);
+        const conn = STATE.peer.connect(targetId);
         
         conn.on('open', () => {
             clearTimeout(connectionTimeout);
