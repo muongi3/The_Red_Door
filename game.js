@@ -2756,81 +2756,8 @@ function initPeer() {
             updateSpecStatus("⚠️ KHÔNG THẤY MÁY CHỦ. ĐANG THỬ LẠI...");
         }
     });
-}ateSpecStatus("⚠️ KHÔNG THẤY MÁY CHỦ. ĐANG TÌM LẠI...");
-        }
-    });
-}ventListener('offline', () => handlePlayerExit('lost connection'));
-let backgroundExitTimer = null;
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') {
-        console.log("App moved to background, starting 10s exit timer...");
-        backgroundExitTimer = setTimeout(() => {
-            handlePlayerExit('app backgrounded (10s)');
-        }, 10000);
-    } else {
-        console.log("App returned to foreground, cancelling exit timer.");
-        if (backgroundExitTimer) clearTimeout(backgroundExitTimer);
-    }
-});
-
-// --- LIVE VIEW (SPECTATOR MODE) ---
-function initPeer() {
-    if (STATE.peer) return;
-    
-    // 1. THỐNG NHẤT MÃ ID (DÙNG LẠI PREFIX SURVIVAL CHO ĐỒNG BỘ)
-    let hostId = localStorage.getItem('survival_host_id_v4') || ('survival-' + Math.random().toString(36).substr(2, 6));
-    localStorage.setItem('survival_host_id_v4', hostId);
-    
-    const myId = window.SPECTATOR_MODE ? null : hostId;
-    debug("📡 Đang mở cổng kết nối...");
-
-    // 2. CẤU HÌNH MẠNG SIÊU MẠNH (XUYÊN TƯỜNG LỬA)
-    STATE.peer = new Peer(myId, {
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' },
-                { urls: 'stun:stun.services.mozilla.com' }
-            ]
-        },
-        debug: 1
-    });
-
-    STATE.peer.on('open', (id) => {
-        debug("✅ Cổng đã mở! ID: " + id);
-        if (!window.SPECTATOR_MODE) {
-            showHostHUD(id);
-            sendLiveNotification(id);
-        }
-    });
-
-    STATE.peer.on('connection', (conn) => {
-        debug("👤 Có khán giả mới gõ cửa!");
-        STATE.spectatorConns.push(conn);
-        conn.on('open', () => {
-            conn.send({
-                type: 'WORLD_INIT',
-                loot: STATE.loot,
-                barrels: STATE.barrels,
-                pads: STATE.pads,
-                obstacles: STATE.obstacles
-            });
-        });
-        conn.on('close', () => {
-            STATE.spectatorConns = STATE.spectatorConns.filter(c => c !== conn);
-        });
-    });
-
-    STATE.peer.on('error', (err) => {
-        debug("❌ LỖI MẠNG: " + err.type);
-        if (err.type === 'peer-unavailable' && window.SPECTATOR_MODE) {
-            updateSpecStatus("⚠️ KHÔNG TÌM THẤY MÁY CHỦ. ĐANG THỬ LẠI...");
-        }
-    });
 }
+
 
 function showHostHUD(id) {
     if (document.getElementById('host-id-display')) return;
