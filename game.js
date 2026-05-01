@@ -986,16 +986,30 @@ function update(dt) {
         proj.pos = nextPos; proj.life -= dt; if (proj.life < 0) proj.dead = true;
     });
     STATE.projectiles = STATE.projectiles.filter(p => !p.dead);
-    STATE.bots.forEach(bot => {
+    STATE.bots.forEach((bot, i) => {
         if (bot.hp <= 0) return; bot.fireCD -= dt; const dist = V3.dist(bot.pos, p.pos);
 
-        // Khi còn ít bot, chúng sẽ tự động săn tìm người chơi (Tracking mode)
-        // [CHỈNH SỐ LƯỢNG CUỒNG BẠO] Đổi số 3 bên dưới thành số bạn muốn (ví dụ: <= 5)
-        const isLastBots = STATE.bots.length <= 3;
+        // --- VA CHẠM GIỮA CÁC BOT (Tránh dính chùm) ---
+        for (let j = i + 1; j < STATE.bots.length; j++) {
+            const b2 = STATE.bots[j];
+            if (b2.hp <= 0) continue;
+            const dx = bot.pos.x - b2.pos.x, dz = bot.pos.z - b2.pos.z;
+            const dSq = dx * dx + dz * dz;
+            if (dSq < 5) { // Khoảng cách va chạm ~2.2m
+                const d = Math.sqrt(dSq) || 0.1, push = (2.2 - d) * 0.5;
+                bot.pos.x += (dx / d) * push; bot.pos.z += (dz / d) * push;
+                b2.pos.x -= (dx / d) * push; b2.pos.z -= (dz / d) * push;
+            }
+        }
+
+        // Khi còn dưới 30% bot ban đầu, chúng sẽ hóa cuồng bạo (Horror Mode)
+        const isLastBots = STATE.bots.length <= (STATE.config.botCount || 25) * 0.3;
+        bot.isHorror = isLastBots; // Bật cờ kinh dị cho Animation
+
         if (isLastBots || dist < 30) {
             const dir = V3.norm(V3.sub(p.pos, bot.pos));
-            const speed = isLastBots ? 17 : 5; // Tăng tốc độ bot thường 1 xíu để nó đi bộ tới người chơi
-            // Tính khoảng cách 2D để bot có thể đánh lên nóc xe
+            // Tốc độ bằng người chơi khi cuồng bạo (12), bình thường đi bộ (5)
+            const speed = isLastBots ? 12 : 5;
             const dist2D = Math.sqrt(Math.pow(p.pos.x - bot.pos.x, 2) + Math.pow(p.pos.z - bot.pos.z, 2));
             if (dist2D > 1.5) {
                 bot.pos.x += dir.x * speed * dt;
@@ -2151,7 +2165,8 @@ function updateHUD() {
     }
 
     // CẢNH BÁO CUỒNG BẠO
-    if (!STATE.enragedAnnounced && STATE.bots.length > 0 && STATE.bots.length <= 3) {
+    const enragedThreshold = (STATE.config.botCount || 25) * 0.3;
+    if (!STATE.enragedAnnounced && STATE.bots.length > 0 && STATE.bots.length <= enragedThreshold) {
         showGlobalAnnouncement("⚠️ CẢNH BÁO: QUÁI VẬT ĐÃ HÓA CUỒNG BẠO!", 4000);
         STATE.enragedAnnounced = true;
         STATE.shake = 5.0;
