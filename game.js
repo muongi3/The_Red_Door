@@ -27,43 +27,92 @@ const V3 = {
 };
 
 window.GAME_CONFIG = {
-    // THÔNG SỐ CỦA NGƯỜI CHƠI (PLAYER)
+    // ==========================================================================================
+    // 👤 THÔNG SỐ NGƯỜI CHƠI (PLAYER STATS)
+    // ==========================================================================================
     player: {
-        maxHp: 1000,
-        maxArmor: 500,
-        walkSpeed: 8,
-        sniperSpeed: 5,
-        sprintMultiplier: 2.0, // Tốc độ nhân thêm khi chạy nhanh
-        powerupSpeedMultiplier: 1.8 // Tốc độ khi nhặt bùa xanh
+        maxHp: 1000,                // Máu tối đa. Tăng -> Trâu hơn, khó chết. Giảm -> Dễ "bay màu".
+        maxArmor: 500,              // Giáp tối đa. Giáp đỡ sát thương trước máu. Tăng -> Chống chịu tốt hơn.
+        walkSpeed: 8,               // Tốc độ đi bộ cơ bản. Tăng -> Di chuyển nhanh, dễ né đòn.
+        sniperSpeed: 5,             // Tốc độ khi cầm Sniper. Giảm -> Cảm giác súng nặng nề hơn.
+        sprintMultiplier: 2.0,      // Nhân tốc độ khi giữ Shift. Tăng -> Chạy cực nhanh.
+        powerupSpeedMultiplier: 1.8 // Nhân tốc độ khi nhặt được "Bùa Tốc Độ" (màu xanh).
     },
-    // THÔNG SỐ CỦA QUÁI VẬT (BOT)
+
+    // ==========================================================================================
+    // 🤖 THÔNG SỐ QUÁI VẬT (BOT AI STATS)
+    // ==========================================================================================
     bot: {
-        baseHp: 200,          // Máu cơ bản
-        baseSpeed: 5,         // Tốc độ chạy bình thường
-        baseDamage: 10,       // Sát thương cào bình thường
-        enragedSpeed: 11,     // Tốc độ khi hóa điên (Lv2, Lv3)
-        enragedDamageLv2: 30, // Sát thương khi còn 40% bot
-        enragedDamageLv3: 60, // Sát thương khi còn 3 bot (Dạng 3)
-        detectRadius: 40      // Tầm nhìn phát hiện người chơi
+        baseHp: 200,          // Máu quái thường (Lv1). Tăng -> Khó tiêu diệt quái hơn.
+        baseSpeed: 5,         // Tốc độ quái Lv1. Tăng -> Quái đuổi theo nhanh hơn.
+        baseDamage: 10,       // Sát thương cào Lv1. Tăng -> Quái cào đau hơn.
+        enragedSpeed: 11,     // Tốc độ quái khi hóa điên (Lv2 và Lv3).
+        enragedDamageLv2: 30, // Sát thương quái khi hóa đỏ (Lv2 - khi còn 40% số lượng).
+        enragedDamageLv3: 60, // Sát thương quái 3 con cuối (Lv3 - dạng móng vuốt).
+        detectRadius: 40,     // Tầm nhìn của quái. Tăng -> Quái phát hiện bạn từ xa hơn.
+        attackRange: 2.5,     // Khoảng cách quái có thể cào. Tăng -> Quái cào được từ xa.
+        attackCD: 0.8,        // Hồi chiêu cào (giây). Giảm -> Quái cào liên tục cực nhanh.
+        evolveTime: 2.0       // Thời gian gồng hóa Lv3. Tăng -> Bạn có nhiều thời gian bắn nó trước khi nó biến hình.
     },
-    // THÔNG SỐ CỦA TRÙM CUỐI (BOSS)
+
+    // ==========================================================================================
+    // 👹 THÔNG SỐ TRÙM CUỐI (NIGHTMARE BOSS - HAKARI)
+    // ==========================================================================================
     boss: {
-        hp: 8000,             // Máu của Boss
-        passiveDamage: 100,   // Sát thương khi đứng quá gần (mỗi giây)
-        skill1Damage: 600,    // Đập búa
-        skill2Damage: 400,    // Sóng lửa (mỗi giây)
-        skill3Damage: 300,    // Bắn đạn/Cột lửa
-        skill4Damage: 300,    // Chiêu cuối: Mưa dung nham
-        projectileSpeed: 100, // Tốc độ đạn bay
-        projectileDamage: 200,// Sát thương đạn Boss
-        skillCD: 5            // Thời gian hồi chiêu
+        hp: 8000,             // Máu của Boss. Tăng -> Trận đấu kéo dài và khó hơn.
+        passiveDamage: 100,   // Sát thương áp sát. Đứng quá gần Boss sẽ tự mất máu (mỗi giây).
+        skillCD: 5,           // Thời gian hồi chiêu giữa các đòn đánh. Giảm -> Boss ra chiêu liên tục.
+        postSkillRest: 3,     // Thời gian Boss đứng yên nghỉ sau mỗi chiêu. Tăng -> Cho người chơi dễ thở.
+
+        // CHIÊU 1: LƯỚT (DASH) - Boss lao thẳng vào người chơi
+        skill1: {
+            damage: 400,      // Sát thương khi bị tông trúng.
+            prepareTime: 1.0, // Thời gian rặn trước khi lướt. Tăng -> Boss lướt chậm hơn.
+            activeTime: 0.8,  // Thời gian trong khi lướt.
+            speed: 110,       // Tốc độ lướt. Tăng -> Boss lướt như tia chớp.
+            width: 8          // Độ rộng vùng sát thương. Tăng -> Khó né hơn.
+        },
+        // CHIÊU 2: ĐẠI BÁC (SHOOT) - Boss nhắm laser và bắn chuỗi đạn
+        skill2: {
+            damage: 200,      // Sát thương mỗi viên đạn.
+            prepareTime: 1.0, // Thời gian laser nhắm bắn. Tăng -> Dễ né hơn.
+            shotCount: 15,    // Số lượng đạn bắn ra mỗi đợt.
+            interval: 0.1,    // Thời gian giữa mỗi viên đạn. Giảm -> Đạn xả như mưa.
+            speed: 100,       // Tốc độ bay của đạn.
+        },
+        // CHIÊU 3: NHẢY DẬM (JUMP/SLAM) - Boss nhảy lên và dậm mạnh xuống đất
+        skill3: {
+            damage: 600,      // Sát thương khi Boss dậm trúng.
+            prepareTime: 2.0, // Thời gian rặn trước khi nhảy.
+            range: 25,        // Tầm nổ của cú dậm. Tăng -> Vùng ảnh hưởng rộng hơn.
+            jumpPower: 45,    // Độ cao cú nhảy.
+            gravity: 50       // Trọng lực kéo Boss xuống. Tăng -> Boss rơi xuống nhanh hơn.
+        },
+        // CHIÊU 4: CỘT MÁU (CRIMSON PILLARS) - Triệu hồi các cột lửa từ dưới đất
+        skill4: {
+            damage: 300,      // Sát thương mỗi cột lửa.
+            prepareTime: 2.5, // Thời gian vòng đỏ hiện lên trước khi nổ. Tăng -> Dễ né.
+            count: 20,        // Số lượng cột lửa triệu hồi. Tăng -> Kín bản đồ.
+            pillarRange: 9,   // Bán kính nổ của mỗi cột.
+            pillarTimer: 2.0  // Thời gian cột nổ từ lúc hiện cảnh báo.
+        },
+        // CHIÊU 5: DỊCH CHUYỂN (TELEPORT STRIKE) - Boss chìm xuống đất và trồi lên đập
+        skill5: {
+            damage: 300,      // Sát thương cú đập khi trồi lên.
+            prepareTime: 2.0, // Thời gian Boss chìm xuống đất.
+            activeTime: 3.0,  // Tổng thời gian chiêu thức (Boss biến mất).
+            range: 30         // Tầm đập của chiêu này. Tăng -> Rất khó né.
+        }
     },
-    // THÔNG SỐ KHÁC
+
+    // ==========================================================================================
+    // ⚙️ THÔNG SỐ KHÁC (MISC STATS)
+    // ==========================================================================================
     misc: {
-        barrelHp: 20,         // Máu của thùng xăng
-        barrelExplosionDamage: 200, // Sát thương nổ thùng xăng
-        barrelExplosionRange: 12,   // Tầm nổ của thùng xăng
-        playerProjectileSpeed: 100  // Tốc độ đạn của người chơi
+        barrelHp: 20,               // Máu của thùng xăng. Giảm -> Bắn phát nổ ngay.
+        barrelExplosionDamage: 200,  // Sát thương nổ thùng.
+        barrelExplosionRange: 12,    // Tầm nổ của thùng.
+        playerProjectileSpeed: 100   // Tốc độ đạn của người chơi.
     }
 };
 
@@ -72,7 +121,11 @@ window.STATE = {
     mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
 
     player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 } },
-    weapons: [{ name: "Pistol", damage: 60, rate: 300, spread: 0.05, range: 50, ammo: 12, maxAmmo: 12, res: 129, type: 0 }, { name: "SMG", damage: 40, rate: 180, spread: 0.1, range: 40, ammo: 30, maxAmmo: 30, res: 90, type: 1 }, { name: "Sniper", damage: 100, rate: 1000, spread: 0.001, range: 200, ammo: 5, maxAmmo: 5, res: 10, type: 2 }],
+    weapons: [
+        { name: "Pistol", damage: 60, rate: 300, spread: 0.05, range: 50, ammo: 12, maxAmmo: 12, res: 129, type: 0 }, // Súng lục: Sát thương vừa, ổn định.
+        { name: "SMG", damage: 40, rate: 180, spread: 0.1, range: 40, ammo: 30, maxAmmo: 30, res: 90, type: 1 },      // SMG: Bắn cực nhanh (rate thấp), sát thương thấp mỗi viên.
+        { name: "Sniper", damage: 100, rate: 1000, spread: 0.001, range: 200, ammo: 5, maxAmmo: 5, res: 10, type: 2 } // Sniper: Sát thương cực cao, bắn xa, nhưng nạp đạn lâu.
+    ],
     lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 },
     inputLocked: false,
     bossTriggered: false,
@@ -834,10 +887,10 @@ function startGame() {
     }
     STATE.playerName = name;
     localStorage.setItem('savedPlayerName', name); // Lưu tên vào trình duyệt
-    STATE.screen = 'game'; 
-    STATE.player.hp = window.GAME_CONFIG.player.maxHp; 
-    STATE.player.maxHp = window.GAME_CONFIG.player.maxHp; 
-    STATE.player.armor = 0; 
+    STATE.screen = 'game';
+    STATE.player.hp = window.GAME_CONFIG.player.maxHp;
+    STATE.player.maxHp = window.GAME_CONFIG.player.maxHp;
+    STATE.player.armor = 0;
     STATE.player.maxArmor = window.GAME_CONFIG.player.maxArmor;
 
 
@@ -1063,15 +1116,15 @@ function update(dt) {
         if (isEnragedLv3 && !bot.hasEvolvedLv3) {
             bot.hasEvolvedLv3 = true;
             bot.isEvolvingLv3 = true;
-            bot.evolveTimer = 2.0; // Khựng 2 giây
+            bot.evolveTimer = window.GAME_CONFIG.bot.evolveTime; // Dùng config
             playAudio('hit');
         }
 
         if (bot.isEvolvingLv3) {
             bot.evolveTimer -= dt;
             if (Math.random() < 0.4) {
-                spawnParticles(V3.add(bot.pos, V3.create((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2)), 2, [1.0, 0.2, 0.2]); 
-                spawnParticles(V3.add(bot.pos, V3.create((Math.random()-0.5)*2, Math.random()*2, (Math.random()-0.5)*2)), 1, [1.0, 0.8, 0.0]); 
+                spawnParticles(V3.add(bot.pos, V3.create((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)), 2, [1.0, 0.2, 0.2]);
+                spawnParticles(V3.add(bot.pos, V3.create((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)), 1, [1.0, 0.8, 0.0]);
             }
             if (bot.evolveTimer <= 0) {
                 bot.isEvolvingLv3 = false;
@@ -1088,7 +1141,7 @@ function update(dt) {
                 bot.pos.x += dir.x * speed * dt;
                 bot.pos.z += dir.z * speed * dt;
             }
-            if (dist2D < 2.5 && Math.abs(p.pos.y - bot.pos.y) < 3.0 && bot.fireCD <= 0) {
+            if (dist2D < window.GAME_CONFIG.bot.attackRange && Math.abs(p.pos.y - bot.pos.y) < 3.0 && bot.fireCD <= 0) {
                 // Sát thương: Lv1=10, Lv2=30, Lv3=60
                 let damage = window.GAME_CONFIG.bot.baseDamage;
                 if (isEnragedLv3) damage = window.GAME_CONFIG.bot.enragedDamageLv3;
@@ -1096,7 +1149,7 @@ function update(dt) {
 
                 takeDamage(p, damage);
                 playAudio('hit');
-                bot.fireCD = 0.8;
+                bot.fireCD = window.GAME_CONFIG.bot.attackCD;
             }
 
             // AI Nhảy: Nếu bị kẹt ở xe/nhà nhưng người chơi ở trên cao
@@ -1235,32 +1288,32 @@ function update(dt) {
 
                 if (skill === 'chiêu 5') {
                     // [CHỈNH SỬA CHIÊU 5] Thời gian Boss "chìm" xuống (rặn chiêu)
-                    b.state = 'teleport_start'; b.skillCD = 2;
+                    b.state = 'teleport_start'; b.skillCD = window.GAME_CONFIG.boss.skill5.prepareTime;
                 } else if (skill === 'chiêu 4') {
                     // [CHỈNH SỬA CHIÊU 4] Thời gian Boss gồng tay (hiện vòng cảnh báo)
-                    b.state = 'pillar_prepare'; b.skillCD = 2.5; b.pillarSpots = [];
+                    b.state = 'pillar_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill4.prepareTime; b.pillarSpots = [];
                     b.shotCount = 0;
                 } else if (skill === 'chiêu 3') {
                     // [CHỈNH SỬA CHIÊU 3] Thời gian Boss rặn trước khi nhảy
-                    b.state = 'jump_start'; b.skillCD = 2.0;
+                    b.state = 'jump_start'; b.skillCD = window.GAME_CONFIG.boss.skill3.prepareTime;
                     const tx = p.pos.x, tz = p.pos.z;
                     b.targetPos = V3.create(tx, getHeight(tx, tz), tz);
                     if (b.indicatorMesh) deleteMesh(b.indicatorMesh);
                     // Đồng bộ bán kính 30 với tầm sát thương
-                    b.indicatorMeshParams = { x: b.targetPos.x, z: b.targetPos.z, r: 25 };
+                    b.indicatorMeshParams = { x: b.targetPos.x, z: b.targetPos.z, r: window.GAME_CONFIG.boss.skill3.range };
                     b.indicatorMesh = genTerrainFollowMesh(b.indicatorMeshParams.x, b.indicatorMeshParams.z, b.indicatorMeshParams.r);
                 } else if (skill === 'chiêu 1') {
                     // [CHỈNH SỬA CHIÊU 1] Thời gian rặn trước khi lướt
-                    b.state = 'dash_prepare'; b.skillCD = 1;
+                    b.state = 'dash_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill1.prepareTime;
                     b.targetDir = V3.norm(V3.sub(p.pos, b.pos));
                     b.targetAng = Math.atan2(b.targetDir.x, b.targetDir.z);
                     if (b.dashMesh) deleteMesh(b.dashMesh);
                     // Rộng hơn (8) và Dài hơn (150)
-                    b.dashMeshParams = { x: b.pos.x, z: b.pos.z, ang: b.targetAng, w: 8, l: 150 };
+                    b.dashMeshParams = { x: b.pos.x, z: b.pos.z, ang: b.targetAng, w: window.GAME_CONFIG.boss.skill1.width, l: 150 };
                     b.dashMesh = genTerrainDashMesh(b.dashMeshParams.x, b.dashMeshParams.z, b.dashMeshParams.ang, b.dashMeshParams.w, b.dashMeshParams.l);
                 } else if (skill === 'chiêu 2') {
                     // [CHỈNH SỬA CHIÊU 2] Thời gian rặn trước khi bắn
-                    b.state = 'shoot_prepare'; b.skillCD = 1;
+                    b.state = 'shoot_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill2.prepareTime;
                 }
             } else {
                 const isRage = b.hp < b.maxHp * 0.4;
@@ -1269,16 +1322,29 @@ function update(dt) {
                 const dir = V3.norm(V3.sub(p.pos, b.pos));
                 b.pos.x += dir.x * speed * dt; b.pos.z += dir.z * speed * dt;
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
+
+                // Animation đi bộ mượt mà (Sway body & arms)
+                const walkCycle = Math.sin(performance.now() * 0.006) * 0.15;
+                b.bodyRot += (walkCycle - b.bodyRot) * 0.1;
+                b.armLift += (walkCycle * 2 - b.armLift) * 0.1;
+
                 if (isRage && Math.random() < 0.2) spawnParticles(b.pos, 2, [1, 0, 0]);
             }
+            // Xoay mặt mượt mà về phía người chơi
+            const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
+            b.targetAng = Math.atan2(dx, dz);
+            let diff = b.targetAng - b.rotY;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            b.rotY += diff * 0.1;
 
         } else if (b.state === 'jump_start') {
             b.bodyRot += (1.2 - b.bodyRot) * 0.1; // Cúi người lấy đà
             b.armLift += (0 - b.armLift) * 0.1;
             if (b.skillCD <= 0) {
-                const gravity = 50;
+                const gravity = window.GAME_CONFIG.boss.skill3.gravity;
                 b.state = 'jumping';
-                const v0y = 45;
+                const v0y = window.GAME_CONFIG.boss.skill3.jumpPower;
                 b.vel.y = v0y;
                 const dy = b.pos.y - b.targetPos.y;
                 const airTime = (v0y + Math.sqrt(v0y * v0y + 2 * gravity * dy)) / gravity;
@@ -1288,122 +1354,95 @@ function update(dt) {
             }
         } else if (b.state === 'jumping') {
             b.armLift = 3.0;
-            b.bodyRot = 0; // THẲNG NGƯỜI KHI ĐANG TRÊN KHÔNG
-            b.vel.y -= 50 * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
+            b.bodyRot = 0;
+            b.vel.y -= window.GAME_CONFIG.boss.skill3.gravity * dt; b.pos.x += b.vel.x * dt; b.pos.z += b.vel.z * dt; b.pos.y += b.vel.y * dt;
             if (b.pos.y <= getHeight(b.pos.x, b.pos.z)) {
                 b.pos.y = getHeight(b.pos.x, b.pos.z);
-                b.state = 'recover'; b.skillCD = 0.5; // Khóa tư thế 1.5s
+                b.state = 'recover'; b.skillCD = 0.5;
                 b.bodyRot = 1.4; b.armLift = -0.5;
-                const dmgDist = 25;
+                const dmgDist = window.GAME_CONFIG.boss.skill3.range;
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
                 if (Math.sqrt(dx * dx + dz * dz) < dmgDist) {
-                    takeDamage(p, window.GAME_CONFIG.boss.skill1Damage);
+                    takeDamage(p, window.GAME_CONFIG.boss.skill3.damage);
                     STATE.shake = 5.0;
                 }
                 spawnParticles(b.pos, isMobile ? 30 : 300, [1, 0, 0], 2.5);
                 STATE.shake = 10.0;
             }
         } else if (b.state === 'recover') {
-            // KHÓA ANIMATION CÚI NGƯỜI (Không cho quay về idle ngay)
             b.bodyRot = 1.4; b.armLift = -0.5;
-            if (b.skillCD <= 0) b.state = 'fight';
-        } else if (b.state === 'dash_prepare') {
-            // XOAY MẶT THEO NGƯỜI CHƠI NHƯNG KHÔNG CÓ ANIMATION KHÁC
-            const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
-            b.targetAng = Math.atan2(dx, dz); // Ghi đè liên tục hướng nhìn
-            b.bodyRot = 0;
-            if (b.skillCD <= 0) { b.state = 'dashing'; b.skillCD = 0.8; }
-        } else if (b.state === 'dashing') {
-            b.armLift += (2.2 - b.armLift) * 0.2; // Tay duỗi thẳng về sau khi lướt
-            b.bodyRot = 0.6; // Nghiêng hẳn người
-            // NERF TỐC ĐỘ LƯỚT BOSS: 150 -> 110
-            b.pos.x += b.targetDir.x * 110 * dt; b.pos.z += b.targetDir.z * 110 * dt;
-            b.pos.y = getHeight(b.pos.x, b.pos.z);
-
-            // HIỆU ỨNG: Để lại bóng ma/khói đỏ khi lướt
-            if (Math.random() < 0.6) spawnParticles(b.pos, 3, [1, 0, 0]);
-            STATE.shake = Math.max(STATE.shake, 1.2); // Rung mạnh hơn khi lướt nhanh
-
-            if (V3.dist(b.pos, p.pos) < 12) {
-                // [CHỈNH SỬA CHIÊU 1] Sát thương khi Boss lướt trúng (400)
-                takeDamage(p, window.GAME_CONFIG.boss.skill2Damage * dt);
-            }
-            b.skillCD -= dt;
             if (b.skillCD <= 0) {
                 b.state = 'fight';
-                // [QUAN TRỌNG] Thời gian Boss nghỉ (3s) sau khi lướt xong
-                b.skillCD = 3;
+                b.skillCD = 1.0;
             }
-
-        } else if (b.state === 'pillar_prepare') {
+        } else if (b.state === 'dash_prepare') {
+            const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
+            b.targetAng = Math.atan2(dx, dz);
             b.bodyRot = 0;
-            b.bodyY = 0;
-
-            // 1 giây đầu giơ tay cao + hiện vòng cảnh báo
-            if (b.skillCD > 1.0) {
-                b.armLift += (2.8 - b.armLift) * 0.1;
-                if (b.shotCount === 0) {
-                    for (let i = 0; i < 20; i++) {
-                        let tx, tz, ok = false;
-                        for (let attempt = 0; attempt < 50; attempt++) {
-                            const ang = Math.random() * Math.PI * 2;
-                            const dist = Math.random() * 70;
-                            tx = p.pos.x + Math.sin(ang) * dist;
-                            tz = p.pos.z + Math.cos(ang) * dist;
-                            let tooClose = false;
-                            for (let s of b.pillarSpots) {
-                                if (Math.sqrt((tx - s.x) ** 2 + (tz - s.z) ** 2) < 18) tooClose = true;
-                            }
-                            if (!tooClose) { ok = true; break; }
-                        }
-                        if (ok) {
-                            const mesh = genTerrainFollowMesh(tx, tz, 9);
-                            b.pillarSpots.push({ x: tx, z: tz, h: getHeight(tx, tz), active: false, hasHit: false, timer: 2.0, mesh: mesh });
-                        }
-                    }
-                    b.shotCount = 20;
-                    playAudio('hit');
+            if (b.skillCD <= 0) {
+                b.state = 'dashing'; b.skillCD = 0.8;
+                playAudio('shoot');
+            }
+        } else if (b.state === 'dashing') {
+            const speed = window.GAME_CONFIG.boss.skill1.speed;
+            b.pos.x += b.targetDir.x * speed * dt;
+            b.pos.z += b.targetDir.z * speed * dt;
+            b.pos.y = getHeight(b.pos.x, b.pos.z);
+            if (!b.hasHit) {
+                const dist = V3.dist(b.pos, p.pos);
+                if (dist < window.GAME_CONFIG.boss.skill1.width) {
+                    takeDamage(p, window.GAME_CONFIG.boss.skill1.damage);
+                    b.hasHit = true;
                 }
-            } else {
-                // Hạ tay xuống để tung chiêu (0.5s cuối)
-                b.armLift += (0 - b.armLift) * 0.4;
             }
-
-            b.pillarSpots.forEach(s => { s.timer -= dt; });
-            if (b.skillCD <= 0) { b.state = 'pillar_active'; b.skillCD = 1.0; }
-
+            if (b.skillCD <= 0) {
+                b.state = 'fight'; b.skillCD = window.GAME_CONFIG.boss.postSkillRest;
+                if (b.dashMesh) { deleteMesh(b.dashMesh); b.dashMesh = null; }
+            }
+        } else if (b.state === 'pillar_prepare') {
+            b.armLift += (2.5 - b.armLift) * 0.1;
+            if (b.pillarSpots.length < window.GAME_CONFIG.boss.skill4.count) {
+                let ok = false, tx, tz;
+                for (let attempt = 0; attempt < 50; attempt++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const d = Math.random() * 70;
+                    tx = p.pos.x + Math.sin(ang) * d;
+                    tz = p.pos.z + Math.cos(ang) * d;
+                    let tooClose = false;
+                    for (let s of b.pillarSpots) if (Math.sqrt((tx - s.x) ** 2 + (tz - s.z) ** 2) < 18) tooClose = true;
+                    if (!tooClose) { ok = true; break; }
+                }
+                if (ok) {
+                    const mesh = genTerrainFollowMesh(tx, tz, window.GAME_CONFIG.boss.skill4.pillarRange);
+                    b.pillarSpots.push({ x: tx, z: tz, h: getHeight(tx, tz), active: false, hasHit: false, timer: window.GAME_CONFIG.boss.skill4.pillarTimer, mesh: mesh });
+                }
+            }
+            if (b.skillCD <= 0) { b.state = 'pillar_active'; b.skillCD = 1.0; b.armLift = 0; b.bodyRot = 0.5; }
         } else if (b.state === 'pillar_active') {
-            b.armLift = 0;
-            b.bodyRot = 0;
+            b.bodyRot += (0 - b.bodyRot) * 0.1;
             b.pillarSpots.forEach(s => {
                 s.timer -= dt;
                 if (s.timer <= 0 && !s.active) {
-                    s.active = true;
-                    s.activeTimer = 1.0;
+                    s.active = true; s.activeTimer = 1.0;
                     spawnParticles({ x: s.x, y: s.h, z: s.z }, 50, [1, 0, 0], 1.5);
                     STATE.shake = 1.5;
                 }
                 if (s.active && !s.hasHit) {
-                    const dist = Math.sqrt((p.pos.x - s.x) ** 2 + (p.pos.z - s.z) ** 2);
-                    if (dist < 9) {
-                        // [CHỈNH SỬA CHIÊU 4] Sát thương mỗi cột máu (300)
-                        takeDamage(p, window.GAME_CONFIG.boss.skill4Damage);
+                    const d = Math.sqrt((p.pos.x - s.x) ** 2 + (p.pos.z - s.z) ** 2);
+                    if (d < window.GAME_CONFIG.boss.skill4.pillarRange) {
+                        takeDamage(p, window.GAME_CONFIG.boss.skill4.damage);
                         s.hasHit = true;
                     }
                 }
-                if (s.active) s.activeTimer -= dt;
             });
             if (b.skillCD <= 0) {
-                b.state = 'fight';
-                // [QUAN TRỌNG] Thời gian Boss nghỉ (3s) sau khi cột máu biến mất
-                b.skillCD = 3;
-                b.pillarSpots.forEach(s => { if (s.mesh) deleteMesh(s.mesh); s.mesh = null; });
+                b.state = 'fight'; b.skillCD = window.GAME_CONFIG.boss.postSkillRest;
+                b.pillarSpots.forEach(s => { if (s.mesh) deleteMesh(s.mesh); });
                 b.pillarSpots = [];
             }
-
         } else if (b.state === 'teleport_start') {
             b.bodyY -= 15 * dt;
-            // CẬP NHẬT LIÊN TỤC vị trí đáp cho đến khi còn 1.0 giây cuối (để mọc lên ở vị trí 1s trước)
+            b.armLift += (2.5 - b.armLift) * 0.1;
             if (b.skillCD > 1.0) {
                 b.targetPos = V3.create(p.pos.x, 0, p.pos.z);
                 b.targetPos.y = getHeight(b.targetPos.x, b.targetPos.z);
@@ -1465,7 +1504,7 @@ function update(dt) {
                     if (diff > Math.PI) diff = 2 * Math.PI - diff;
                     if (d < 30 && diff < 1.2) {
                         // [CHỈNH SỬA CHIÊU 3/5] Sát thương cú đập Slam (300)
-                        takeDamage(p, window.GAME_CONFIG.boss.skill3Damage); STATE.shake = 8.0; playAudio('hit');
+                        takeDamage(p, window.GAME_CONFIG.boss.skill5.damage); STATE.shake = 8.0; playAudio('hit');
                         b.hasHit = true;
                     }
                 }
@@ -1499,7 +1538,7 @@ function update(dt) {
                 const spawnPoint = V3.add(b.pos, { x: 0, y: 12, z: 0 });
                 const dir = V3.norm(V3.sub(targetPoint, spawnPoint));
                 // [CHỈNH SỬA CHIÊU 2] Sát thương mỗi viên đạn (Bác vừa chỉnh xuống 200)
-                STATE.projectiles.push({ pos: spawnPoint, dir: dir, dmg: window.GAME_CONFIG.boss.projectileDamage, speed: window.GAME_CONFIG.boss.projectileSpeed, life: 3, isPlayer: false, dead: false, isBoss: true });
+                STATE.projectiles.push({ pos: spawnPoint, dir: dir, dmg: window.GAME_CONFIG.boss.skill2.damage, speed: window.GAME_CONFIG.boss.skill2.speed, life: 3, isPlayer: false, dead: false, isBoss: true });
 
                 // HIỆU ỨNG: Té lửa tại đầu nòng
                 spawnParticles(spawnPoint, 15, [1, 0.5, 0]);
@@ -1509,7 +1548,7 @@ function update(dt) {
                 if (b.shotCount <= 0) {
                     b.state = 'fight';
                     // [QUAN TRỌNG] Thời gian Boss nghỉ (3s) sau khi bắn hết đạn
-                    b.skillCD = 3;
+                    b.skillCD = window.GAME_CONFIG.boss.postSkillRest;
                 }
             }
         }
@@ -2074,21 +2113,54 @@ function draw() {
 
         // Boss Body (Static for spectators)
         let mBody = M4.translation(b.pos.x, b.pos.y + b.bodyY, b.pos.z);
-        mBody = M4.multiply(mBody, M4.rotationY(ang));
+        mBody = M4.multiply(mBody, M4.rotationY(b.rotY || ang));
         if (!window.SPECTATOR_MODE) mBody = M4.multiply(mBody, M4.rotationX(b.bodyRot));
         gl.uniformMatrix4fv(locs.model, false, mBody);
         gl.bindVertexArray(ASSETS.bossBody.vao);
         gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossBody.count);
 
-        // Boss Arms
+        // Hiệu ứng tụ năng lượng ở ngực (Chiêu 2)
+        if (b.state === 'shoot_prepare' || b.state === 'shooting') {
+            const pulse = 0.8 + Math.sin(performance.now() * 0.02) * 0.2;
+            gl.uniform3f(locs.fogColor, 2.0, 0.8, 0); // Cam rực
+            let mChest = M4.multiply(mBody, M4.translation(0, 16, 3));
+            mChest = M4.multiply(mChest, M4.scaling(3 * pulse, 3 * pulse, 3 * pulse));
+            drawMeshRaw(ASSETS.crate, mChest);
+            gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
+        }
+
+        // Boss Arms - HIỆU ỨNG TAY TÙY BIẾN THEO CHIÊU
         const drawArm = (side) => {
+            let armScale = 1.0;
+            let armColor = null;
+            let lift = b.armLift;
+
+            if (b.state === 'jumping') {
+                armScale = 2.0; armColor = [2, 0, 0];
+            } else if (b.state === 'pillar_prepare') {
+                armColor = [2, 0, 0]; // Đỏ lòng bàn tay (cả tay đỏ cho ngầu)
+            } else if (b.state === 'teleport_strike') {
+                if (side === 1) { // Chỉ tay phải to và đỏ khi đập
+                    armScale = 2.0; armColor = [2, 0, 0];
+                } else {
+                    lift = -0.5; // Tay trái hạ xuống cho tự nhiên
+                }
+            } else if (b.state === 'dash_prepare' || b.state === 'dashing') {
+                // Chiêu 1 không đỏ, không to
+                armScale = 1.0; armColor = null;
+            }
+
             let mArm = M4.translation(b.pos.x, b.pos.y + b.bodyY + 16, b.pos.z);
-            mArm = M4.multiply(mArm, M4.rotationY(ang));
+            mArm = M4.multiply(mArm, M4.rotationY(b.rotY || ang));
             mArm = M4.multiply(mArm, M4.translation(side * 2.8, 0, 0));
-            if (!window.SPECTATOR_MODE) mArm = M4.multiply(mArm, M4.rotationX(b.armLift));
+            if (!window.SPECTATOR_MODE) mArm = M4.multiply(mArm, M4.rotationX(lift));
+            mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale));
+
+            if (armColor) gl.uniform3f(locs.fogColor, armColor[0], armColor[1], armColor[2]);
             gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao);
             gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
+            if (armColor) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
         };
         drawArm(-1); drawArm(1);
 
@@ -2376,11 +2448,22 @@ function triggerBossEvent() {
         // Khởi tạo Boss 3D (Hakari)
         const yaw = STATE.camera.rot.y;
         const spawnDist = 45;
-        STATE.boss.pos = V3.add(STATE.player.pos, V3.create(Math.sin(yaw) * spawnDist, 0, -Math.cos(yaw) * spawnDist));
+        STATE.boss = {
+            pos: V3.add(STATE.player.pos, V3.create(Math.sin(yaw) * spawnDist, 0, -Math.cos(yaw) * spawnDist)),
+            hp: window.GAME_CONFIG.boss.hp,
+            maxHp: window.GAME_CONFIG.boss.hp,
+            active: true,
+            state: 'fight',
+            skillCD: 3,
+            vel: V3.create(0, 0, 0),
+            armLift: 0, bodyRot: 0, bodyY: 0,
+            rotY: yaw + Math.PI, targetAng: yaw + Math.PI,
+            pillarSpots: [],
+            dead: false,
+            skillIndex: 0,
+            skillSequence: null
+        };
         STATE.boss.pos.y = getHeight(STATE.boss.pos.x, STATE.boss.pos.z);
-        STATE.boss.active = true;
-        STATE.boss.hp = STATE.boss.maxHp;
-        STATE.boss.state = 'fight';
 
         document.getElementById('boss-msg').classList.add('boss-text-show');
         STATE.inputLocked = false;
