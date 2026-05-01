@@ -1377,6 +1377,9 @@ function update(dt) {
             const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
             b.targetAng = Math.atan2(dx, dz);
             b.bodyRot = 0;
+            // Boss rung nhanh 2 bên trước khi lướt
+            b.pos.x += (Math.random() - 0.5) * 1.5;
+            b.pos.z += (Math.random() - 0.5) * 1.5;
             if (b.skillCD <= 0) {
                 b.state = 'dashing'; b.skillCD = 0.8;
                 playAudio('shoot');
@@ -1485,47 +1488,44 @@ function update(dt) {
                 b.bodyY += 40 * dt; if (b.bodyY > 0) b.bodyY = 0;
                 b.armLift += (-1.8 - b.armLift) * 0.1; // Tay giơ cao chuẩn bị đập
 
-                // 2. THỜI GIAN GỒNG CHỜ (Đập xuống tốn 2 giây): Khi skillCD từ 2.5 xuống 0.5
-            } else if (b.skillCD > 0.5) {
+                // 2. THỜI GIAN GỒNG CHỜ: Khi skillCD từ 2.5 xuống 1.0 (rặn trong 1.5 giây)
+            } else if (b.skillCD > 1.0) {
                 b.armLift = -1.8;
 
-                // 3. VUNG TAY ĐẬP XUỐNG: Khi skillCD < 0.5 (Giai đoạn sát thương)
+                // 3. VUNG TAY ĐẬP XUỐNG: Khi skillCD < 1.0
             } else {
                 b.armLift += (-0.2 - b.armLift) * 0.4; // Tay phải đập thẳng xuống chạm đất phía trước
                 b.bodyRot += (0.6 - b.bodyRot) * 0.2; // Hơi cúi người thôi
                 
-                if (!b.hasHit) {
-                    const d = V3.dist(b.pos, p.pos);
-                    // Kiểm tra hướng và tầm đánh (Hình quạt)
-                    if (d < 25) {
-                        takeDamage(p, window.GAME_CONFIG.boss.skill5.damage);
-                        b.hasHit = true;
-                        STATE.shake = 10;
-                        spawnParticles(p.pos, 50, [1, 0, 0], 2.0);
-                    }
-                }
-
                 const toP = V3.norm(V3.sub(p.pos, b.pos));
                 const bYaw = Math.atan2(toP.x, toP.z);
-                const d = V3.dist(b.pos, p.pos);
-                const pAng = Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z);
+                const handX = b.pos.x + Math.sin(bYaw) * 15;
+                const handZ = b.pos.z + Math.cos(bYaw) * 15;
 
                 if (Math.random() < 0.7) {
-                    const handX = b.pos.x + Math.sin(bYaw) * 15;
-                    const handZ = b.pos.z + Math.cos(bYaw) * 15;
                     spawnParticles({ x: handX, y: b.pos.y + 10, z: handZ }, 5, [1, 0, 0], 1.5);
                 }
 
-                // 4. THỜI ĐIỂM GÂY SÁT THƯƠNG: Khoảng 0.15s sau khi bắt đầu vung tay (0.5 - 0.15 = 0.35)
-                // [CHỈNH SỬA THỜI GIAN] Con số 0.35 này ăn theo thời gian vung tay ở trên (mục 2)
-                if (b.skillCD < 0.35 && !b.hasHit) {
+                // 4. THỜI ĐIỂM GÂY SÁT THƯƠNG: Khoảng 0.15s sau khi bắt đầu đập (1.0 - 0.15 = 0.85)
+                if (b.skillCD < 0.85 && !b.hasHit) {
+                    // Hiệu ứng đất gãy, vỡ vụn tại vị trí tay đập
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 100, [0.8, 0.4, 0.1], 3.0); // Bụi đất cam
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 150, [0.2, 0.2, 0.2], 2.0); // Đá vỡ vụn xám
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 50, [2.0, 0, 0], 1.5); // Tia đỏ xé toạc
+                    STATE.shake = 15; // Rung màn hình cực mạnh
+                    
+                    const d = V3.dist(b.pos, p.pos);
+                    const pAng = Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z);
                     let diff = Math.abs(pAng - bYaw);
                     if (diff > Math.PI) diff = 2 * Math.PI - diff;
+                    
+                    // Kiểm tra hướng và tầm đánh (Hình quạt 30m, góc 1.2 rad)
                     if (d < 30 && diff < 1.2) {
-                        // [CHỈNH SỬA CHIÊU 3/5] Sát thương cú đập Slam (300)
-                        takeDamage(p, window.GAME_CONFIG.boss.skill5.damage); STATE.shake = 8.0; playAudio('hit');
-                        b.hasHit = true;
+                        takeDamage(p, window.GAME_CONFIG.boss.skill5.damage); 
+                        spawnParticles(p.pos, 50, [1, 0, 0], 2.0);
+                        playAudio('hit');
                     }
+                    b.hasHit = true;
                 }
             }
             if (b.skillCD <= 0) {
@@ -2149,13 +2149,8 @@ function draw() {
             let lift = b.armLift || 0;
             let forward = 0;
 
-            // Skill 1: DASH (Lướt) - Hai tay đưa về phía trước
-            if (b.state === 'dash_prepare' || b.state === 'dashing') {
-                lift = Math.PI * 0.4;
-                forward = 2;
-            } 
             // Skill 2: SHOOT (Bắn) - Hai tay đưa về phía trước nhắm bắn
-            else if (b.state === 'shoot_prepare' || b.state === 'shooting') {
+            if (b.state === 'shoot_prepare' || b.state === 'shooting') {
                 lift = Math.PI * 0.45;
                 forward = 1.5;
             }
@@ -2172,7 +2167,7 @@ function draw() {
             else if (b.state === 'teleport_strike') {
                 if (side === 1) { // Tay phải
                     armColor = [2.0, 0, 0];
-                    armScale = b.skillCD > 0.5 ? 1.3 : 1.8;
+                    armScale = b.skillCD > 1.0 ? 1.3 : 1.8;
                     lift = b.armLift; // Sử dụng giá trị b.armLift từ AI (mượt mà)
                 } else { // Tay trái hạ xuống tự nhiên
                     lift = 0.5; // Hơi đưa ra sau lưng
