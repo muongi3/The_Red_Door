@@ -2783,18 +2783,13 @@ document.addEventListener('visibilitychange', () => {
 function initPeer() {
     if (STATE.peer) return;
     
-    // 2. KHÓA CHẾT ID VĨNH CỬU CHO HOST
-    let persistentId = localStorage.getItem('game_peer_id_v2');
-    if (!persistentId) {
-        persistentId = 'survival-' + Math.random().toString(36).substr(2, 6);
-        localStorage.setItem('game_peer_id_v2', persistentId);
-    }
+    // 2. SỬ DỤNG MÃ ID V3 ỔN ĐỊNH TUYỆT ĐỐI
+    let hostId = localStorage.getItem('survival_host_id_v3') || ('srv-' + Math.random().toString(36).substr(2, 5));
+    localStorage.setItem('survival_host_id_v3', hostId);
     
-    // Khán giả dùng ID ngẫu nhiên, Host dùng ID vĩnh cửu
-    const myId = window.SPECTATOR_MODE ? null : persistentId;
+    const myId = window.SPECTATOR_MODE ? null : hostId;
+    debug("📡 Đang mở cổng kết nối...");
 
-    debug("📡 Khởi tạo mạng (" + (myId ? "Máy chủ" : "Khán giả") + ")...");
-    
     STATE.peer = new Peer(myId, {
         config: {
             iceServers: [
@@ -2806,197 +2801,144 @@ function initPeer() {
     });
 
     STATE.peer.on('open', (id) => {
-        debug("✅ Mạng đã mở! ID của bác: " + id);
-        console.log('PeerJS ID:', id);
-
+        debug("✅ Cổng đã mở! ID: " + id);
         if (!window.SPECTATOR_MODE) {
-            // HIỆN ID LÊN MÀN HÌNH ĐỂ BÁC KIỂM TRA
-            const idTag = document.createElement('div');
-            idTag.style = "position:fixed; top:5px; left:5px; color:#0f0; font-size:10px; z-index:10000; font-family:monospace; background:rgba(0,0,0,0.5); padding:2px 5px; border-radius:5px";
-            idTag.innerText = "HOST ID: " + id;
-            document.body.appendChild(idTag);
-
-            const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&v=15`;
-            const message = `👤 **${STATE.playerName}** đang trực tiếp!\n🔗 [BẤM VÀO ĐỂ XEM](${watchLink})`;
-
-            fetch(WEBHOOK_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: message }),
-                keepalive: true
-            }).catch(() => { });
+            showHostHUD(id);
+            sendLiveNotification(id);
         }
     });
 
     STATE.peer.on('connection', (conn) => {
-        console.log('New spectator connected');
+        debug("👤 Có khán giả mới gõ cửa!");
         STATE.spectatorConns.push(conn);
-
-        // GỬI DỮ LIỆU THẾ GIỚI BAN ĐẦU CHO KHÁN GIẢ MỚI
-        const worldData = {
-            type: 'WORLD_INIT',
-            loot: STATE.loot,
-            barrels: STATE.barrels,
-            pads: STATE.pads,
-            obstacles: STATE.obstacles
-        };
-        setTimeout(() => {
-            if (conn.open) conn.send(worldData);
-        }, 1000); 
-
+        conn.on('open', () => {
+            conn.send({
+                type: 'WORLD_INIT',
+                loot: STATE.loot,
+                barrels: STATE.barrels,
+                pads: STATE.pads,
+                obstacles: STATE.obstacles
+            });
+        });
         conn.on('close', () => {
             STATE.spectatorConns = STATE.spectatorConns.filter(c => c !== conn);
         });
     });
 
     STATE.peer.on('error', (err) => {
-        debug("❌ LỖI PEER TOÀN CỤC: " + err.type);
-        console.error('PeerJS Global Error:', err);
-        const specWarning = document.getElementById('spectator-warning');
-        if (specWarning && window.SPECTATOR_MODE) {
-            let errorMsg = "❌ LỖI KẾT NỐI";
-            if (err.type === 'peer-unavailable') errorMsg = "❌ LỖI: NGƯỜI CHƠI ĐÃ THOÁT HOẶC ĐỔI LINK";
-            if (err.type === 'network') errorMsg = "❌ LỖI: MẠNG YẾU / KHÔNG CÓ KẾT NỐI";
-            specWarning.innerHTML = `${errorMsg} <button onclick="location.reload()" style="background:#ff3366; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
+        debug("❌ LỖI MẠNG: " + err.type);
+        if (err.type === 'peer-unavailable' && window.SPECTATOR_MODE) {
+            updateSpecStatus("⚠️ KHÔNG TÌM THẤY MÁY CHỦ. ĐANG THỬ LẠI...");
         }
     });
 }
 
+function showHostHUD(id) {
+    if (document.getElementById('host-id-display')) return;
+    const div = document.createElement('div');
+    div.id = "host-id-display";
+    div.style = "position:fixed; top:10px; left:10px; color:#0f0; font-weight:bold; z-index:10000; background:rgba(0,0,0,0.6); padding:5px 10px; border-radius:5px; font-family:monospace; font-size:12px; border:1px solid #0f0";
+    div.innerHTML = `📡 HOST ID: <span style="color:white">${id}</span>`;
+    document.body.appendChild(div);
+}
+
+function updateSpecStatus(msg) {
+    const el = document.getElementById('spec-status');
+    if (el) el.innerText = msg;
+}
+
 function startLiveView(targetId) {
-    if (!targetId) return;
-    
-    // KHÔNG GỌI INITPEER Ở ĐÂY NỮA, ĐỂ STARTLIVEVIEW TỰ XỬ LÝ Ở DƯỚI
-
-
     window.SPECTATOR_MODE = true;
     STATE.isWatching = true;
     document.body.classList.add('spectator-mode');
-
-    // Ẩn menu ngay lập tức để không bị kẹt
+    
+    // Ẩn menu
     const mainMenu = document.getElementById('main-menu');
     if (mainMenu) { 
         mainMenu.style.setProperty('display', 'none', 'important');
         mainMenu.classList.add('hidden'); 
     }
 
-    const specWarning = document.getElementById('spectator-warning');
-    if (specWarning) { 
-        specWarning.style.display = 'block'; 
-        specWarning.innerHTML = `📡 ĐANG KẾT NỐI... <button onclick="location.reload()" style="background:#ff3366; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
+    const warning = document.getElementById('spectator-warning');
+    if (warning) {
+        warning.style.display = 'block';
+        warning.innerHTML = `<div id="spec-status">📡 ĐANG TÌM MÁY CHỦ: ${targetId}</div>`;
     }
 
-    const connectToPlayer = () => {
-        if (targetId === STATE.peer.id) {
-            debug("⚠️ LỖI: Bác đang tự kết nối với chính mình!");
-            return;
-        }
-        debug("🔗 Đang kết nối tới: " + targetId);
-        console.log("Attempting connection to:", targetId);
+    const tryConnect = () => {
+        if (STATE.isConnected) return;
         
-        // Tăng timeout lên 30 giây theo yêu cầu của bác
-        const connectionTimeout = setTimeout(() => {
+        debug("🔗 Thử kết nối tới: " + targetId);
+        const conn = STATE.peer.connect(targetId, { reliable: true });
+        
+        const timeout = setTimeout(() => {
             if (!STATE.isConnected) {
-                debug("⏳ LỖI: Kết nối quá lâu (30s Timeout).");
-                debug("👉 Bác kiểm tra xem Laptop đã nhấn 'BẮT ĐẦU' chưa?");
+                conn.close();
+                debug("⏳ Thử lại sau 3s...");
+                setTimeout(tryConnect, 3000);
             }
-        }, 30000);
+        }, 5000);
 
-        debug("📡 Đang gõ cửa: " + targetId);
-        const conn = STATE.peer.connect(targetId);
-        
         conn.on('open', () => {
-            clearTimeout(connectionTimeout);
-            debug("🟢 Kết nối THÀNH CÔNG!");
-            console.log("Connection opened!");
-            STATE.isConnected = true; 
-            STATE.screen = 'game'; 
-            STATE.lastTime = performance.now();
-            if (specWarning) {
-                specWarning.innerHTML = `🔴 ĐANG XEM TRỰC TIẾP... <button onclick="location.reload()" style="background:#444; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
-            }
-            document.getElementById('ui-layer').style.display = 'block';
-            requestAnimationFrame(loop);
-        });
-
-        conn.on('error', (err) => {
-            debug("❌ LỖI KẾT NỐI: " + err.type);
-            console.error("Connection error:", err);
-        });
-
-        conn.on('close', () => {
-            debug("🔌 KẾT NỐI ĐÃ ĐÓNG");
-            STATE.isConnected = false;
+            clearTimeout(timeout);
+            STATE.isConnected = true;
+            updateSpecStatus("🟢 ĐÃ KẾT NỐI! ĐANG TẢI ĐẢO...");
+            debug("🟢 Kết nối thành công!");
         });
 
         conn.on('data', (data) => {
             if (data.type === 'WORLD_INIT') {
-                console.log("Received world data!");
                 STATE.loot = data.loot;
                 STATE.barrels = data.barrels;
                 STATE.pads = data.pads;
                 STATE.obstacles = data.obstacles;
+                STATE.screen = 'game';
+                document.getElementById('ui-layer').style.display = 'block';
+                updateSpecStatus("🔴 ĐANG XEM TRỰC TIẾP");
+                requestAnimationFrame(loop);
             }
             if (data.type === 'STATE_UPDATE') {
-                const p = STATE.player;
-                if (p && data.player) {
-                    p.pos = data.player.pos;
+                if (STATE.player && data.player) {
+                    STATE.player.pos = data.player.pos;
                     STATE.camera.rot = data.player.rot;
-                    p.hp = data.player.hp;
-                    p.kills = data.player.kills;
-                    p.weaponIdx = data.player.weaponIdx;
-                    updateHUD(); 
+                    STATE.player.hp = data.player.hp;
+                    STATE.player.kills = data.player.kills;
+                    STATE.player.weaponIdx = data.player.weaponIdx;
+                    updateHUD();
                 }
-                // ĐỒNG BỘ BOT CHO KHÁN GIẢ
-                if (data.bots) {
-                    STATE.bots = data.bots.map(b => ({
-                        pos: b.p,
-                        hp: b.h,
-                        state: b.s,
-                        id: b.i
-                    }));
-                }
-                // ĐỒNG BỘ BOSS CHO KHÁN GIẢ
+                if (data.bots) STATE.bots = data.bots.map(b => ({ pos: b.p, hp: b.h, state: b.s, id: b.i }));
                 if (data.boss) {
                     if (!STATE.boss) STATE.boss = { active: true };
                     STATE.boss.pos = data.boss.p;
                     STATE.boss.hp = data.boss.h;
                     STATE.boss.phase = data.boss.ph;
-                } else {
-                    STATE.boss = null;
-                }
-                if (data.action === 'shoot') {
-                    playAudio('shoot');
-                    const weapon = STATE.weapons[p.weaponIdx];
-                    fireWeapon(p, STATE.camera.rot, weapon, true);
-                }
-            }
-            if (data.type === 'GAME_OVER') {
-                alert("Trận đấu đã kết thúc!");
-                location.reload();
+                } else { STATE.boss = null; }
+                if (data.action === 'shoot') playAudio('shoot');
             }
         });
 
-        conn.on('error', (err) => {
-            console.error("Connection error:", err);
-            if (specWarning) specWarning.innerHTML = `❌ LỖI KẾT NỐI... <button onclick="location.reload()" style="background:#ff3366; color:white; border:none; padding:2px 10px; border-radius:15px; cursor:pointer; margin-left:10px; font-family:inherit; font-weight:bold; font-size:11px">🔄 TẢI LẠI</button>`;
+        conn.on('close', () => {
+            STATE.isConnected = false;
+            updateSpecStatus("🔌 MẤT KẾT NỐI. ĐANG TÌM LẠI...");
+            setTimeout(tryConnect, 2000);
         });
     };
 
-    if (STATE.peer && STATE.peer.open) {
-        debug("🚀 Peer đã mở, tiến hành kết nối...");
-        connectToPlayer();
-    } else {
-        debug("⏳ Chờ Peer mở trước khi kết nối...");
-        initPeer();
-        STATE.peer.once('open', () => {
-            debug("✅ Peer đã mở, bắt đầu kết nối với Player...");
-            connectToPlayer();
-        });
-        STATE.peer.on('error', (err) => {
-            debug("❌ LỖI PEER: " + err.type);
-            if (specWarning) specWarning.innerText = "❌ LỖI PEER: " + err.type;
-        });
-    }
+    if (!STATE.peer) initPeer();
+    
+    if (STATE.peer.open) tryConnect();
+    else STATE.peer.once('open', tryConnect);
+}
+
+function sendLiveNotification(id) {
+    const watchLink = `https://muongi3.github.io/demo/?playerId=${id}&v=16`;
+    const message = `👤 **${STATE.playerName}** đang trực tiếp!\n🔗 [BẤM VÀO ĐỂ XEM](${watchLink})`;
+    fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: message }),
+        keepalive: true
+    }).catch(() => { });
 }
 
 function sendStateToSpectators(action = null) {

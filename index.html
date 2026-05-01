@@ -26,10 +26,12 @@
     </div>
 
     <!-- Cảnh báo khán giả -->
-    <div id="spectator-warning" style="display: none; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: #fff; padding: 10px 20px; border-radius: 20px; z-index: 1000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #00ff00; text-align: center; box-shadow: 0 0 10px #00ff00;">🔴 ĐANG XEM TRỰC TIẾP...</div>
+    <div id="spectator-warning" style="display: none; position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.9); color: #0f0; padding: 15px 30px; border-radius: 30px; z-index: 10000; font-family: 'Outfit', sans-serif; font-weight: bold; border: 2px solid #0f0; text-align: center; box-shadow: 0 0 20px #0f0;">
+        <div id="spec-status">📡 ĐANG KHỞI TẠO...</div>
+    </div>
 
-    <div id="spectator-warning">📡 ĐANG KẾT NỐI...</div>
-    <div id="debug-console" style="position:fixed; top:40px; left:10px; width:150px; max-height:80px; background:rgba(0,0,0,0.5); color:#0f0; font-size:8px; font-family:monospace; pointer-events:none; z-index:10000; overflow-y:auto; padding:3px; line-height:1.1; border:1px solid rgba(0,255,0,0.2); display:none;"></div>
+
+    <div id="debug-console" style="position:fixed; top:80px; left:10px; width:180px; max-height:100px; background:rgba(0,0,0,0.8); color:#0f0; font-size:9px; font-family:monospace; pointer-events:none; z-index:10000; overflow-y:auto; padding:5px; border:1px solid #0f0; display:none;"></div>
     <canvas id="glcanvas"></canvas>
 
     <!-- Damage Overlay -->
@@ -291,7 +293,7 @@
     <!-- PeerJS for Live View -->
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <!-- Thêm ?v=3 để bắt trình duyệt tải lại file JS mới -->
-    <script src="game.js?v=15"></script>
+    <script src="game.js?v=16"></script>
 
     <!-- OIIA CAT Assets -->
     <img id="hakariphonk-cat" src="hakariphonk.png" alt="hakariphonk cat">
