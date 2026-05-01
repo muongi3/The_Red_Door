@@ -1420,7 +1420,7 @@ function update(dt) {
                 b.pillarSpots = [];
             }
             document.getElementById('boss-hp-container').style.display = 'none';
-            spawnOiiaCat(); playBossSound(); showClickAnywhere(2000);
+            spawnOiiaCat(); playBossSound(); showClickAnywhere(10000);
         }
         if (b.active) {
             document.getElementById('boss-hp-fill').style.width = (b.hp / b.maxHp) * 100 + '%';
