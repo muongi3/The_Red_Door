@@ -64,7 +64,8 @@ window.addEventListener('load', () => {
     // Cập nhật kích thước canvas ngay khi load
     gl.canvas.width = window.innerWidth;
     gl.canvas.height = window.innerHeight;
-    initAssets();
+    initGraphics(); // KHỞI TẠO SHADER/PROGRAM TRƯỚC
+    initAssets();   // SAU ĐÓ MỚI TẠO MESH
     console.log("Game initialized successfully!");
 });
 
@@ -161,24 +162,28 @@ function createShader(src, type) {
     return s;
 }
 
-const prog = gl.createProgram();
-gl.attachShader(prog, createShader(VS_SOURCE, gl.VERTEX_SHADER));
-gl.attachShader(prog, createShader(FS_SOURCE, gl.FRAGMENT_SHADER));
-gl.linkProgram(prog);
-if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(prog));
+let prog, locs;
 
-const locs = {
-    proj: gl.getUniformLocation(prog, "uProj"),
-    view: gl.getUniformLocation(prog, "uView"),
-    model: gl.getUniformLocation(prog, "uModel"),
-    camPos: gl.getUniformLocation(prog, "uCamPos"),
-    sunDir: gl.getUniformLocation(prog, "uSunDir"),
-    fogColor: gl.getUniformLocation(prog, "uFogColor"),
-    instanced: gl.getUniformLocation(prog, "uInstanced"),
-    time: gl.getUniformLocation(prog, "uTime"),
-    isWater: gl.getUniformLocation(prog, "uIsWater"),
-    isSky: gl.getUniformLocation(prog, "uIsSky"),
-};
+function initGraphics() {
+    prog = gl.createProgram();
+    gl.attachShader(prog, createShader(VS_SOURCE, gl.VERTEX_SHADER));
+    gl.attachShader(prog, createShader(FS_SOURCE, gl.FRAGMENT_SHADER));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) console.error(gl.getProgramInfoLog(prog));
+
+    locs = {
+        proj: gl.getUniformLocation(prog, "uProj"),
+        view: gl.getUniformLocation(prog, "uView"),
+        model: gl.getUniformLocation(prog, "uModel"),
+        camPos: gl.getUniformLocation(prog, "uCamPos"),
+        sunDir: gl.getUniformLocation(prog, "uSunDir"),
+        fogColor: gl.getUniformLocation(prog, "uFogColor"),
+        instanced: gl.getUniformLocation(prog, "uInstanced"),
+        time: gl.getUniformLocation(prog, "uTime"),
+        isWater: gl.getUniformLocation(prog, "uIsWater"),
+        isSky: gl.getUniformLocation(prog, "uIsSky"),
+    };
+}
 
 function createMesh(verts, norms, cols) {
     const vao = gl.createVertexArray();
@@ -921,7 +926,7 @@ function update(dt) {
             STATE.bots.forEach(bot => { if (V3.dist(nextPos, V3.add(bot.pos, V3.create(0, 0.65, 0))) < (isMobile ? 2.5 : 1.0)) { bot.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0, 0]); proj.dead = true; } });
 
             // Hitbox Boss hình trụ
-            if (STATE.boss.active) {
+            if (STATE.boss && STATE.boss.active) {
                 const dx = nextPos.x - STATE.boss.pos.x, dz = nextPos.z - STATE.boss.pos.z, dy = nextPos.y - STATE.boss.pos.y;
                 if (Math.sqrt(dx * dx + dz * dz) < 4 && dy > -5 && dy < 15) {
                     STATE.boss.hp -= proj.dmg; playAudio('hit'); showHitMarker(); proj.dead = true;
@@ -1062,7 +1067,7 @@ function update(dt) {
     if (p.streak >= 3) document.getElementById('damage-overlay').style.boxShadow = `inset 0 0 100px rgba(255, 204, 0, 0.2)`;
 
     // Boss AI Logic
-    if (STATE.boss.active) {
+    if (STATE.boss && STATE.boss.active) {
 
         const b = STATE.boss;
         const dist = V3.dist(b.pos, p.pos);
@@ -1852,7 +1857,7 @@ function draw() {
     let fogCol = [0.6, 0.3, 0.2]; // Màu cam chiều tà mặc định
     let bgCol = [0.7, 0.4, 0.3];  // Bầu trời buổi chiều
 
-    if (STATE.boss.active) {
+    if (STATE.boss && STATE.boss.active) {
         const dist = V3.dist(p.pos, STATE.boss.pos);
         const intensity = Math.max(0, 1 - dist / 50);
         // Bầu trời máu nhấp nháy u ám (Hell Vibe)
@@ -1914,7 +1919,7 @@ function draw() {
     drawMeshActual(ASSETS.sky, eye, 1, 0);
 
     // VẼ TRĂNG MÁU (Blood Moon) TỐI GIẢN
-    if (STATE.boss.active) {
+    if (STATE.boss && STATE.boss.active) {
         gl.uniform1i(locs.isSky, false);
         const moonPos = { x: eye.x + 200, y: eye.y + 180, z: eye.z - 400 };
 
@@ -1979,7 +1984,7 @@ function draw() {
     }
 
     // Boss Rendering
-    if (STATE.boss.active) {
+    if (STATE.boss && STATE.boss.active) {
         const b = STATE.boss;
         const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
         const ang = Math.atan2(dx, dz);
@@ -2147,7 +2152,7 @@ function drawMinimap(p, bots) {
         ctx.fill();
     });
 
-    if (STATE.boss.active) {
+    if (STATE.boss && STATE.boss.active) {
         ctx.fillStyle = "#ff00ff";
         const bx = cx + STATE.boss.pos.x * scale, by = cy + STATE.boss.pos.z * scale;
         ctx.beginPath();
@@ -2362,7 +2367,7 @@ function playBossSound() {
 
     // Thỉnh thoảng chèn tiếng rít cao
     setInterval(() => {
-        if (!STATE.boss.active) return;
+        if (!STATE.boss || !STATE.boss.active) return;
         const sting = AudioCtx.createOscillator();
         const sGain = AudioCtx.createGain();
         sting.type = 'square';
