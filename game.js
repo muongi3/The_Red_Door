@@ -24,10 +24,11 @@ window.GAME_CONFIG = {
     player: {
         maxHp: 1000,                // Máu tối đa. Tăng -> Trâu hơn, khó chết. Giảm -> Dễ "bay màu".
         maxArmor: 500,              // Giáp tối đa. Giáp đỡ sát thương trước máu. Tăng -> Chống chịu tốt hơn.
-        walkSpeed: 8,               // Tốc độ đi bộ cơ bản. Tăng -> Di chuyển nhanh, dễ né đòn.
-        sniperSpeed: 5,             // Tốc độ khi cầm Sniper. Giảm -> Cảm giác súng nặng nề hơn.
-        sprintMultiplier: 2.0,      // Nhân tốc độ khi giữ Shift. Tăng -> Chạy cực nhanh.
-        powerupSpeedMultiplier: 1.8 // Nhân tốc độ khi nhặt được "Bùa Tốc Độ" (màu xanh).
+        walkSpeed: 8,               // Tốc độ chạy/đi bộ bình thường.
+        sprintMultiplier: 2.0,      // Hệ số chạy nhanh khi giữ Shift. (vd: 8 x 2.0 = 16 đơn vị tốc độ).
+        jumpPower: 10,              // Lực nhảy cao (Phím Space).
+        sniperSpeed: 5,             // Tốc độ khi cầm súng bắn tỉa (Sniper) - Súng nặng nên đi chậm hơn.
+        powerupSpeedMultiplier: 1.8 // Hệ số tăng tốc khi nhặt được "Bùa Tốc Độ" (màu xanh).
     },
 
     // ==========================================================================================
@@ -1067,7 +1068,7 @@ function update(dt) {
     }
     let onPad = false; for (let pad of STATE.pads) if (V3.dist(p.pos, pad.pos) < 3 && Math.abs(p.pos.y - pad.pos.y) < 2) { p.vel.y = 30; p.grounded = false; onPad = true; playAudio('jump'); break; }
     if (!onPad && p.pos.y < floorH) { p.pos.y = floorH; p.vel.y = 0; p.grounded = true; } else if (!onPad) p.grounded = false;
-    if (STATE.keys['Space'] && p.grounded) { p.vel.y = 10; p.grounded = false; }
+    if (STATE.keys['Space'] && p.grounded) { p.vel.y = window.GAME_CONFIG.player.jumpPower; p.grounded = false; }
     const now = performance.now(), weapon = STATE.weapons[p.weaponIdx];
     if (STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; }
     p.recoil *= 0.8; if (STATE.keys['Digit1']) p.weaponIdx = 0; if (STATE.keys['Digit2']) p.weaponIdx = 1; if (STATE.keys['Digit3']) p.weaponIdx = 2;
