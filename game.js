@@ -582,8 +582,18 @@ function genSniperMesh() {
     push(getCube(dark, 0.12, 0.4, 0.2, 0, -0.3, -0.6)); // Sniper Stock
     push(getCube(dark, 0.1, 0.5, 0.1, 0, -0.4, 0.3)); // Mag
     push(getCube(gray, 0.08, 0.08, 1.2, 0, 0, 1.2)); // Long Barrel
-    push(getCube(dark, 0.05, 0.5, 0.05, 0.1, -0.4, 0.8)); // Bipod L
     push(getCube(dark, 0.05, 0.5, 0.05, -0.1, -0.4, 0.8)); // Bipod R
+    return createMesh(V, N, C);
+}
+
+
+function genCannonMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const gray = [0.2, 0.2, 0.2], orange = [1, 0.4, 0];
+    push(getCube(gray, 0.35, 0.35, 1.4, 0, 0, 0)); // Thân đại bác
+    push(getCube(orange, 0.45, 0.45, 0.1, 0, 0, 0.7)); // Đầu nòng lửa
+    push(getCube(gray, 0.3, 0.5, 0.3, 0, -0.3, -0.3)); // Tay cầm
     return createMesh(V, N, C);
 }
 
@@ -857,8 +867,11 @@ function initAssets() {
     ASSETS.ground = genTerrain(); ASSETS.barrel = genBarrelMesh();
     ASSETS.pad = genJumpPadMesh(); ASSETS.grass = genGrassMesh(); ASSETS.water = genWaterMesh();
     ASSETS.sky = genSkyMesh();
-    ASSETS.pistol = genPistolMesh(); ASSETS.smg = genSMGMesh(); ASSETS.sniper = genSniperMesh();
-    ASSETS.arm = genArmMesh(); ASSETS.bossBody = genBossBody(); ASSETS.bossArm = genBossArm(); ASSETS.bossProj = genBossProjectileMesh(); ASSETS.indicator = genIndicatorMesh();
+    ASSETS.pistol = genPistolMesh();
+    ASSETS.smg = genSMGMesh();
+    ASSETS.sniper = genSniperMesh();
+    ASSETS.cannon = genCannonMesh();
+    ASSETS.bossBody = genBossBody(); ASSETS.bossBody = genBossBody(); ASSETS.bossArm = genBossArm(); ASSETS.bossProj = genBossProjectileMesh(); ASSETS.indicator = genIndicatorMesh();
 
     ASSETS.bloodMoon = genMoonMesh([1, 0, 0], 1, 24); // Giảm resolution xuống 24 để mượt trên Mobile
     ASSETS.dashInd = genDashIndicatorMesh();
@@ -1055,6 +1068,7 @@ function update(dt) {
     // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
+    if (p.isChargingUlti) { move.x = 0; move.z = 0; } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
 
     // Quán tính (Lerp) di chuyển
@@ -2278,7 +2292,8 @@ function draw() {
     // Draw View Model (Arms + Current Weapon)
     if (STATE.screen === 'game') {
         gl.clear(gl.DEPTH_BUFFER_BIT);
-        const weaponMesh = [ASSETS.pistol, ASSETS.smg, ASSETS.sniper][p.weaponIdx];
+        let weaponMesh = [ASSETS.pistol, ASSETS.smg, ASSETS.sniper][p.weaponIdx];
+        if (p.isChargingUlti) weaponMesh = ASSETS.cannon;
         const bob = Math.sin(performance.now() * 0.01) * 0.015 * (1 - STATE.aimLerp * 0.8); // Giảm rung khi ngắm
         const kick = p.recoil * 0.4;
         const vmProj = M4.perspective(fov, aspect, 0.01, 10);
