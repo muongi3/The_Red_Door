@@ -136,7 +136,7 @@ window.GAME_CONFIG = {
     // 🔥 KỸ NĂNG ĐẶC BIỆT (ULTIMATE SKILL)
     // ==========================================================================================
     ultimate: {
-        requiredDamage: 1000,    // Gây 1000 dame để sạc đầy Unti
+        requiredDamage: 500,    // Gây 1000 dame để sạc đầy Unti
         chargeTime: 1.0,         // Thời gian gồng (1s)
         invincibleTime: 1.0,     // Bất tử 1s lúc tung chiêu
         damage: 800,             // Sát thương nổ
@@ -1138,7 +1138,7 @@ function update(dt) {
         if (proj.dead && proj.isUlti) {
             createExplosion(proj.pos, window.GAME_CONFIG.ultimate.explosionRange, window.GAME_CONFIG.ultimate.damage, true);
         }
-        
+
         proj.pos = nextPos; proj.life -= dt; if (proj.life < 0) proj.dead = true;
     });
     STATE.projectiles = STATE.projectiles.filter(p => !p.dead);
@@ -1692,12 +1692,12 @@ function update(dt) {
 
 }
 
-function createExplosion(pos, customRange, customDamage, isFriendly = false) { 
-    STATE.shake = 0.8; playAudio('shoot'); spawnParticles(pos, 40, [1, 0.5, 0]); 
-    const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange; 
+function createExplosion(pos, customRange, customDamage, isFriendly = false) {
+    STATE.shake = 0.8; playAudio('shoot'); spawnParticles(pos, 40, [1, 0.5, 0]);
+    const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange;
     const damage = customDamage || window.GAME_CONFIG.misc.barrelExplosionDamage;
-    if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage); 
-    STATE.bots.forEach(b => { if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) { b.hp -= damage; STATE.player.damageDealt += damage; } }); 
+    if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage);
+    STATE.bots.forEach(b => { if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) { b.hp -= damage; STATE.player.damageDealt += damage; } });
     if (STATE.boss && STATE.boss.active && V3.dist(pos, STATE.boss.pos) < range + 5) { STATE.boss.hp -= damage; STATE.player.damageDealt += damage; }
 }
 
@@ -2418,6 +2418,15 @@ function updateHUD() {
         }
     }
 
+    const btnUlti = document.getElementById('btn-ulti');
+    if (btnUlti) {
+        if (p.damageDealt >= window.GAME_CONFIG.ultimate.requiredDamage) {
+            btnUlti.classList.remove('hidden');
+        } else {
+            btnUlti.classList.add('hidden');
+        }
+    }
+
     // CẢNH BÁO CUỒNG BẠO LV2 (40%)
     const enragedThreshold = (STATE.config.botCount || 25) * 0.4;
     if (!STATE.enragedAnnounced && STATE.bots.length > 0 && STATE.bots.length <= enragedThreshold) {
@@ -2425,6 +2434,41 @@ function updateHUD() {
         STATE.enragedAnnounced = true;
         STATE.shake = 5.0;
     }
+}
+
+function activateUltimate() {
+    const p = STATE.player;
+    if (p.damageDealt < window.GAME_CONFIG.ultimate.requiredDamage || p.isChargingUlti) return;
+
+    p.isChargingUlti = true;
+    p.damageDealt = 0; // Reset điểm
+    showGlobalAnnouncement("🔥 ĐANG GỒM ĐẠI BÁC... 🔥", 1000);
+    
+    // Gồng 1s
+    setTimeout(() => {
+        p.isChargingUlti = false;
+        p.isInvincible = true;
+        
+        // Bắn đại bác
+        const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
+        const dir = { x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) };
+        
+        const proj = {
+            pos: V3.add(p.pos, V3.create(0, 1.2, 0)),
+            dir: dir,
+            dmg: window.GAME_CONFIG.ultimate.damage,
+            life: 3, dead: false, isPlayer: true, isUlti: true
+        };
+        STATE.projectiles.push(proj);
+        playAudio('shoot');
+        STATE.shake = 3.0;
+
+        // Bất tử 1s
+        setTimeout(() => {
+            p.isInvincible = false;
+        }, window.GAME_CONFIG.ultimate.invincibleTime * 1000);
+        
+    }, window.GAME_CONFIG.ultimate.chargeTime * 1000);
 }
 
 
@@ -2897,6 +2941,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const onAim = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.isAiming = !STATE.isAiming; if (STATE.isAiming) btnAim.classList.add('pressed'); else btnAim.classList.remove('pressed'); };
         btnAim.addEventListener('touchstart', onAim);
         btnAim.addEventListener('mousedown', onAim);
+    }
+
+    const btnUlti = document.getElementById('btn-ulti');
+    if (btnUlti) {
+        const onUlti = e => { if (window.isEditingHUD) return; e.preventDefault(); activateUltimate(); };
+        btnUlti.addEventListener('touchstart', onUlti);
+        btnUlti.addEventListener('mousedown', onUlti);
     }
 
     const btnSprint = document.getElementById('btn-sprint');
