@@ -269,9 +269,6 @@
             <h1 class="menu-title" id="end-title">VICTORY!!!!</h1>
             <h2 class="end-stats-text" id="end-stats">KILLS: 5</h2>
             <div class="menu-btn-col">
-                <button id="open-reward-btn" class="menu-btn w-menu-btn hidden" onclick="openReward()">
-                    🎁 QUAY THƯỞNG 🎁
-                </button>
                 <button id="play-again-btn" class="menu-btn w-menu-btn" onclick="finishGameAndSendToDiscord()">
                     🏠 QUAY LẠI MENU
                 </button>
@@ -279,34 +276,7 @@
         </div>
     </div>
 
-    <!-- Reward Wheel Screen -->
-    <div id="reward-screen" class="menu-screen hidden">
-        <div class="menu-inner">
-            <h1 class="menu-title reward-title">🎁 QUAY TRÚNG THƯỞNG 🎁</h1>
 
-            <div id="wheel-layout">
-                <div id="wheel-container">
-                    <div id="wheel"></div>
-                    <div id="wheel-pointer"></div>
-                </div>
-                <div id="reward-legend">
-                    <div class="legend-item"><span class="legend-color red"></span><span>May mắn lần sau 😅</span></div>
-                    <div class="legend-item"><span class="legend-color yellow"></span><span>Lì xì 15K 🎉</span></div>
-                    <div class="legend-item"><span class="legend-color cyan"></span><span>Lì xì 5K 💙</span></div>
-                    <div class="legend-item"><span class="legend-color orange"></span><span>Lì xì 10K 🧡</span></div>
-                    <div class="legend-item"><span class="legend-color green"></span><span>Lì xì 20K 💚</span></div>
-                </div>
-            </div>
-
-            <div class="reward-actions">
-                <button class="menu-btn w-menu-btn" id="spin-btn" onclick="spinWheel()">🎰 QUAY LIỀN</button>
-                <h2 id="reward-result"></h2>
-                <button class="menu-btn w-menu-btn" id="back-to-menu-btn"
-                    onclick="finishGameAndSendToDiscord()"
-                    style="display:none;">🏠 QUAY LẠI MENU</button>
-            </div>
-        </div>
-    </div>
 
 
 

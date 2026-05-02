@@ -905,7 +905,8 @@ function startGame() {
     STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
 
     STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = [];
-    spun = false; document.getElementById("reward-result").innerText = ""; document.getElementById("reward-result").style.display = "none"; document.getElementById("wheel").style.transform = `rotate(0deg)`;
+    // Reset game state
+
     const minimap = document.getElementById('minimap');
     if (minimap) { minimap.width = 200; minimap.height = 200; }
 
@@ -1707,23 +1708,34 @@ function endGame(win) {
     const duration = Math.floor((Date.now() - STATE.startTime) / 1000);
     STATE.finalStats = { win, kills: STATE.player.kills, duration, date: new Date().toLocaleString('vi-VN') };
 
-    const gameOver = document.getElementById('game-over-screen'), rewardBtn = document.getElementById('open-reward-btn'), playAgainBtn = document.getElementById('play-again-btn');
+    const gameOver = document.getElementById('game-over-screen'), playAgainBtn = document.getElementById('play-again-btn');
     gameOver.classList.remove('hidden');
     if (win) {
         document.getElementById('end-title').innerText = "VICTORY";
         document.getElementById('end-title').style.color = "#ffd700";
-        rewardBtn.style.display = 'inline-block';
-        if (playAgainBtn) playAgainBtn.style.display = 'none';
     } else {
         document.getElementById('end-title').innerText = "THUA RỒI AK CỐ LÊN!!";
         document.getElementById('end-title').style.color = "#ff0000";
-        rewardBtn.style.display = 'none';
-        if (playAgainBtn) playAgainBtn.style.display = 'inline-block';
     }
+    if (playAgainBtn) playAgainBtn.style.display = 'inline-block';
     document.getElementById('end-stats').innerText = `Kills: ${STATE.player.kills} | Thời gian: ${duration}s`;
 }
 
-// finishGameAndSendToDiscord() được định nghĩa trong spectator.js (gửi Discord rồi reload)
+function finishGameAndSendToDiscord() {
+    const s = STATE.finalStats;
+    if (!s) { location.reload(); return; }
+
+    const WEBHOOK_URL = "https://discord.com/api/webhooks/1317517173822263387/a_E-57T078uO3fM26T6zZk5zGvYxH6X1X3v6Z3v6Z3v6Z3v6Z3v6Z3v6Z3v6Z3v6"; // URL từ spectator.js cũ
+    const resultLabel = s.win ? "🏆 CHIẾN THẮNG" : "💀 THẤT BẠI";
+
+    fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            content: `🎮 **KẾT QUẢ TRẬN ĐẤU** 🎮\n━━━━━━━━━━━━━━━\n👤 Người chơi: **${STATE.playerName}**\n🏁 Kết quả: **${resultLabel}**\n🔫 Kills: \`${s.kills}\` mạng\n⏱️ Thời gian: \`${s.duration} giây\`\n📅 Ngày: \`${s.date}\`\n━━━━━━━━━━━━━━━`
+        })
+    }).finally(() => location.reload());
+}
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1928,56 +1940,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // showClickToContinue() đã thay bằng showClickAnywhere() — đã xóa
 
-let spun = false;
-const rewards = [
-    { text: "CHÚC U MAY MẮN CHO LẦN SAU :PP", color: "#ff3366" }, // 0: Đỏ
-    { text: "LÌ XÌ 15K", color: "#ffcc00" },                      // 1: Vàng
-    { text: "LÌ XÌ 5K", color: "#00ffcc" },                       // 2: Xanh lơ (Cyan)
-    { text: "LÌ XÌ cho 20K nè", color: "#3366ff" },               // 3: Xanh biển (Blue)
-    { text: "LÌ XÌ 10K", color: "#ff6600" }                       // 4: Cam
-];
-
-
-function openReward() { document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('reward-screen').classList.remove('hidden'); }
-function spinWheel() {
-    if (spun) return; spun = true;
-    const wheel = document.getElementById("wheel"),
-        resultText = document.getElementById("reward-result");
-
-    // --- CHẾ ĐỘ GIAN THƯƠNG (Tỉ lệ ảo) ---
-    const rand = Math.random() * 100;
-    let index = 0;
-    if (rand < 60) index = 0;       // 60%: Chúc may mắn (Đỏ)
-    else if (rand < 85) index = 2;  // 25%: 5K (Xanh lơ)
-    else if (rand < 95) index = 4;  // 10%: 10K (Cam)
-    else if (rand < 99.5) index = 1;// 4.5%: 15K (Vàng)
-    else index = 3;                 // 0.5%: 20K (Xanh biển) - CỰC KỲ KHÓ
-    // -------------------------------------
-
-    const degPerSlice = 360 / rewards.length;
-    // Thêm độ lệch ngẫu nhiên để kim không chĩa ngay giữa ô (nhìn cho thật)
-    const randomOffset = (Math.random() - 0.5) * (degPerSlice - 10);
-
-    const extraSpin = 360 * 20;
-    const finalDeg = extraSpin + 360 - (index * degPerSlice) - (degPerSlice / 2) + randomOffset;
-
-
-    wheel.style.transform = `rotate(${finalDeg}deg)`;
-    setTimeout(() => {
-        const rewardObj = rewards[index];
-        resultText.innerText = "🎉 " + rewardObj.text;
-        resultText.style.color = rewardObj.color;
-        resultText.style.display = "block";
-        document.getElementById("back-to-menu-btn").style.display = "block"; // Hiện nút quay lại sau khi quay xong
-        document.getElementById("spin-btn").style.display = "none"; // Ẩn nút quay để tránh quay tiếp
-
-        // Lưu phần thưởng vào trạng thái để chuẩn bị gửi Discord
-        if (STATE.finalStats) {
-            STATE.finalStats.reward = rewards[index].text;
-        }
-
-    }, 10000);
-}
 
 
 

@@ -693,123 +693,7 @@ canvas {
     font-weight: 700;
 }
 
-/* Reward screen actions area */
-.reward-actions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
-    margin-top: 20px;
-    width: 100%;
-    max-width: 340px;
-}
 
-.reward-title {
-    font-size: clamp(24px, 5vw, 60px) !important;
-    margin-bottom: 10px !important;
-}
-
-#reward-result {
-    color: white;
-    margin: 0;
-    min-height: 40px;
-    font-size: clamp(18px, 4vw, 32px);
-    font-weight: 900;
-    text-align: center;
-    display: none;
-}
-
-/* Reward Wheel */
-#wheel-container {
-    position: relative;
-    width: clamp(200px, 40vw, 300px);
-    height: clamp(200px, 40vw, 300px);
-    margin: 20px 0;
-    filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
-    flex-shrink: 0;
-}
-
-#wheel {
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    border: 12px solid #fff;
-    background: conic-gradient(#ff3366 0deg 72deg, #ffcc00 72deg 144deg, #00ffcc 144deg 216deg, #3366ff 216deg 288deg, #ff6600 288deg 360deg);
-    transition: transform 10s cubic-bezier(0.1, 0, 0, 1);
-    box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.2);
-}
-
-#wheel-pointer {
-    position: absolute;
-    top: -15px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 20px solid transparent;
-    border-right: 20px solid transparent;
-    border-top: 35px solid #fff;
-    filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.3));
-    z-index: 10;
-}
-
-#wheel-layout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-    width: 100%;
-    max-width: 700px;
-}
-
-#reward-legend {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 25px;
-    border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.legend-item {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    font-weight: 500;
-    color: #eee;
-    font-size: 16px;
-}
-
-.legend-color {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-}
-
-.red { background: #ff3366; }
-.yellow { background: #ffcc00; }
-.cyan { background: #00ffcc; }
-.orange { background: #ff6600; }
-.green { background: #3366ff; }
-
-@keyframes winPop {
-    from { transform: scale(0.5); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-#reward-footer-left {
-    position: fixed;
-    bottom: 30px;
-    left: 30px;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.4);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
 
 /* OIIA CAT */
 #hakariphonk-cat {
@@ -1445,31 +1329,7 @@ canvas {
         font-size: 12px !important;
     }
 
-    /* Reward wheel: 2 c\u1ed9t ngang \u0111\u00e3 \u0111\u01b0\u1ee3c x\u1eed l\u00fd b\u1edfi #wheel-layout flex-wrap */
-    #wheel-container {
-        width: clamp(140px, 30vh, 200px);
-        height: clamp(140px, 30vh, 200px);
-    }
 
-    #reward-legend {
-        padding: 12px;
-        gap: 8px;
-    }
-
-    .legend-item {
-        font-size: 12px;
-        gap: 8px;
-    }
-
-    .reward-title {
-        font-size: clamp(14px, 4vh, 26px) !important;
-        margin-bottom: 6px !important;
-    }
-
-    .reward-actions {
-        margin-top: 10px;
-        gap: 8px;
-    }
 
     /* Guide modal trong landscape */
     .guide-content {
