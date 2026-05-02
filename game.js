@@ -1076,14 +1076,15 @@ function update(dt) {
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (p.isChargingUlti) { 
         move.x = 0; move.z = 0; 
-        // Hiệu ứng Aura xoay chậm quanh người chơi
+        // Hiệu ứng Aura xoay chậm quanh người chơi (Rõ nét hơn)
         const t = performance.now() * 0.005;
-        const radius = 1.5;
-        for (let i = 0; i < 2; i++) {
-            const ang = t + i * Math.PI;
+        const radius = 1.8;
+        for (let i = 0; i < 4; i++) { // Tăng lên 4 hạt mỗi lần
+            const ang = t + i * (Math.PI / 2);
             const px = p.pos.x + Math.cos(ang) * radius;
             const pz = p.pos.z + Math.sin(ang) * radius;
-            spawnParticles(V3.create(px, p.pos.y + 0.5 + Math.sin(t*2)*0.5, pz), 1, [1, 0.5, 0], 0.1);
+            // Hạt to hơn và sáng hơn
+            spawnParticles(V3.create(px, p.pos.y + 0.8 + Math.sin(t*3)*0.5, pz), 2, [1, 0.7, 0.2], 0.05);
         }
     } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -1696,7 +1697,11 @@ function update(dt) {
 
 
 
-        if (b.state === 'fight' && dist < 10) takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt);
+        const dist = V3.dist(p.pos, b.pos);
+        if (b.state === 'fight' && dist < 10) {
+            // Gây dame thụ động nhưng không phát âm thanh liên tục
+            takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt, true); 
+        }
 
         if (b.hp <= 0 && !b.dead) {
             b.dead = true;
@@ -1755,7 +1760,7 @@ function fireWeapon(shooter, rot, weapon, isPlayer, dirOverride) {
     playAudio('shoot');
 }
 
-function takeDamage(p, amt) {
+function takeDamage(p, amt, silent = false) {
     if (STATE.gameEnded || p.isInvincible) return;
     // FIX CRASH: Kiểm tra p.powerup tồn tại trước khi truy cập type
     if (p.powerup && p.powerup.time > 0 && p.powerup.type === 2) amt *= 0.2;
@@ -1767,7 +1772,7 @@ function takeDamage(p, amt) {
     } else p.hp -= amt;
 
     if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
-    playAudio('hit');
+    if (!silent) playAudio('hit');
 
     p.damageFlash = 1.0; // [YÊU CẦU] Nháy đỏ trong 1 giây
 
@@ -2068,7 +2073,7 @@ function draw() {
     STATE.sprintLerp = (STATE.sprintLerp || 0) + (((STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 1 : 0) - (STATE.sprintLerp || 0)) * 0.05;
 
     const aspect = gl.canvas.width / gl.canvas.height;
-    const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
+    const zoomFactor = [0.5, 0.8, 1.5][p.weaponIdx];
     const fov = 1.2 - (STATE.aimLerp * zoomFactor) + (STATE.sprintLerp * 0.3);
 
     const proj = M4.perspective(fov, aspect, 0.1, 1000);
@@ -2192,8 +2197,8 @@ function draw() {
         else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
     });
     STATE.particles.forEach(p => {
-        gl.uniform3f(locs.fogColor, p.color[0], p.color[1], p.color[2]);
-        drawMeshActual(ASSETS.crate, p.pos, 0.2 * p.life, 0);
+        gl.uniform3f(locs.fogColor, p.color[0] * 2.0, p.color[1] * 2.0, p.color[2] * 2.0);
+        drawMeshActual(ASSETS.crate, p.pos, 0.5 * p.life, 0);
     });
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
 
@@ -2596,6 +2601,11 @@ function triggerBossEvent() {
     if (STATE.bossTriggered) return;
     STATE.bossTriggered = true;
 
+    // HIỆN THÔNG BÁO CHỜ
+    showGlobalAnnouncement("BOSS SẼ XUẤT HIỆN SAU 5 GIÂY...", 5000);
+
+    setTimeout(() => {
+
     STATE.inputLocked = true;
     STATE.keys = {};
 
@@ -2644,7 +2654,9 @@ function triggerBossEvent() {
 
         // Hiện thanh máu Boss
         document.getElementById('boss-hp-container').style.display = 'block';
+        if (typeof playBossSound === 'function') playBossSound();
     }, 3000);
+    }, 5000); // Khoảng chờ 5 giây
 }
 
 
