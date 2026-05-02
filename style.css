@@ -160,8 +160,9 @@ canvas {
 }
 
 #ammo-display {
-    bottom: 30px;
-    right: 30px;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%);
     font-size: 24px;
     font-weight: 900;
     text-align: right;
@@ -181,8 +182,8 @@ canvas {
 
 #stats-display {
     position: absolute;
-    top: 30px;
-    right: 30px;
+    top: 60px;
+    right: 20px;
     text-align: right;
     font-size: 14px;
     font-weight: 700;
@@ -1007,8 +1008,10 @@ canvas {
 
 #loot-legend {
     position: absolute;
-    bottom: 20px;
-    left: 20px;
+    top: 110px;
+    right: 20px;
+    bottom: auto;
+    left: auto;
     font-size: 10px;
     text-align: left;
     background: rgba(0,0,0,0.6);
