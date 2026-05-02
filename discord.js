@@ -65,21 +65,46 @@ function finishGameAndSendToDiscord() {
     }
 }
 
-// --- EVENT LISTENERS (GLOBAL) ---
-window.addEventListener('beforeunload', () => handlePlayerExit('tab closed / refreshed'));
-window.addEventListener('pagehide', () => handlePlayerExit('page hidden'));
-window.addEventListener('offline', () => handlePlayerExit('lost connection'));
+// --- EVENT LISTENERS (GLOBAL & MOBILE) ---
 
+// 1. Phát hiện đóng tab / Refresh / Chuyển trang (PC & Mobile)
+window.addEventListener('beforeunload', () => handlePlayerExit('Đóng tab hoặc tải lại trang'));
+
+// 2. Phát hiện ẩn trình duyệt / Vuốt thoát ứng dụng (Rất quan trọng trên Mobile)
+window.addEventListener('pagehide', (e) => {
+    // Nếu không phải là di chuyển trong cùng trang (ví dụ reload)
+    handlePlayerExit(e.persisted ? 'Ẩn ứng dụng (vào chế độ ngủ)' : 'Vuốt thoát / Đóng trình duyệt');
+});
+
+// 3. Phát hiện mất mạng đột ngột
+window.addEventListener('offline', () => handlePlayerExit('Mất kết nối mạng'));
+
+// 4. Phát hiện ẩn/hiện tab (Visibility API)
 let backgroundExitTimer = null;
 document.addEventListener('visibilitychange', () => {
+    const STATE = window.STATE;
     if (document.visibilityState === 'hidden') {
+        // Thông báo ngay khi người chơi vừa ẩn game xuống nền
+        if (!STATE.hasExited && STATE.screen === 'game') {
+             // Chỉ thông báo "Ẩn game" nếu đang trong trận
+             sendExitToDiscord('Ẩn game xuống nền (có thể đã thoát)');
+        }
+        
+        // Nếu sau 15 giây không quay lại, coi như đã thoát hẳn
         backgroundExitTimer = setTimeout(() => {
-            handlePlayerExit('app backgrounded (10s)');
-        }, 10000);
+            handlePlayerExit('Thoát game do ở nền quá lâu (15s)');
+        }, 15000);
     } else {
-        if (backgroundExitTimer) clearTimeout(backgroundExitTimer);
+        // Nếu quay lại kịp lúc
+        if (backgroundExitTimer) {
+            clearTimeout(backgroundExitTimer);
+            backgroundExitTimer = null;
+        }
     }
 });
+
+// 5. Page Lifecycle API (Dành cho Mobile hiện đại)
+window.addEventListener('freeze', () => handlePlayerExit('Ứng dụng bị hệ thống đóng (Freeze)'));
 
 // --- UI HELPERS (MENU & GÓP Ý) ---
 document.addEventListener('DOMContentLoaded', () => {
