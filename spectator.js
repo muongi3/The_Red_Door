@@ -14,15 +14,7 @@ const PEER_CFG   = { host: '0.peerjs.com', port: 443, secure: true, debug: 0 };
 
 // ─── DISCORD ─────────────────────────────────────────────────────────────────
 function sendLiveNotification() {
-    initSpectatorHost(); // Khởi spectator khi game bắt đầu
-    const STATE = window.STATE;
-    const time  = new Date().toLocaleTimeString('vi-VN');
-    const bots  = STATE.config ? (STATE.config.botCount || 25) : 25;
-    const msg   = [`🎮 **${STATE.playerName}** vừa bắt đầu trận!`,
-                   `━━━━━━━━━━━━━`, `⏰ \`${time}\``, `🤖 Bot: \`${bots}\``,
-                   `━━━━━━━━━━━━━`].join('\n');
-    fetch(WEBHOOK_URL, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ content: msg }), keepalive: true }).catch(() => {});
+    initSpectatorHost(true); // Khởi spectator và yêu cầu gửi thông báo kèm link
 }
 
 function sendStateToSpectators() { /* dùng WebRTC thay thế */ }
@@ -76,7 +68,7 @@ let _spectatorCount = 0;
 let _activeCalls    = [];
 
 /* ── HOST: khởi khi game bắt đầu ── */
-function initSpectatorHost() {
+function initSpectatorHost(shouldNotifyDiscord = false) {
     if (_peer) return;
     if (new URLSearchParams(location.search).get('watch')) return; // tôi là spectator
 
@@ -88,6 +80,28 @@ function initSpectatorHost() {
         const btn = document.getElementById('btn-share-screen');
         if (btn) btn.style.display = 'flex';
         debug('Share URL: ' + url);
+
+        // Gửi thông báo Discord kèm link xem trực tiếp
+        if (shouldNotifyDiscord) {
+            const STATE = window.STATE;
+            const time  = new Date().toLocaleTimeString('vi-VN');
+            const bots  = STATE.config ? (STATE.config.botCount || 25) : 25;
+            const msg   = [
+                `🎮 **${STATE.playerName}** vừa bắt đầu trận!`,
+                `━━━━━━━━━━━━━`,
+                `⏰ Giờ: \`${time}\``,
+                `🤖 Số bot: \`${bots}\``,
+                `📺 Xem trực tiếp: ${url}`,
+                `━━━━━━━━━━━━━`
+            ].join('\n');
+
+            fetch(WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: msg }),
+                keepalive: true
+            }).catch(() => { });
+        }
     });
 
     _peer.on('call', function (call) {
