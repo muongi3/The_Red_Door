@@ -2059,6 +2059,8 @@ function draw() {
     // Xử lý Aim Lerp (Mượt mà)
     STATE.aimLerp += ((STATE.isAiming ? 1 : 0) - STATE.aimLerp) * 0.2;
 
+    const aspect = gl.canvas.width / gl.canvas.height;
+    const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
     const sprintFOV = (STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 0.3 : 0;
     const fov = 1.2 - (STATE.aimLerp * zoomFactor) + sprintFOV;
 
