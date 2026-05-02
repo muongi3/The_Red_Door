@@ -63,42 +63,42 @@ window.GAME_CONFIG = {
 
         // CHIÊU 1: LƯỚT (DASH)
         skill1: {
-            damage: 350,      
-            prepareTime: 0.8, 
-            activeTime: 0.7,  
+            damage: 350,
+            prepareTime: 0.8,
+            activeTime: 0.7,
             speed: 130,       // Lướt nhanh hơn
-            width: 9          
+            width: 9
         },
         // CHIÊU 2: ĐẠI BÁC (SHOOT)
         skill2: {
-            damage: 50,       // Sát thương mỗi viên (Cân bằng lại để không bị sốc chết ngay)
-            prepareTime: 1.0, 
+            damage: 100,       // Sát thương mỗi viên (Cân bằng lại để không bị sốc chết ngay)
+            prepareTime: 1.0,
             shotCount: 20,    // Bắn nhiều đạn hơn (20 viên)
             interval: 0.08,   // Tốc độ xả đạn nhanh hơn
-            speed: 120,       
+            speed: 120,
         },
         // CHIÊU 3: NHẢY DẬM (JUMP/SLAM)
         skill3: {
-            damage: 550,      
-            prepareTime: 1.8, 
-            range: 28,        
-            jumpPower: 48,    
-            gravity: 55       
+            damage: 550,
+            prepareTime: 1.8,
+            range: 28,
+            jumpPower: 48,
+            gravity: 55
         },
         // CHIÊU 4: CỘT MÁU (CRIMSON PILLARS)
         skill4: {
-            damage: 350,      
-            prepareTime: 2.2, 
+            damage: 350,
+            prepareTime: 2.2,
             count: 25,        // Nhiều cột hơn
-            pillarRange: 10,  
-            pillarTimer: 1.8  
+            pillarRange: 10,
+            pillarTimer: 1.8
         },
         // CHIÊU 5: DỊCH CHUYỂN (TELEPORT STRIKE)
         skill5: {
-            damage: 450,      
-            prepareTime: 1.8, 
-            activeTime: 2.5,  
-            range: 35         
+            damage: 450,
+            prepareTime: 1.8,
+            activeTime: 2.5,
+            range: 35
         }
     },
 
@@ -106,10 +106,10 @@ window.GAME_CONFIG = {
     // ⚙️ THÔNG SỐ KHÁC (MISC STATS)
     // ==========================================================================================
     misc: {
-        barrelHp: 15,               
-        barrelExplosionDamage: 300,  
-        barrelExplosionRange: 15,    
-        playerProjectileSpeed: 120   
+        barrelHp: 15,
+        barrelExplosionDamage: 300,
+        barrelExplosionRange: 15,
+        playerProjectileSpeed: 120
     }
 };
 
@@ -1009,18 +1009,8 @@ function update(dt) {
         if (p.powerup.type === 0 || p.powerup.type === 3) speedMult = window.GAME_CONFIG.player.powerupSpeedMultiplier;
         if (p.powerup.type === 1 || p.powerup.type === 3) dmgMult = 2.0;
     }
-    let isSprinting = (STATE.keys['ShiftLeft'] || (STATE.joystick && STATE.joystick.dist > 30));
-    if (isSprinting) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
-    
-    // Toggle hiệu ứng vệt gió
-    const sprintOverlay = document.getElementById('sprint-overlay');
-    if (sprintOverlay) sprintOverlay.classList.toggle('hidden', !isSprinting);
-
-    // FOV effect for sprinting
-    STATE.targetFOV = isSprinting ? 1.1 : 1.0; 
-    STATE.currentFOV = STATE.currentFOV || 1.0;
-    STATE.currentFOV += (STATE.targetFOV - STATE.currentFOV) * 5 * dt;
-
+    if (STATE.keys['ShiftLeft']) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
+    // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -1979,8 +1969,7 @@ function draw() {
 
     const aspect = gl.canvas.width / gl.canvas.height;
     const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
-    const sprintFOV = STATE.currentFOV || 1.0;
-    const fov = (1.2 * sprintFOV) - (STATE.aimLerp * zoomFactor);
+    const fov = 1.2 - (STATE.aimLerp * zoomFactor);
 
     const proj = M4.perspective(fov, aspect, 0.1, 1000);
     const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
@@ -2701,8 +2690,6 @@ window.addEventListener('DOMContentLoaded', () => {
     // Joystick (Di chuyển)
     if (jZone) {
         jZone.addEventListener('touchstart', e => {
-            // Không cho phép di chuyển khi đang mở menu cài đặt để tránh đè nút
-            if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
             e.preventDefault();
             const touch = e.changedTouches[0];
             joyActive = true;

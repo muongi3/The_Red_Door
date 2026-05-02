@@ -241,15 +241,21 @@ canvas {
 }
 
 #pickup-msg {
-    bottom: 140px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 28px;
+    font-size: 14px;
     color: #00ffaa;
     font-weight: 900;
     opacity: 0;
     transition: all 0.3s;
     text-shadow: 0 0 10px rgba(0, 255, 170, 0.5);
+    background: rgba(0, 0, 0, 0.6);
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid rgba(0, 255, 170, 0.3);
+    z-index: 3000;
+    pointer-events: none;
 }
 
 /* New Fun UI Elements */
