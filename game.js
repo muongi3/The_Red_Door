@@ -1076,8 +1076,15 @@ function update(dt) {
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (p.isChargingUlti) { 
         move.x = 0; move.z = 0; 
-        // Hiệu ứng hạt lửa khi gồng (Fiery Aura)
-        if (Math.random() < 0.5) spawnParticles(V3.add(p.pos, V3.create((Math.random()-0.5)*2, 0.5, (Math.random()-0.5)*2)), 2, [1, 0.3, 0], 0.5);
+        // Hiệu ứng Aura xoay chậm quanh người chơi
+        const t = performance.now() * 0.005;
+        const radius = 1.5;
+        for (let i = 0; i < 2; i++) {
+            const ang = t + i * Math.PI;
+            const px = p.pos.x + Math.cos(ang) * radius;
+            const pz = p.pos.z + Math.sin(ang) * radius;
+            spawnParticles(V3.create(px, p.pos.y + 0.5 + Math.sin(t*2)*0.5, pz), 1, [1, 0.5, 0], 0.1);
+        }
     } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
 
@@ -2056,13 +2063,13 @@ function draw() {
     gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE);
     gl.cullFace(gl.BACK); gl.frontFace(gl.CCW); gl.useProgram(prog);
 
-    // Xử lý Aim Lerp (Mượt mà)
+    // Xử lý Aim & Sprint Lerp (Mượt mà)
     STATE.aimLerp += ((STATE.isAiming ? 1 : 0) - STATE.aimLerp) * 0.2;
+    STATE.sprintLerp = (STATE.sprintLerp || 0) + (((STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 1 : 0) - (STATE.sprintLerp || 0)) * 0.05;
 
     const aspect = gl.canvas.width / gl.canvas.height;
     const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
-    const sprintFOV = (STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 0.3 : 0;
-    const fov = 1.2 - (STATE.aimLerp * zoomFactor) + sprintFOV;
+    const fov = 1.2 - (STATE.aimLerp * zoomFactor) + (STATE.sprintLerp * 0.3);
 
     const proj = M4.perspective(fov, aspect, 0.1, 1000);
     const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
