@@ -360,29 +360,36 @@ canvas {
     background: radial-gradient(circle at center, #1a1a2e 0%, #0a0a0a 100%);
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;   /* tránh center che nội dung khi tràn */
     align-items: center;
     pointer-events: auto;
     z-index: 1000;
     transition: opacity 0.5s;
+    overflow-y: auto;              /* cho phép scroll khi nội dung dài hơn màn hình */
+    overflow-x: hidden;
+    padding: 40px 16px 30px;       /* padding trên/dưới để nội dung không bị cắt */
+    box-sizing: border-box;
 }
 
 .menu-title {
-    font-size: 80px;
+    font-size: clamp(28px, 7vw, 80px);
     font-weight: 900;
     background: linear-gradient(to bottom, #fff 0%, #aaa 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     text-transform: uppercase;
-    letter-spacing: -4px;
+    letter-spacing: -2px;
     font-style: normal;
     animation: titleFloat 3s ease-in-out infinite;
+    text-align: center;
+    width: 100%;
+    flex-shrink: 0;   /* không bị ép nhỏ bởi flexbox */
 }
 
 @keyframes titleFloat {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-6px); }  /* giảm bounce để không bị cắt */
 }
 
 /* --- BOSS EVENT STYLES --- */
@@ -490,13 +497,12 @@ canvas {
 /* ------------------------- */
 
 .menu-btn {
-
-    padding: 18px 50px;
-    margin: 12px;
-    font-size: 24px;
+    padding: 14px 32px;
+    margin: 6px 0;
+    font-size: clamp(13px, 3.2vw, 20px);
     background: rgba(255, 255, 255, 0.05);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     cursor: pointer;
     border-radius: 50px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -504,6 +510,11 @@ canvas {
     letter-spacing: 1px;
     backdrop-filter: blur(5px);
     text-transform: uppercase;
+    font-family: 'Outfit', sans-serif;
+    box-sizing: border-box;
+    white-space: normal;    /* cho phép text xuống dòng */
+    word-break: break-word;
+    line-height: 1.3;
 }
 
 .menu-btn:hover {
@@ -547,13 +558,178 @@ canvas {
     letter-spacing: 2px;
 }
 
+/* ============================================
+   MENU LAYOUT SYSTEM (Responsive)
+   ============================================ */
+
+/* Container bên trong mọi menu screen */
+.menu-inner {
+    width: 100%;
+    max-width: 480px;
+    margin: auto;            /* auto tự căn giữa dọc khi space thừa */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    padding: 0 16px;
+    box-sizing: border-box;
+}
+
+/* Wrap input nhập tên */
+.menu-input-wrap {
+    width: 100%;
+    max-width: 340px;
+    margin-bottom: 12px;
+}
+
+/* Input nhập tên */
+.menu-name-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #ffcc00;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 12px;
+    font-family: 'Outfit', sans-serif;
+    text-align: center;
+    font-size: 18px;
+    outline: none;
+    box-shadow: 0 0 15px rgba(255, 204, 0, 0.2);
+    box-sizing: border-box;
+    transition: box-shadow 0.3s;
+}
+.menu-name-input:focus {
+    box-shadow: 0 0 25px rgba(255, 204, 0, 0.5);
+}
+
+/* Slider box (bot count) */
+.menu-slider-box {
+    width: 100%;
+    max-width: 340px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 12px 16px;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 204, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    margin-bottom: 14px;
+    box-sizing: border-box;
+}
+
+.menu-slider-label {
+    color: #ffcc00;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.menu-slider-val {
+    font-size: 20px;
+    color: #fff;
+    font-weight: 900;
+}
+
+.menu-range {
+    width: 100%;
+    cursor: pointer;
+    accent-color: #ffcc00;
+    background: transparent;
+}
+
+/* Nút rộng (full-width trong menu) */
+.w-menu-btn {
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+}
+
+/* Hàng 2 nút (Guide + Feedback) nằm ngang */
+.menu-btn-row {
+    display: flex;
+    flex-direction: row;
+    gap: 12px;
+    width: 100%;
+    max-width: 340px;
+    margin-top: 10px;
+}
+
+.menu-btn-row .menu-btn {
+    flex: 1;
+    margin: 0;
+    padding: 14px 10px;
+    font-size: 15px;
+}
+
+.menu-btn-guide {
+    background: rgba(255, 204, 0, 0.3) !important;
+    border-color: rgba(255, 204, 0, 0.5) !important;
+}
+.menu-btn-guide:hover {
+    background: rgba(255, 204, 0, 0.8) !important;
+    color: #000 !important;
+}
+
+.menu-btn-feedback {
+    background: rgba(0, 150, 255, 0.3) !important;
+    border-color: rgba(0, 150, 255, 0.5) !important;
+}
+.menu-btn-feedback:hover {
+    background: rgba(0, 150, 255, 0.8) !important;
+    color: #fff !important;
+}
+
+/* Cột nút (pause / game over) */
+.menu-btn-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+/* Stats game over */
+.end-stats-text {
+    color: white;
+    font-size: clamp(16px, 4vw, 28px);
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+/* Reward screen actions area */
+.reward-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    margin-top: 20px;
+    width: 100%;
+    max-width: 340px;
+}
+
+.reward-title {
+    font-size: clamp(24px, 5vw, 60px) !important;
+    margin-bottom: 10px !important;
+}
+
+#reward-result {
+    color: white;
+    margin: 0;
+    min-height: 40px;
+    font-size: clamp(18px, 4vw, 32px);
+    font-weight: 900;
+    text-align: center;
+    display: none;
+}
+
 /* Reward Wheel */
 #wheel-container {
     position: relative;
-    width: 320px;
-    height: 320px;
-    margin: 30px 0;
+    width: clamp(200px, 40vw, 300px);
+    height: clamp(200px, 40vw, 300px);
+    margin: 20px 0;
     filter: drop-shadow(0 0 20px rgba(0, 0, 0, 0.5));
+    flex-shrink: 0;
 }
 
 #wheel {
@@ -584,8 +760,11 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 60px;
-    margin-top: 20px;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+    width: 100%;
+    max-width: 700px;
 }
 
 #reward-legend {
@@ -619,15 +798,6 @@ canvas {
 .cyan { background: #00ffcc; }
 .orange { background: #ff6600; }
 .green { background: #3366ff; }
-
-#reward-result {
-    font-size: 32px;
-    font-weight: 900;
-    color: var(--accent);
-    margin-top: 30px;
-    text-shadow: 0 0 20px rgba(255, 204, 0, 0.4);
-    animation: winPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
 
 @keyframes winPop {
     from { transform: scale(0.5); opacity: 0; }
@@ -991,12 +1161,12 @@ canvas {
 
 @media (max-width: 800px), (pointer: coarse) {
     #btn-settings { display: block !important; }
-    
+
     #stats-display {
         top: 10px !important;
         right: 10px !important;
     }
-    
+
     #mobile-weapons {
         top: 60px !important;
         right: 10px !important;
@@ -1010,30 +1180,17 @@ canvas {
         transform: scale(0.7);
         transform-origin: top right;
     }
-    
+
     #ammo-display {
         bottom: 20px !important;
         right: auto !important;
         left: 50% !important;
         transform: translateX(-50%);
     }
-    .menu-title {
-        font-size: 36px !important;
-        margin-bottom: 20px !important;
-    }
-    .menu-btn {
-        width: 220px !important;
-        padding: 12px !important;
-        font-size: 14px !important;
-        margin-top: 8px !important;
-    }
-    #player-name-input {
-        width: 220px !important;
-        padding: 10px !important;
-        font-size: 14px !important;
-    }
+
+    /* Menu — scale font/spacing, giữ layout */
     .menu-guide {
-        display: none !important;
+        display: none;
     }
 }
 
@@ -1102,3 +1259,463 @@ canvas {
     .guide-section p { font-size: 12px; }
 }
 
+/* ============================================
+   RESPONSIVE — Màn hình nhỏ (< 480px / điện thoại dọc)
+   ============================================ */
+@media (max-width: 480px) {
+
+    /* Menu inner co vừa màn hình */
+    .menu-inner {
+        padding: 0 12px;
+    }
+
+    /* Tiêu đề menu nhỏ hơn nữa */
+    .menu-title {
+        font-size: clamp(28px, 10vw, 48px) !important;
+        margin-bottom: 16px !important;
+        letter-spacing: -1px !important;
+    }
+
+    /* Input tên full-width */
+    .menu-name-input {
+        font-size: 15px;
+        padding: 10px 14px;
+    }
+
+    /* Slider box full-width */
+    .menu-slider-box {
+        max-width: 100%;
+        padding: 12px 14px;
+    }
+
+    /* Nút chính full-width */
+    .w-menu-btn {
+        max-width: 100%;
+    }
+
+    /* Hàng 2 nút — xếp dọc trên màn hình rất nhỏ */
+    .menu-btn-row {
+        flex-direction: column;
+        max-width: 100%;
+        gap: 8px;
+    }
+
+    .menu-btn-row .menu-btn {
+        font-size: 14px;
+        padding: 12px 10px;
+    }
+
+    /* Reward wheel — co nhỏ, xếp dọc */
+    #wheel-layout {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    #wheel-container {
+        width: clamp(160px, 70vw, 240px);
+        height: clamp(160px, 70vw, 240px);
+        margin: 10px 0;
+    }
+
+    #reward-legend {
+        padding: 15px;
+        gap: 10px;
+    }
+
+    .legend-item {
+        font-size: 13px;
+        gap: 10px;
+    }
+
+    .reward-title {
+        font-size: clamp(18px, 6vw, 32px) !important;
+    }
+
+    /* Guide content co hơn */
+    .guide-content {
+        padding: 15px;
+        max-height: 90vh;
+    }
+
+    .guide-section h3 { font-size: 14px; }
+    .guide-section p  { font-size: 11px; }
+}
+/* ============================================
+   LANDSCAPE MOBILE — M\u00e0n h\u00ecnh ngang \u0111i\u1ec7n tho\u1ea1i
+   (chi\u1ec1u cao nh\u1ecf, chi\u1ec1u r\u1ed9ng l\u1edbn)
+   ============================================ */
+@media (orientation: landscape) and (max-height: 500px) {
+
+    /* Menu screen: padding nh\u1ecf, kh\u00f4ng scroll d\u1ecdc */
+    .menu-screen {
+        padding: 10px 16px 10px;
+        justify-content: center;
+        overflow-y: auto;
+    }
+
+    /* menu-inner chuy\u1ec3n sang 2 c\u1ed9t ngang */
+    .menu-inner {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        max-width: 860px;
+        gap: 0 28px;
+        padding: 0 8px;
+    }
+
+    /* Title v\u1eabn \u1edf tr\u00ean c\u00f9ng, full-width */
+    .menu-title {
+        width: 100% !important;
+        font-size: clamp(14px, 5vh, 32px) !important;
+        margin-bottom: 8px !important;
+        letter-spacing: -1px !important;
+        animation: none !important;   /* t\u1eaft bounce, tr\u00e1nh b\u1ecb c\u1eaft */
+        transform: none !important;
+        flex-shrink: 0;
+        order: 0;
+    }
+
+    /* C\u1ed9t TR\u00c1I: Input t\u00ean + Slider bot */
+    .menu-input-wrap {
+        flex: 1 1 220px;
+        max-width: 300px;
+        margin-bottom: 8px;
+        order: 1;
+    }
+
+    .menu-slider-box {
+        flex: 1 1 220px;
+        max-width: 300px;
+        margin-bottom: 0;
+        padding: 8px 12px;
+        order: 2;
+    }
+
+    /* C\u1ed9t PH\u1ea2I: c\u00e1c n\u00fat */
+    .w-menu-btn {
+        flex: 1 1 180px;
+        max-width: 260px;
+        order: 3;
+        margin: 4px 0;
+    }
+
+    .menu-btn-row {
+        flex: 1 1 180px;
+        max-width: 260px;
+        order: 4;
+        margin-top: 6px;
+        flex-direction: row;    /* gi\u1eef ngang */
+    }
+
+    #btn-join-discord {
+        flex: 1 1 180px;
+        max-width: 260px;
+        order: 5;
+    }
+
+    /* \u1ea8n guide text v\u00e0 version \u0111\u1ec3 ti\u1ebft ki\u1ec7m ch\u1ed7 */
+    .menu-guide,
+    .menu-update {
+        display: none !important;
+    }
+
+    /* Input t\u00ean compact h\u01a1n */
+    .menu-name-input {
+        font-size: 13px;
+        padding: 8px 14px;
+    }
+
+    /* Slider label nh\u1ecf h\u01a1n */
+    .menu-slider-label {
+        font-size: 11px;
+        margin-bottom: 5px;
+    }
+
+    .menu-slider-val {
+        font-size: 15px;
+    }
+
+    /* N\u00fat menu compact */
+    .menu-btn {
+        padding: 9px 20px !important;
+        font-size: clamp(11px, 2.5vh, 15px) !important;
+        margin: 3px 0 !important;
+    }
+
+    .menu-btn-row .menu-btn {
+        padding: 9px 10px !important;
+        font-size: 12px !important;
+    }
+
+    /* Reward wheel: 2 c\u1ed9t ngang \u0111\u00e3 \u0111\u01b0\u1ee3c x\u1eed l\u00fd b\u1edfi #wheel-layout flex-wrap */
+    #wheel-container {
+        width: clamp(140px, 30vh, 200px);
+        height: clamp(140px, 30vh, 200px);
+    }
+
+    #reward-legend {
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .legend-item {
+        font-size: 12px;
+        gap: 8px;
+    }
+
+    .reward-title {
+        font-size: clamp(14px, 4vh, 26px) !important;
+        margin-bottom: 6px !important;
+    }
+
+    .reward-actions {
+        margin-top: 10px;
+        gap: 8px;
+    }
+
+    /* Guide modal trong landscape */
+    .guide-content {
+        max-height: 90vh;
+        padding: 14px;
+        overflow-y: auto;
+    }
+
+    .guide-section h3 { font-size: 13px; }
+    .guide-section p  { font-size: 11px; line-height: 1.4; }
+}
+
+/* ============================================================
+   SPECTATOR SYSTEM STYLES
+   ============================================================ */
+
+/* ── Share Button (HUD, hiện trong game) ─────────────────── */
+.sp-share-btn {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2001;
+    pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    background: rgba(0, 140, 255, 0.55);
+    border: 2px solid rgba(0, 200, 255, 0.7);
+    border-radius: 20px;
+    color: #fff;
+    font-family: 'Outfit', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    text-transform: uppercase;
+}
+.sp-share-btn:hover {
+    background: rgba(0, 180, 255, 0.8);
+    transform: translateX(-50%) scale(1.05);
+}
+#spectator-count-live {
+    color: #0ff;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+/* ── Share Modal ─────────────────────────────────────────── */
+.sp-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.82);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    pointer-events: auto;
+    backdrop-filter: blur(4px);
+}
+.sp-modal-backdrop.hidden { display: none; }
+
+.sp-modal-box {
+    background: linear-gradient(135deg, #0d0d1f 0%, #1a1a35 100%);
+    border: 2px solid rgba(0, 200, 255, 0.35);
+    border-radius: 18px;
+    padding: 28px 24px;
+    width: 90%;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 0 60px rgba(0, 150, 255, 0.2);
+}
+
+.sp-modal-title {
+    color: #0ff;
+    font-size: 20px;
+    font-weight: 900;
+    margin: 0 0 8px;
+    letter-spacing: 1px;
+}
+
+.sp-modal-desc {
+    color: #aaa;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+
+.sp-link-input {
+    width: 100%;
+    background: rgba(0, 20, 40, 0.8);
+    border: 1px solid rgba(0, 200, 255, 0.3);
+    border-radius: 8px;
+    color: #0ff;
+    padding: 10px 12px;
+    font-size: 12px;
+    font-family: monospace;
+    box-sizing: border-box;
+    margin-bottom: 14px;
+    outline: none;
+}
+
+.sp-modal-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 14px;
+}
+
+.sp-btn-copy {
+    background: rgba(0, 140, 255, 0.3) !important;
+    border-color: rgba(0, 200, 255, 0.4) !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+}
+.sp-btn-close {
+    background: rgba(100, 100, 100, 0.3) !important;
+    padding: 10px 20px !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+}
+
+.sp-count-text {
+    color: #ffcc00;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+/* ── Spectator View (toàn màn hình) ─────────────────────── */
+#spectator-view {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 9000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#spectator-view.hidden { display: none; }
+
+#spectator-video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* ── Spectator Overlay ───────────────────────────────────── */
+.sp-overlay {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.sp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 30, 30, 0.75);
+    border: 1.5px solid rgba(255, 80, 80, 0.8);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 2px;
+    backdrop-filter: blur(6px);
+    animation: spPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes spPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+.sp-status {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    backdrop-filter: blur(6px);
+}
+.sp-status.connecting { background: rgba(255, 165, 0, 0.5); color: #ffd080; }
+.sp-status.live       { background: rgba(0, 200, 80, 0.5);  color: #80ffb0; }
+.sp-status.error      { background: rgba(200, 0, 0, 0.5);   color: #ffaaaa; }
+
+/* ── Nút Play (khi autoplay bị chặn) ────────────────────── */
+.sp-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.7);
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    width: 80px;
+    height: 80px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 900;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s, transform 0.15s;
+    font-family: 'Outfit', sans-serif;
+}
+.sp-play-btn:hover { background: rgba(255,255,255,0.2); transform: translate(-50%, -50%) scale(1.1); }
+
+/* ── Nút Quay lại ────────────────────────────────────────── */
+.sp-back-btn {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    color: rgba(255,255,255,0.7);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 16px;
+    text-decoration: none;
+    backdrop-filter: blur(6px);
+    transition: color 0.2s, background 0.2s;
+    z-index: 20;
+    font-family: 'Outfit', sans-serif;
+}
+.sp-back-btn:hover { color: #fff; background: rgba(255,255,255,0.15); }
+
+/* ── Responsive spectator ────────────────────────────────── */
+@media (max-width: 480px) {
+    .sp-modal-btns { flex-direction: column; }
+    .sp-btn-copy, .sp-btn-close { width: 100% !important; }
+    .sp-badge { font-size: 10px; }
+    .sp-status { font-size: 11px; }
+}

@@ -98,7 +98,7 @@ window.GAME_CONFIG = {
             damage: 400,      // Sát thương cú đập khi trồi lên.
             prepareTime: 2.0, // Thời gian Boss chìm xuống đất.
             activeTime: 3.0,  // Tổng thời gian chiêu thức (Boss biến mất).
-            range: 40         // Tầm đập của chiêu này. Tăng -> Rất khó né.
+            range: 33         // Tầm đập của chiêu này. Tăng -> Rất khó né.
         }
     },
 
@@ -193,7 +193,7 @@ const M4 = {
 
 let gl;
 window.addEventListener('load', () => {
-    gl = document.getElementById('glcanvas').getContext('webgl2');
+    gl = document.getElementById('glcanvas').getContext('webgl2', { preserveDrawingBuffer: true });
     if (!gl) {
         debug("❌ WebGL2 KHÔNG HỖ TRỢ!");
         alert("Thiết bị của bác không hỗ trợ WebGL2. Vui lòng dùng trình duyệt khác!");
