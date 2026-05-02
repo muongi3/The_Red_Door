@@ -133,25 +133,16 @@ window.STATE = {
     gameEnded: false,
     playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
     enragedAnnounced: false,
-    hasExited: false,
-    isWatching: false,
-    isConnected: false,
-    peer: null,
-    spectatorConns: []
+    hasExited: false
 };
 const STATE = window.STATE;
 
-// Hệ thống Debug cho Mobile
-// Hệ thống Debug Toàn cục
-window.debug = (msg) => {
-    console.log(msg);
-    const consoleEl = document.getElementById('debug-console');
-    if (consoleEl) {
-        consoleEl.innerHTML += msg + '<br>';
-        consoleEl.scrollTop = consoleEl.scrollHeight;
-    }
+// Hệ thống log thay thế cho debug
+const logger = {
+    info: (msg) => console.log(`[INFO] ${msg}`),
+    error: (msg) => console.error(`[ERROR] ${msg}`)
 };
-window.onerror = (msg, url, line) => window.debug(`❌ LỖI: ${msg} tại ${line}`);
+window.onerror = (msg, url, line) => console.error(`❌ LỖI: ${msg} tại ${line}`);
 
 const M4 = {
     identity: () => new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]),
@@ -193,23 +184,23 @@ const M4 = {
 
 let gl;
 window.addEventListener('load', () => {
-    gl = document.getElementById('glcanvas').getContext('webgl2', { preserveDrawingBuffer: true });
+    gl = document.getElementById('glcanvas').getContext('webgl2');
     if (!gl) {
-        debug("❌ WebGL2 KHÔNG HỖ TRỢ!");
+        console.log("❌ WebGL2 KHÔNG HỖ TRỢ!");
         alert("Thiết bị của bác không hỗ trợ WebGL2. Vui lòng dùng trình duyệt khác!");
         return;
     }
-    debug("✅ WebGL2 OK");
+    console.log("✅ WebGL2 OK");
     // Cập nhật kích thước canvas ngay khi load
     gl.canvas.width = window.innerWidth;
     gl.canvas.height = window.innerHeight;
-    debug("🎨 Khởi tạo Graphics...");
+    console.log("🎨 Khởi tạo Graphics...");
     initGraphics();
-    debug("📦 Khởi tạo Assets...");
+    console.log("📦 Khởi tạo Assets...");
     initAssets();
-    debug("🚀 Game initialized successfully!");
+    console.log("🚀 Game initialized successfully!");
 
-    debug("🔍 Chế độ: NGƯỜI CHƠI (HOST)");
+    console.log("🔍 Chế độ: NGƯỜI CHƠI (HOST)");
 });
 
 const VS_SOURCE = `#version 300 es
@@ -892,9 +883,14 @@ const OIIA_CAT = { spawned: false, active: false };
 
 function startGame() {
     const nameInput = document.getElementById('player-name-input');
-    const name = nameInput.value.trim() || "Survivor_" + Math.floor(Math.random() * 1000);
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert("VUI LÒNG NHẬP TÊN TRƯỚC KHI BẮT ĐẦU!");
+        nameInput.focus();
+        return;
+    }
     STATE.playerName = name;
-    localStorage.setItem('savedPlayerName', name); 
+    localStorage.setItem('savedPlayerName', name); // Lưu tên vào trình duyệt
     STATE.screen = 'game';
     STATE.player.hp = window.GAME_CONFIG.player.maxHp;
     STATE.player.maxHp = window.GAME_CONFIG.player.maxHp;
@@ -1706,10 +1702,7 @@ function endGame(win) {
     if (STATE.gameEnded) return;
     STATE.gameEnded = true;
 
-    // Gửi tín hiệu đóng khán giả
-    if (typeof STATE.spectatorConns !== 'undefined' && STATE.spectatorConns.length > 0) {
-        STATE.spectatorConns.forEach(c => { if (c.open) c.send({ type: 'GAME_OVER' }); });
-    }
+    // STATE.gameEnded = true; (đã có ở trên)
     STATE.screen = 'end'; document.exitPointerLock(); document.getElementById('ui-layer').style.display = 'none';
     const duration = Math.floor((Date.now() - STATE.startTime) / 1000);
     STATE.finalStats = { win, kills: STATE.player.kills, duration, date: new Date().toLocaleString('vi-VN') };
