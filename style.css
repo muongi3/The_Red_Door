@@ -1636,19 +1636,7 @@ canvas {
 }
 
 .sp-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    background: rgba(255, 30, 30, 0.75);
-    border: 1.5px solid rgba(255, 80, 80, 0.8);
-    border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 11px;
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: 2px;
-    backdrop-filter: blur(6px);
-    animation: spPulse 1.5s ease-in-out infinite;
+    display: none !important; /* Ẩn theo yêu cầu của user */
 }
 
 @keyframes spPulse {
@@ -1657,15 +1645,8 @@ canvas {
 }
 
 .sp-status {
-    font-size: 12px;
-    font-weight: 700;
-    padding: 4px 10px;
-    border-radius: 6px;
-    backdrop-filter: blur(6px);
+    display: none !important; /* Ẩn theo yêu cầu của user */
 }
-.sp-status.connecting { background: rgba(255, 165, 0, 0.5); color: #ffd080; }
-.sp-status.live       { background: rgba(0, 200, 80, 0.5);  color: #80ffb0; }
-.sp-status.error      { background: rgba(200, 0, 0, 0.5);   color: #ffaaaa; }
 
 /* ── Nút Play (khi autoplay bị chặn) ────────────────────── */
 .sp-play-btn {
