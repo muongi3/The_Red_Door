@@ -871,7 +871,11 @@ function initAssets() {
     ASSETS.smg = genSMGMesh();
     ASSETS.sniper = genSniperMesh();
     ASSETS.cannon = genCannonMesh();
-    ASSETS.bossBody = genBossBody(); ASSETS.bossBody = genBossBody(); ASSETS.bossArm = genBossArm(); ASSETS.bossProj = genBossProjectileMesh(); ASSETS.indicator = genIndicatorMesh();
+    ASSETS.arm = genArmMesh();
+    ASSETS.bossBody = genBossBody();
+    ASSETS.bossArm = genBossArm();
+    ASSETS.bossProj = genBossProjectileMesh();
+    ASSETS.indicator = genIndicatorMesh();
 
     ASSETS.bloodMoon = genMoonMesh([1, 0, 0], 1, 24); // Giảm resolution xuống 24 để mượt trên Mobile
     ASSETS.dashInd = genDashIndicatorMesh();
