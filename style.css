@@ -1049,6 +1049,8 @@ canvas {
     #stats-display {
         top: 10px !important;
         right: 10px !important;
+        bottom: auto !important;
+        transform: none !important;
     }
 
     #mobile-weapons {
@@ -1061,15 +1063,17 @@ canvas {
         right: 10px !important;
         bottom: auto !important;
         left: auto !important;
-        transform: scale(0.7);
+        transform: scale(0.6) !important;
         transform-origin: top right;
     }
 
     #ammo-display {
+        top: auto !important;
         bottom: 20px !important;
         right: auto !important;
         left: 50% !important;
-        transform: translateX(-50%);
+        transform: translateX(-50%) !important;
+        font-size: 18px !important;
     }
 
     /* Menu — scale font/spacing, giữ layout */
