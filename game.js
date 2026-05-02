@@ -594,36 +594,33 @@ function genCannonMesh() {
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
     const gray = [0.03, 0.03, 0.03], lightGray = [0.1, 0.1, 0.1], cyan = [0, 1, 1], orange = [1, 0.4, 0];
     
-    // Main Chassis (Reinforced)
-    push(getCube(gray, 0.5, 0.55, 1.4, 0, 0, -0.2)); 
-    push(getCube(lightGray, 0.55, 0.45, 0.9, 0, 0.1, -0.3)); 
+    // Main Chassis (Reinforced) - Scaled down
+    push(getCube(gray, 0.25, 0.28, 0.7, 0, 0, -0.1)); 
+    push(getCube(lightGray, 0.28, 0.22, 0.45, 0, 0.05, -0.15)); 
     
     // Cooling Fins (Radiator plates)
     for(let i=0; i<4; i++) {
-        push(getCube(lightGray, 0.6, 0.02, 0.4, 0, 0.3 + i*0.05, -0.1));
+        push(getCube(lightGray, 0.3, 0.01, 0.2, 0, 0.15 + i*0.02, -0.05));
     }
     
     // Futuristic Quad-Barrel Assembly
-    const bSize = 0.18;
-    push(getCube(gray, bSize, bSize, 1.5, 0.2, 0.2, 0.4));
-    push(getCube(gray, bSize, bSize, 1.5, -0.2, 0.2, 0.4));
-    push(getCube(gray, bSize, bSize, 1.5, 0.2, -0.2, 0.4));
-    push(getCube(gray, bSize, bSize, 1.5, -0.2, -0.2, 0.4));
+    const bSize = 0.09;
+    push(getCube(gray, bSize, bSize, 0.75, 0.1, 0.1, 0.2));
+    push(getCube(gray, bSize, bSize, 0.75, -0.1, 0.1, 0.2));
+    push(getCube(gray, bSize, bSize, 0.75, 0.1, -0.1, 0.2));
+    push(getCube(gray, bSize, bSize, 0.75, -0.1, -0.1, 0.2));
     
     // Energy Rails (Glowing Cyan)
-    push(getCube(cyan, 0.58, 0.05, 1.0, 0, 0.28, 0)); // Top Rail
-    push(getCube(cyan, 0.05, 0.55, 1.1, 0.28, 0, 0)); // Side L
-    push(getCube(cyan, 0.05, 0.55, 1.1, -0.28, 0, 0)); // Side R
+    push(getCube(cyan, 0.3, 0.02, 0.5, 0, 0.14, 0)); 
+    push(getCube(cyan, 0.02, 0.3, 0.5, 0.14, 0, 0)); 
+    push(getCube(cyan, 0.02, 0.3, 0.5, -0.14, 0, 0)); 
     
-    // Holographic Ammo Display (Small orange block)
-    push(getCube(orange, 0.1, 0.1, 0.1, 0.2, 0.4, -0.1));
+    // Muzzle Accelerator
+    push(getCube(orange, 0.32, 0.32, 0.1, 0, 0, 0.55)); 
     
-    // Muzzle Accelerator (Glowing)
-    push(getCube(orange, 0.65, 0.65, 0.2, 0, 0, 1.1)); 
-    
-    // Ergonomic Grip & Tactical Stock
-    push(getCube(gray, 0.18, 0.7, 0.4, 0, -0.5, -0.6)); // Grip
-    push(getCube(lightGray, 0.45, 0.4, 0.7, 0, 0, -1.0)); // Stock
+    // Modern Grip & Stock
+    push(getCube(gray, 0.1, 0.35, 0.2, 0, -0.25, -0.3)); 
+    push(getCube(lightGray, 0.22, 0.2, 0.35, 0, 0, -0.5)); 
     
     return createMesh(V, N, C);
 }
@@ -2237,7 +2234,7 @@ function draw() {
     });
     STATE.particles.forEach(p => {
         gl.uniform3f(locs.emitColor, p.color[0] * 2.0, p.color[1] * 2.0, p.color[2] * 2.0); // Rực rỡ hơn nữa
-        const sz = (p.type === 'smoke' ? 1.4 : 0.6) * p.life; // Khói siêu to
+        const sz = (p.type === 'smoke' ? 0.7 : 0.3) * p.life; // Khói vừa phải, rõ nét
         drawMeshActual(ASSETS.crate, p.pos, sz, 0);
     });
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
