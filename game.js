@@ -592,34 +592,38 @@ function genSniperMesh() {
 function genCannonMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const gray = [0.05, 0.05, 0.05], lightGray = [0.15, 0.15, 0.15], cyan = [0, 1, 1], orange = [1, 0.3, 0];
+    const gray = [0.03, 0.03, 0.03], lightGray = [0.1, 0.1, 0.1], cyan = [0, 1, 1], orange = [1, 0.4, 0];
     
-    // Main Chassis
-    push(getCube(gray, 0.45, 0.5, 1.2, 0, 0, -0.1)); 
-    push(getCube(lightGray, 0.5, 0.4, 0.8, 0, 0.1, -0.2)); // Upper frame
+    // Main Chassis (Reinforced)
+    push(getCube(gray, 0.5, 0.55, 1.4, 0, 0, -0.2)); 
+    push(getCube(lightGray, 0.55, 0.45, 0.9, 0, 0.1, -0.3)); 
     
-    // Quad Barrels (Modern futuristic look)
-    push(getCube(gray, 0.15, 0.15, 1.3, 0.15, 0.15, 0.3));
-    push(getCube(gray, 0.15, 0.15, 1.3, -0.15, 0.15, 0.3));
-    push(getCube(gray, 0.15, 0.15, 1.3, 0.15, -0.15, 0.3));
-    push(getCube(gray, 0.15, 0.15, 1.3, -0.15, -0.15, 0.3));
+    // Cooling Fins (Radiator plates)
+    for(let i=0; i<4; i++) {
+        push(getCube(lightGray, 0.6, 0.02, 0.4, 0, 0.3 + i*0.05, -0.1));
+    }
     
-    // Energy Vents & Neon Rails
-    push(getCube(cyan, 0.52, 0.04, 0.6, 0, 0.25, -0.1)); // Top Neon
-    push(getCube(cyan, 0.52, 0.04, 0.6, 0, -0.25, -0.1)); // Bottom Neon
-    push(getCube(cyan, 0.04, 0.4, 0.8, 0.23, 0, -0.1)); // Side Neon L
-    push(getCube(cyan, 0.04, 0.4, 0.8, -0.23, 0, -0.1)); // Side Neon R
+    // Futuristic Quad-Barrel Assembly
+    const bSize = 0.18;
+    push(getCube(gray, bSize, bSize, 1.5, 0.2, 0.2, 0.4));
+    push(getCube(gray, bSize, bSize, 1.5, -0.2, 0.2, 0.4));
+    push(getCube(gray, bSize, bSize, 1.5, 0.2, -0.2, 0.4));
+    push(getCube(gray, bSize, bSize, 1.5, -0.2, -0.2, 0.4));
     
-    // Cooling Pipes
-    push(getCube([0.3, 0, 0], 0.06, 0.06, 0.9, 0.2, 0.2, -0.2)); 
-    push(getCube([0.3, 0, 0], 0.06, 0.06, 0.9, -0.2, 0.2, -0.2));
+    // Energy Rails (Glowing Cyan)
+    push(getCube(cyan, 0.58, 0.05, 1.0, 0, 0.28, 0)); // Top Rail
+    push(getCube(cyan, 0.05, 0.55, 1.1, 0.28, 0, 0)); // Side L
+    push(getCube(cyan, 0.05, 0.55, 1.1, -0.28, 0, 0)); // Side R
     
-    // Muzzle Energy Core
-    push(getCube(orange, 0.55, 0.55, 0.15, 0, 0, 0.9)); 
+    // Holographic Ammo Display (Small orange block)
+    push(getCube(orange, 0.1, 0.1, 0.1, 0.2, 0.4, -0.1));
     
-    // Modern Grip & Stock
-    push(getCube(gray, 0.15, 0.6, 0.3, 0, -0.4, -0.5)); // Grip
-    push(getCube(lightGray, 0.4, 0.3, 0.5, 0, 0, -0.8)); // Stock
+    // Muzzle Accelerator (Glowing)
+    push(getCube(orange, 0.65, 0.65, 0.2, 0, 0, 1.1)); 
+    
+    // Ergonomic Grip & Tactical Stock
+    push(getCube(gray, 0.18, 0.7, 0.4, 0, -0.5, -0.6)); // Grip
+    push(getCube(lightGray, 0.45, 0.4, 0.7, 0, 0, -1.0)); // Stock
     
     return createMesh(V, N, C);
 }
@@ -1101,15 +1105,15 @@ function update(dt) {
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (p.isChargingUlti) { 
         move.x = 0; move.z = 0; 
-        // Hiệu ứng Aura xoay chậm quanh người chơi (Vòng xoáy năng lượng)
-        const t = performance.now() * 0.003;
-        const radius = 1.8;
-        for (let i = 0; i < 3; i++) {
-            const ang = t + i * (Math.PI * 2 / 3);
+        // Hiệu ứng Aura bùng nổ quanh người chơi
+        const t = performance.now() * 0.004;
+        const radius = 2.0;
+        for (let i = 0; i < 6; i++) { // Gấp đôi số hạt Aura
+            const ang = t + i * (Math.PI * 2 / 6);
             const px = p.pos.x + Math.cos(ang) * radius;
             const pz = p.pos.z + Math.sin(ang) * radius;
-            // Spawning glowing particles that hover
-            spawnParticles(V3.create(px, p.pos.y + 0.2 + Math.sin(t*3+i)*0.8, pz), 1, [1, 0.6, 0], 0.02);
+            spawnParticles(V3.create(px, p.pos.y + 0.1 + Math.sin(t*4+i)*1.0, pz), 1, [0, 1, 1], 0.05); // Màu xanh Cyan cho Aura ngầu hơn
+            if (Math.random() < 0.3) spawnParticles(p.pos, 1, [1, 0.5, 0], 0.2); // Xen kẽ lửa cam
         }
     } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -2232,8 +2236,8 @@ function draw() {
         else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
     });
     STATE.particles.forEach(p => {
-        gl.uniform3f(locs.emitColor, p.color[0] * 1.5, p.color[1] * 1.5, p.color[2] * 1.5); // Tăng cường độ phát sáng
-        const sz = (p.type === 'smoke' ? 0.8 : 0.4) * p.life; // Khói to hơn lửa
+        gl.uniform3f(locs.emitColor, p.color[0] * 2.0, p.color[1] * 2.0, p.color[2] * 2.0); // Rực rỡ hơn nữa
+        const sz = (p.type === 'smoke' ? 1.4 : 0.6) * p.life; // Khói siêu to
         drawMeshActual(ASSETS.crate, p.pos, sz, 0);
     });
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
