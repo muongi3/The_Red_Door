@@ -1136,7 +1136,7 @@ function update(dt) {
             }
         }
         if (proj.dead && proj.isUlti) {
-            createExplosion(proj.pos, window.GAME_CONFIG.ultimate.explosionRange, window.GAME_CONFIG.ultimate.damage, true);
+            createExplosion(proj.pos, window.GAME_CONFIG.ultimate.explosionRange, window.GAME_CONFIG.ultimate.damage, true, true);
         }
 
         proj.pos = nextPos; proj.life -= dt; if (proj.life < 0) proj.dead = true;
@@ -1658,7 +1658,6 @@ function update(dt) {
 
 
 
-
         if (b.state === 'fight' && dist < 10) takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt);
 
         if (b.hp <= 0 && !b.dead) {
@@ -1692,13 +1691,21 @@ function update(dt) {
 
 }
 
-function createExplosion(pos, customRange, customDamage, isFriendly = false) {
+function createExplosion(pos, customRange, customDamage, isFriendly = false, noCharge = false) {
     STATE.shake = 0.8; playAudio('shoot'); spawnParticles(pos, 40, [1, 0.5, 0]);
     const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange;
     const damage = customDamage || window.GAME_CONFIG.misc.barrelExplosionDamage;
     if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage);
-    STATE.bots.forEach(b => { if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) { b.hp -= damage; STATE.player.damageDealt += damage; } });
-    if (STATE.boss && STATE.boss.active && V3.dist(pos, STATE.boss.pos) < range + 5) { STATE.boss.hp -= damage; STATE.player.damageDealt += damage; }
+    STATE.bots.forEach(b => {
+        if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) {
+            b.hp -= damage;
+            if (!noCharge) STATE.player.damageDealt += damage;
+        }
+    });
+    if (STATE.boss && STATE.boss.active && V3.dist(pos, STATE.boss.pos) < range + 5) {
+        STATE.boss.hp -= damage;
+        if (!noCharge) STATE.player.damageDealt += damage;
+    }
 }
 
 function fireWeapon(shooter, rot, weapon, isPlayer, dirOverride) {
@@ -1788,7 +1795,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileBtns = [
         'btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint',
         'mobile-weapons', 'health-bar-container', 'armor-bar-container',
-        'ammo-display', 'stats-display', 'loot-legend'
+        'ammo-display', 'stats-display', 'loot-legend', 'btn-ulti'
     ];
     let draggedBtn = null;
 
@@ -1884,7 +1891,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.getElementById(id);
                 if (btn && preEditHUD[id]) {
                     btn.classList.remove('editing-btn');
-                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons'].includes(id)) {
+                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
                         btn.style.pointerEvents = ''; // Trả về mặc định
                     }
                     btn.style.top = preEditHUD[id].top;
@@ -1910,7 +1917,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const btn = document.getElementById(id);
                 if (btn) {
                     btn.classList.remove('editing-btn');
-                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons'].includes(id)) {
+                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
                         btn.style.pointerEvents = ''; // Trả về mặc định
                     }
                     newHUD[id] = {

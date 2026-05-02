@@ -268,10 +268,10 @@ canvas {
     top: 25%;
     left: 50%;
     transform: translate(-50%, -50%) scale(0);
-    font-size: 24px;
+    font-size: 14px;
     color: #ff00ff;
     font-weight: 900;
-    text-shadow: 2px 2px 0 #000;
+    text-shadow: 1px 1px 0 #000;
     transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     pointer-events: none;
     text-align: center;
