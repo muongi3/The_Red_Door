@@ -1011,6 +1011,10 @@ function update(dt) {
     }
     let isSprinting = (STATE.keys['ShiftLeft'] || (STATE.joystick && STATE.joystick.dist > 30));
     if (isSprinting) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
+    
+    // Toggle hiệu ứng vệt gió
+    const sprintOverlay = document.getElementById('sprint-overlay');
+    if (sprintOverlay) sprintOverlay.classList.toggle('hidden', !isSprinting);
 
     // FOV effect for sprinting
     STATE.targetFOV = isSprinting ? 1.1 : 1.0; 
