@@ -975,31 +975,50 @@ canvas {
     position: absolute;
     top: 55px;
     right: 145px;
-    width: 60px;
-    height: 60px;
+    width: 65px;
+    height: 65px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.85);
     border: 2px solid #00f2ff;
     color: #00f2ff;
     font-weight: 900;
-    font-size: 13px;
+    font-size: 14px;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
     z-index: 2000;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), inset 0 0 10px rgba(0, 242, 255, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 242, 255, 0.5), inset 0 0 15px rgba(0, 242, 255, 0.3);
     animation: unti-modern-pulse 2s infinite ease-in-out;
     scale: var(--btn-scale, 1.0);
     text-shadow: 0 0 10px #00f2ff;
+    overflow: hidden;
+}
+
+/* Hiệu ứng Scanline cho nút Unti */
+#btn-ulti::after {
+    content: '';
+    position: absolute;
+    top: -100%;
+    left: 0;
+    width: 100%;
+    height: 200%;
+    background: linear-gradient(0deg, transparent 0%, rgba(0, 242, 255, 0.2) 50%, transparent 100%);
+    animation: scanline 3s infinite linear;
+    pointer-events: none;
+}
+
+@keyframes scanline {
+    0% { top: -100%; }
+    100% { top: 100%; }
 }
 
 #btn-ulti.hidden { display: none; }
 
 @keyframes unti-modern-pulse {
     0% { transform: scale(1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
-    50% { transform: scale(1.08); box-shadow: 0 0 30px rgba(0, 242, 255, 0.8), 0 0 50px rgba(255, 106, 0, 0.4); border-color: #ff6a00; color: #ff6a00; text-shadow: 0 0 15px #ff6a00; }
+    50% { transform: scale(1.1); box-shadow: 0 0 35px rgba(0, 242, 255, 0.9), 0 0 60px rgba(255, 106, 0, 0.5); border-color: #ff6a00; color: #ff6a00; text-shadow: 0 0 20px #ff6a00; }
     100% { transform: scale(1); box-shadow: 0 0 15px rgba(0, 242, 255, 0.4); }
 }
 #btn-sprint:active, #btn-sprint.pressed {

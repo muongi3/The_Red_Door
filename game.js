@@ -592,13 +592,35 @@ function genSniperMesh() {
 function genCannonMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const gray = [0.08, 0.08, 0.08], cyan = [0, 0.9, 1], orange = [1, 0.4, 0];
-    push(getCube(gray, 0.4, 0.4, 1.4, 0, 0, 0)); // Sleek Black Body
-    push(getCube(cyan, 0.42, 0.05, 1.0, 0, 0.2, 0)); // Glowing Top Neon
-    push(getCube(cyan, 0.05, 0.42, 1.0, 0.2, 0, 0)); // Glowing Side Neon L
-    push(getCube(cyan, 0.05, 0.42, 1.0, -0.2, 0, 0)); // Glowing Side Neon R
-    push(getCube(orange, 0.45, 0.45, 0.1, 0, 0, 0.7)); // Energy Muzzle
-    push(getCube(gray, 0.1, 0.5, 0.2, 0, -0.3, -0.3)); // Grip
+    const gray = [0.05, 0.05, 0.05], lightGray = [0.15, 0.15, 0.15], cyan = [0, 1, 1], orange = [1, 0.3, 0];
+    
+    // Main Chassis
+    push(getCube(gray, 0.45, 0.5, 1.2, 0, 0, -0.1)); 
+    push(getCube(lightGray, 0.5, 0.4, 0.8, 0, 0.1, -0.2)); // Upper frame
+    
+    // Quad Barrels (Modern futuristic look)
+    push(getCube(gray, 0.15, 0.15, 1.3, 0.15, 0.15, 0.3));
+    push(getCube(gray, 0.15, 0.15, 1.3, -0.15, 0.15, 0.3));
+    push(getCube(gray, 0.15, 0.15, 1.3, 0.15, -0.15, 0.3));
+    push(getCube(gray, 0.15, 0.15, 1.3, -0.15, -0.15, 0.3));
+    
+    // Energy Vents & Neon Rails
+    push(getCube(cyan, 0.52, 0.04, 0.6, 0, 0.25, -0.1)); // Top Neon
+    push(getCube(cyan, 0.52, 0.04, 0.6, 0, -0.25, -0.1)); // Bottom Neon
+    push(getCube(cyan, 0.04, 0.4, 0.8, 0.23, 0, -0.1)); // Side Neon L
+    push(getCube(cyan, 0.04, 0.4, 0.8, -0.23, 0, -0.1)); // Side Neon R
+    
+    // Cooling Pipes
+    push(getCube([0.3, 0, 0], 0.06, 0.06, 0.9, 0.2, 0.2, -0.2)); 
+    push(getCube([0.3, 0, 0], 0.06, 0.06, 0.9, -0.2, 0.2, -0.2));
+    
+    // Muzzle Energy Core
+    push(getCube(orange, 0.55, 0.55, 0.15, 0, 0, 0.9)); 
+    
+    // Modern Grip & Stock
+    push(getCube(gray, 0.15, 0.6, 0.3, 0, -0.4, -0.5)); // Grip
+    push(getCube(lightGray, 0.4, 0.3, 0.5, 0, 0, -0.8)); // Stock
+    
     return createMesh(V, N, C);
 }
 
@@ -1341,7 +1363,7 @@ function update(dt) {
         } else {
             p.vel.y -= 20 * dt; // Trọng lực lửa
         }
-        p.life -= dt;
+        p.life -= dt * (p.type === 'smoke' ? 0.5 : 1.0); // Khói tồn tại lâu hơn lửa
     });
     STATE.particles = STATE.particles.filter(p => p.life > 0);
 
@@ -2210,8 +2232,9 @@ function draw() {
         else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
     });
     STATE.particles.forEach(p => {
-        gl.uniform3f(locs.emitColor, p.color[0], p.color[1], p.color[2]); // Làm hạt phát sáng
-        drawMeshActual(ASSETS.crate, p.pos, 0.3 * p.life, 0); // Tăng kích thước hạt
+        gl.uniform3f(locs.emitColor, p.color[0] * 1.5, p.color[1] * 1.5, p.color[2] * 1.5); // Tăng cường độ phát sáng
+        const sz = (p.type === 'smoke' ? 0.8 : 0.4) * p.life; // Khói to hơn lửa
+        drawMeshActual(ASSETS.crate, p.pos, sz, 0);
     });
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
