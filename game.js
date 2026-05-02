@@ -1009,8 +1009,14 @@ function update(dt) {
         if (p.powerup.type === 0 || p.powerup.type === 3) speedMult = window.GAME_CONFIG.player.powerupSpeedMultiplier;
         if (p.powerup.type === 1 || p.powerup.type === 3) dmgMult = 2.0;
     }
-    if (STATE.keys['ShiftLeft']) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
-    // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
+    let isSprinting = (STATE.keys['ShiftLeft'] || (STATE.joystick && STATE.joystick.dist > 30));
+    if (isSprinting) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
+
+    // FOV effect for sprinting
+    STATE.targetFOV = isSprinting ? 1.1 : 1.0; 
+    STATE.currentFOV = STATE.currentFOV || 1.0;
+    STATE.currentFOV += (STATE.targetFOV - STATE.currentFOV) * 5 * dt;
+
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -1969,7 +1975,8 @@ function draw() {
 
     const aspect = gl.canvas.width / gl.canvas.height;
     const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
-    const fov = 1.2 - (STATE.aimLerp * zoomFactor);
+    const sprintFOV = STATE.currentFOV || 1.0;
+    const fov = (1.2 * sprintFOV) - (STATE.aimLerp * zoomFactor);
 
     const proj = M4.perspective(fov, aspect, 0.1, 1000);
     const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
@@ -2690,6 +2697,8 @@ window.addEventListener('DOMContentLoaded', () => {
     // Joystick (Di chuyển)
     if (jZone) {
         jZone.addEventListener('touchstart', e => {
+            // Không cho phép di chuyển khi đang mở menu cài đặt để tránh đè nút
+            if (!document.getElementById('settings-modal').classList.contains('hidden')) return;
             e.preventDefault();
             const touch = e.changedTouches[0];
             joyActive = true;
