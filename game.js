@@ -159,7 +159,7 @@ window.STATE = {
     screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
     mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
 
-    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false },
+    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0 },
     weapons: [
         { name: "Pistol", ...window.GAME_CONFIG.weapons.pistol, ammo: window.GAME_CONFIG.weapons.pistol.maxAmmo, type: 0 },
         { name: "SMG", ...window.GAME_CONFIG.weapons.smg, ammo: window.GAME_CONFIG.weapons.smg.maxAmmo, type: 1 },
@@ -1076,15 +1076,15 @@ function update(dt) {
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
     if (p.isChargingUlti) { 
         move.x = 0; move.z = 0; 
-        // Hiệu ứng Aura xoay chậm quanh người chơi (Rõ nét hơn)
-        const t = performance.now() * 0.005;
+        // Hiệu ứng Aura xoay chậm quanh người chơi (Vòng xoáy năng lượng)
+        const t = performance.now() * 0.003;
         const radius = 1.8;
-        for (let i = 0; i < 4; i++) { // Tăng lên 4 hạt mỗi lần
-            const ang = t + i * (Math.PI / 2);
+        for (let i = 0; i < 3; i++) {
+            const ang = t + i * (Math.PI * 2 / 3);
             const px = p.pos.x + Math.cos(ang) * radius;
             const pz = p.pos.z + Math.sin(ang) * radius;
-            // Hạt to hơn và sáng hơn
-            spawnParticles(V3.create(px, p.pos.y + 0.8 + Math.sin(t*3)*0.5, pz), 2, [1, 0.7, 0.2], 0.05);
+            // Spawning glowing particles that hover
+            spawnParticles(V3.create(px, p.pos.y + 0.2 + Math.sin(t*3+i)*0.8, pz), 1, [1, 0.6, 0], 0.02);
         }
     } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -1697,11 +1697,7 @@ function update(dt) {
 
 
 
-        const dist = V3.dist(p.pos, b.pos);
-        if (b.state === 'fight' && dist < 10) {
-            // Gây dame thụ động nhưng không phát âm thanh liên tục
-            takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt, true); 
-        }
+        if (b.state === 'fight' && dist < 10) takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt);
 
         if (b.hp <= 0 && !b.dead) {
             b.dead = true;
@@ -1760,7 +1756,7 @@ function fireWeapon(shooter, rot, weapon, isPlayer, dirOverride) {
     playAudio('shoot');
 }
 
-function takeDamage(p, amt, silent = false) {
+function takeDamage(p, amt) {
     if (STATE.gameEnded || p.isInvincible) return;
     // FIX CRASH: Kiểm tra p.powerup tồn tại trước khi truy cập type
     if (p.powerup && p.powerup.time > 0 && p.powerup.type === 2) amt *= 0.2;
@@ -1772,7 +1768,13 @@ function takeDamage(p, amt, silent = false) {
     } else p.hp -= amt;
 
     if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
-    if (!silent) playAudio('hit');
+    
+    // Cooldown âm thanh trúng đòn để tránh lặp liên tục khi Boss áp sát
+    const now = performance.now();
+    if (now - p.lastDamageSoundTime > 200) {
+        playAudio('hit');
+        p.lastDamageSoundTime = now;
+    }
 
     p.damageFlash = 1.0; // [YÊU CẦU] Nháy đỏ trong 1 giây
 
@@ -2073,7 +2075,7 @@ function draw() {
     STATE.sprintLerp = (STATE.sprintLerp || 0) + (((STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 1 : 0) - (STATE.sprintLerp || 0)) * 0.05;
 
     const aspect = gl.canvas.width / gl.canvas.height;
-    const zoomFactor = [0.5, 0.8, 1.5][p.weaponIdx];
+    const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
     const fov = 1.2 - (STATE.aimLerp * zoomFactor) + (STATE.sprintLerp * 0.3);
 
     const proj = M4.perspective(fov, aspect, 0.1, 1000);
@@ -2197,9 +2199,10 @@ function draw() {
         else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
     });
     STATE.particles.forEach(p => {
-        gl.uniform3f(locs.fogColor, p.color[0] * 2.0, p.color[1] * 2.0, p.color[2] * 2.0);
-        drawMeshActual(ASSETS.crate, p.pos, 0.5 * p.life, 0);
+        gl.uniform3f(locs.emitColor, p.color[0], p.color[1], p.color[2]); // Làm hạt phát sáng
+        drawMeshActual(ASSETS.crate, p.pos, 0.3 * p.life, 0); // Tăng kích thước hạt
     });
+    gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
 
     // Boss Rendering
@@ -2601,71 +2604,55 @@ function triggerBossEvent() {
     if (STATE.bossTriggered) return;
     STATE.bossTriggered = true;
 
-    // HIỆN THÔNG BÁO CHỜ (5 giây chuẩn bị)
-    showGlobalAnnouncement("BOSS SẼ XUẤT HIỆN SAU 5 GIÂY...", 5000);
+    STATE.inputLocked = true;
+    STATE.keys = {};
 
     setTimeout(() => {
-        STATE.inputLocked = true;
-        STATE.keys = {};
+        const overlay = document.getElementById('boss-overlay');
+        const container = document.getElementById('boss-container');
+        const visual = document.getElementById('boss-visual');
 
-        // Hiệu ứng màn hình rung và overlay
-        setTimeout(() => {
-            const overlay = document.getElementById('boss-overlay');
-            const container = document.getElementById('boss-container');
-            const visual = document.getElementById('boss-visual');
+        overlay.classList.remove('hidden');
+        container.classList.remove('hidden');
+        overlay.classList.add('active');
+        visual.classList.add('boss-appear');
 
-            if (overlay) {
-                overlay.classList.remove('hidden');
-                overlay.classList.add('active');
-            }
-            if (container) container.classList.remove('hidden');
-            if (visual) visual.classList.add('boss-appear');
+        document.body.classList.add('shake-screen');
+    }, 500);
 
-            document.body.classList.add('shake-screen');
-        }, 500);
+    // XUẤT HIỆN BOSS 3D NGAY ĐỂ CHIẾN ĐẤU
+    setTimeout(() => {
+        // Khởi tạo Boss 3D (Hakari)
+        const yaw = STATE.camera.rot.y;
+        const spawnDist = 45;
+        STATE.boss = {
+            pos: V3.add(STATE.player.pos, V3.create(Math.sin(yaw) * spawnDist, 0, -Math.cos(yaw) * spawnDist)),
+            hp: window.GAME_CONFIG.boss.hp,
+            maxHp: window.GAME_CONFIG.boss.hp,
+            active: true,
+            state: 'fight',
+            skillCD: 3,
+            vel: V3.create(0, 0, 0),
+            armLift: 0, bodyRot: 0, bodyY: 0,
+            rotY: yaw + Math.PI, targetAng: yaw + Math.PI,
+            pillarSpots: [],
+            dead: false,
+            skillIndex: 0,
+            skillSequence: null
+        };
+        STATE.boss.pos.y = getHeight(STATE.boss.pos.x, STATE.boss.pos.z);
 
-        // TRIỆU HỒI BOSS 3D SAU CẮT CẢNH
-        setTimeout(() => {
-            const yaw = STATE.camera.rot.y;
-            const spawnDist = 45;
-            const playerPos = STATE.player.pos;
-            
-            STATE.boss = {
-                pos: V3.add(playerPos, V3.create(Math.sin(yaw) * spawnDist, 0, -Math.cos(yaw) * spawnDist)),
-                hp: window.GAME_CONFIG.boss.hp,
-                maxHp: window.GAME_CONFIG.boss.hp,
-                active: true,
-                state: 'fight',
-                skillCD: 3,
-                vel: V3.create(0, 0, 0),
-                armLift: 0, bodyRot: 0, bodyY: 0,
-                rotY: yaw + Math.PI, targetAng: yaw + Math.PI,
-                pillarSpots: [],
-                dead: false,
-                skillIndex: 0,
-                skillSequence: null
-            };
-            STATE.boss.pos.y = getHeight(STATE.boss.pos.x, STATE.boss.pos.z);
+        document.getElementById('boss-msg').classList.add('boss-text-show');
+        STATE.inputLocked = false;
+        document.body.classList.remove('shake-screen');
 
-            const bossMsg = document.getElementById('boss-msg');
-            if (bossMsg) bossMsg.classList.add('boss-text-show');
-            
-            STATE.inputLocked = false;
-            document.body.classList.remove('shake-screen');
+        // Ẩn các overlay cinematic
+        document.getElementById('boss-overlay').classList.remove('active');
+        document.getElementById('boss-container').classList.add('hidden');
 
-            // Ẩn các overlay cinematic
-            const bOverlay = document.getElementById('boss-overlay');
-            const bContainer = document.getElementById('boss-container');
-            if (bOverlay) bOverlay.classList.remove('active');
-            if (bContainer) bContainer.classList.add('hidden');
-
-            // Hiện thanh máu Boss
-            const hpCont = document.getElementById('boss-hp-container');
-            if (hpCont) hpCont.style.display = 'block';
-            
-            if (typeof playBossSound === 'function') playBossSound();
-        }, 3000);
-    }, 5000); // Đợi 5 giây mới bắt đầu sự kiện
+        // Hiện thanh máu Boss
+        document.getElementById('boss-hp-container').style.display = 'block';
+    }, 3000);
 }
 
 
