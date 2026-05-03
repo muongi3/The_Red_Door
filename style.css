@@ -708,6 +708,21 @@ canvas {
 }
 
 
+/* [MỚI] VICTORY BACKGROUND OVERLAY */
+#victory-bg {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle, rgba(0,0,0,0) 0%, rgba(0,0,0,0.9) 100%);
+    z-index: 9999;
+    display: none;
+    pointer-events: none;
+    animation: victoryBgFade 1s ease-out forwards;
+}
+
+@keyframes victoryBgFade {
+    from { opacity: 0; background: rgba(0,0,0,0); }
+    to { opacity: 1; background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.9) 100%); }
+}
 
 /* [CẢI TIẾN] OIIA CAT EPIC VERSION */
 #hakariphonk-cat {
@@ -715,13 +730,14 @@ canvas {
     left: 50%;
     top: 45%;
     transform: translate(-50%, -50%) scale(0);
-    width: min(450px, 80vw);
+    width: min(500px, 90vw);
     pointer-events: none;
     display: none;
     z-index: 10000;
-    filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.8));
-    animation: oiiaEpicEntry 1.5s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards, 
-               oiiaEpicPulse 0.5s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 30px rgba(0, 255, 255, 0.8));
+    animation: oiiaEpicEntry 1.0s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards, 
+               oiiaEpicPulse 0.4s ease-in-out infinite alternate,
+               oiiaEpicShake 0.1s infinite;
 }
 
 #click-anywhere {
@@ -757,13 +773,22 @@ canvas {
 /* --run-left / --run-right đã gộp vào :root ở trên */
 
 @keyframes oiiaEpicEntry {
-    0% { transform: translate(-50%, -50%) scale(0) rotate(-45deg); opacity: 0; }
-    100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+    0% { transform: translate(-50%, -50%) scale(0) rotate(-15deg); opacity: 0; filter: brightness(5) blur(10px); }
+    70% { transform: translate(-50%, -50%) scale(1.2) rotate(5deg); opacity: 1; filter: brightness(2) blur(0px); }
+    100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; filter: brightness(1); }
 }
 
 @keyframes oiiaEpicPulse {
-    from { filter: drop-shadow(0 0 20px rgba(255, 0, 0, 0.6)); }
-    to { filter: drop-shadow(0 0 40px rgba(255, 0, 255, 1)); transform: translate(-50%, -50%) scale(1.05); }
+    from { filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.6)) contrast(1); }
+    to { filter: drop-shadow(0 0 50px rgba(255, 0, 255, 1)) contrast(1.5); transform: translate(-50%, -50%) scale(1.08); }
+}
+
+@keyframes oiiaEpicShake {
+    0% { margin-left: 0; margin-top: 0; }
+    25% { margin-left: 3px; margin-top: -3px; }
+    50% { margin-left: -3px; margin-top: 3px; }
+    75% { margin-left: 3px; margin-top: 3px; }
+    100% { margin-left: -3px; margin-top: -3px; }
 }
 
 @keyframes fireGlow {

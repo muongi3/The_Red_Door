@@ -2921,7 +2921,14 @@ function resumeGame() {
     document.getElementById('pause-menu').classList.add('hidden'); if (gl && gl.canvas) gl.canvas.requestPointerLock();
 }
 
-function spawnOiiaCat() { OIIA_CAT.spawned = true; const cat = document.getElementById("hakariphonk-cat"), sound = document.getElementById("hakariphonk-sound"); cat.style.display = "block"; sound.currentTime = 0; sound.play(); }
+function spawnOiiaCat() { 
+    OIIA_CAT.spawned = true; 
+    const cat = document.getElementById("hakariphonk-cat"), sound = document.getElementById("hakariphonk-sound"); 
+    const vBg = document.getElementById("victory-bg");
+    if (vBg) vBg.style.display = "block";
+    cat.style.display = "block"; 
+    sound.currentTime = 0; sound.play(); 
+}
 
 function loop(now) {
     if (!STATE.lastTime) STATE.lastTime = now;
@@ -2948,6 +2955,12 @@ function showClickAnywhere(delay = 10000) {
         overlay.onclick = () => {
             overlay.style.display = "none";
             continueText.style.display = "none";
+            const cat = document.getElementById("hakariphonk-cat");
+            const vBg = document.getElementById("victory-bg");
+            const sound = document.getElementById("hakariphonk-sound");
+            if (cat) cat.style.display = "none";
+            if (vBg) vBg.style.display = "none";
+            if (sound) { sound.pause(); sound.currentTime = 0; }
             overlay.onclick = null;
             endGame(true); // GỌI ENDGAME(TRUE) ĐỂ CHẠY ĐÚNG LOGIC!
         };
