@@ -738,7 +738,7 @@ canvas {
     animation: hakariEpicEntry 0.6s cubic-bezier(0.17, 0.89, 0.32, 1.49) forwards, 
                hakariEpicPulse 0.4s ease-in-out infinite alternate,
                hakariEpicShake 0.05s infinite,
-               hakariEpicFlip 0.25s steps(2) infinite;
+               hakariEpicFlip 0.8s steps(2) infinite;
 }
 
 #click-anywhere {

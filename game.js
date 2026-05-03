@@ -123,7 +123,7 @@ window.GAME_CONFIG = {
             res: 200
         },
         sniper: {
-            damage: 400,
+            damage: 300,
             rate: 1200,
             spread: 0.1,
             range: 300,
@@ -1199,7 +1199,7 @@ function update(dt) {
         // --- 1. VA CHẠM ĐỊA HÌNH & VẬT CẢN (Tường/Nhà/Xe) ---
         const floorY = getHeight(nextPos.x, nextPos.z);
         if (nextPos.y <= floorY) {
-            proj.dead = true; 
+            proj.dead = true;
             if (proj.isUlti) createExplosion(nextPos, window.GAME_CONFIG.ultimate.explosionRange, window.GAME_CONFIG.ultimate.damage, true, true);
             return;
         }
@@ -1217,76 +1217,75 @@ function update(dt) {
         }
 
         // --- 2. VA CHẠM THÙNG NỔ ---
-        STATE.barrels.forEach(b => { 
-            if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.6, 0))) < 2.5) { 
-                b.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]); 
-                proj.dead = true; 
-                if (b.hp <= 0) createExplosion(b.pos); 
-            } 
+        STATE.barrels.forEach(b => {
+            if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.6, 0))) < 2.5) {
+                b.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]);
+                proj.dead = true;
+                if (b.hp <= 0) createExplosion(b.pos);
+            }
         });
 
-        if (proj.isPlayer) {
-            // --- 3. VA CHẠM QUÁI (BOT) - HITBOX TOÀN THÂN ---
+        if (proj.isPlayer && !proj.dead) {
+            // --- 3. VA CHẠM QUÁI (BOT) ---
             STATE.bots.forEach(bot => {
-                if (bot.hp <= 0 || bot.isEvolvingLv3) return;
-                
+                if (proj.dead || bot.hp <= 0 || bot.isEvolvingLv3) return; // Dừng ngay nếu đạn đã trúng
+
                 const dy = nextPos.y - bot.pos.y;
                 const dx = nextPos.x - bot.pos.x, dz = nextPos.z - bot.pos.z;
                 const distXZ = Math.sqrt(dx * dx + dz * dz);
-                
-                // Tỉ lệ hitbox theo cấp độ bot
+
+                // Hitbox theo cấp độ (thực tế hơn)
                 let hitboxScale = 1.0;
-                if (bot.isFinal) hitboxScale = 2.4; 
-                else if (bot.isHorror) hitboxScale = 1.4;
-                
-                const hitRadius = (isMobile ? 2.2 : 0.8) * hitboxScale; 
-                const hitHeight = 1.7 * hitboxScale;
-                const headThreshold = 0.95 * hitboxScale;
-                
-                if (distXZ < hitRadius && dy > -0.5 && dy < hitHeight) {
+                if (bot.isFinal) hitboxScale = 1.8;       // Lv3: to nhưng không quá ưu tiên
+                else if (bot.isHorror) hitboxScale = 1.3; // Lv2
+
+                const hitRadius = (isMobile ? 1.8 : 0.7) * hitboxScale; // Thực tế hơn trước
+                const hitHeight = 1.8 * hitboxScale;     // Chiều cao cơ thể
+                const headY    = 1.5 * hitboxScale;      // Phần đầu: chỉ từ 1.5m trở lên
+
+                if (distXZ < hitRadius && dy > -0.3 && dy < hitHeight) {
                     let dmg = proj.dmg;
-                    let isHead = dy > headThreshold;
-                    
+                    // Headshot CHỈ tính khi đạn rõ ràng trúng vùng đầu
+                    const isHead = (dy > headY && distXZ < hitRadius * 0.6);
+
                     if (isHead) {
-                        dmg *= 1.5; 
-                        spawnParticles(nextPos, 8, [1, 1, 0], 1.5); 
+                        dmg = Math.round(proj.dmg * 1.5);
+                        spawnParticles(nextPos, 8, [1, 1, 0], 1.5);
                     } else {
                         spawnParticles(nextPos, 5, [1, 0, 0], 1.0);
                     }
-                    
+
                     bot.hp -= dmg;
-                    spawnDamageNumber(nextPos, dmg, isHead); // HIỆN SỐ DAME
-                    
+                    spawnDamageNumber(nextPos, dmg, isHead);
                     if (!proj.isUlti) STATE.player.damageDealt += dmg;
                     playAudio('hit');
                     showHitMarker();
-                    proj.dead = true;
+                    proj.dead = true; // Dánh dấu ngay để khỏng chế frame tiếp
                 }
             });
 
-            // --- 4. VA CHẠM BOSS ---
-            if (STATE.boss && STATE.boss.active) {
+            // --- 4. VA CHẠM BOSS --- (Chỉ xét khi đạn chưa chết)
+            if (!proj.dead && STATE.boss && STATE.boss.active) {
                 const b = STATE.boss;
                 const dx = nextPos.x - b.pos.x, dz = nextPos.z - b.pos.z, dy = nextPos.y - b.pos.y;
                 const distXZ = Math.sqrt(dx * dx + dz * dz);
-                let hit = false, isHeadshot = false;
 
-                if (distXZ < 5.0 && dy > -1 && dy < 17) hit = true;
+                // Kiểm tra hitbox: Đầu TƯỚC TIÊN (nhỏ hơn, chaứa trong vùng thân)
                 const headDist = V3.dist(nextPos, { x: b.pos.x, y: b.pos.y + 19, z: b.pos.z });
-                if (headDist < 2.8) { hit = true; isHeadshot = true; }
+                const isHeadshot = headDist < 2.5;
+                // Thân: chỉ tính nếu KHÔNG phải headshot
+                const isBodyHit = !isHeadshot && distXZ < 4.5 && dy > -1 && dy < 17;
 
-                if (hit) {
-                    let finalDmg = proj.dmg;
-                    if (isHeadshot) finalDmg *= 1.5;
+                if (isHeadshot || isBodyHit) {
+                    let finalDmg = proj.dmg; // Đảm bảo là số nguyên (round)
+                    if (isHeadshot) finalDmg = Math.round(proj.dmg * 1.5);
                     b.hp -= finalDmg;
-                    spawnDamageNumber(nextPos, finalDmg, isHeadshot); // HIỆN SỐ DAME BOSS
+                    spawnDamageNumber(nextPos, finalDmg, isHeadshot);
 
                     if (!proj.isUlti) STATE.player.damageDealt += finalDmg;
                     proj.dead = true; playAudio('hit'); showHitMarker();
                     if (proj.isUlti) { STATE.shake = 10.0; b.flinchTime = 0.6; }
-                    if (b.hp <= 0 && !b.dead) {
-                        killBoss();
-                    }
+                    if (b.hp <= 0 && !b.dead) killBoss();
                 }
             }
         }
@@ -1902,7 +1901,7 @@ function killBoss() {
     spawnHakariDance();
     playBossSound();
     showClickAnywhere(5000); // Đợi 5s rồi hiện chữ Tiếp tục
-    
+
     // Hiệu ứng nổ lớn
     STATE.shake = 20.0;
     spawnParticles(b.pos, 500, [1, 0, 0], 5.0);
@@ -2921,12 +2920,12 @@ function resumeGame() {
     document.getElementById('pause-menu').classList.add('hidden'); if (gl && gl.canvas) gl.canvas.requestPointerLock();
 }
 
-function spawnHakariDance() { 
-    HAKARI_DANCE.spawned = true; 
-    const img = document.getElementById("hakari-dance-img"), sound = document.getElementById("hakari-dance-sound"); 
+function spawnHakariDance() {
+    HAKARI_DANCE.spawned = true;
+    const img = document.getElementById("hakari-dance-img"), sound = document.getElementById("hakari-dance-sound");
     const vBg = document.getElementById("victory-bg");
     if (vBg) vBg.style.display = "block";
-    if (img) img.style.display = "block"; 
+    if (img) img.style.display = "block";
     if (sound) { sound.currentTime = 0; sound.play(); }
 }
 
