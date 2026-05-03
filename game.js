@@ -161,10 +161,12 @@ window.GAME_CONFIG = {
 window.DIFFICULTY_PRESETS = {
     easy: {
         label: '😊 DỄ', color: '#00e676',
-        botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.75,  // giảm tốc độ thêm
+        botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.75,
         enrageLv2Pct: 0.30, lv3Count: 3,
         bossHpMult: 0.6, bossDmgMult: 0.5, bossSkillCdMult: 1.5, bossSpeedMult: 0.7,
         playerHpMult: 1.2, playerSpdMult: 1.0,
+        weaponDmgMult: 1.0,   // súng cơ bản
+        ultiDmgMult:   1.0,   // unti cơ bản
     },
     normal: {
         label: '⚔️ THƯỜNG', color: '#ffcc00',
@@ -172,20 +174,26 @@ window.DIFFICULTY_PRESETS = {
         enrageLv2Pct: 0.40, lv3Count: 5,
         bossHpMult: 1.0, bossDmgMult: 1.0, bossSkillCdMult: 1.0, bossSpeedMult: 1.0,
         playerHpMult: 1.0, playerSpdMult: 1.0,
+        weaponDmgMult: 1.1,   // +10% dame súng
+        ultiDmgMult:   1.2,   // +20% dame unti
     },
     hard: {
         label: '🔥 KHÓ', color: '#ff6600',
-        botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.2,  // không tăng quá nhiều
+        botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.2,
         enrageLv2Pct: 0.55, lv3Count: 7,
         bossHpMult: 1.5, bossDmgMult: 1.6, bossSkillCdMult: 0.75, bossSpeedMult: 1.3,
         playerHpMult: 0.85, playerSpdMult: 0.9,
+        weaponDmgMult: 1.2,   // +20% dame súng
+        ultiDmgMult:   1.4,   // +40% dame unti
     },
     extreme: {
         label: '💀 CỰC KHÓ', color: '#ff0033',
-        botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.4,  // tốc độ giảm từ 1.6 xuống 1.4
+        botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.4,
         enrageLv2Pct: 0.70, lv3Count: 10,
         bossHpMult: 2.2, bossDmgMult: 2.5, bossSkillCdMult: 0.55, bossSpeedMult: 1.6,
         playerHpMult: 0.7, playerSpdMult: 0.85,
+        weaponDmgMult: 1.3,   // +30% dame súng
+        ultiDmgMult:   1.6,   // +60% dame unti (khó hơn nhưng phần thưởng to hơn)
     }
 };
 
@@ -224,6 +232,14 @@ window.applyDifficulty = function(key) {
     b.player.maxArmor        = Math.round(1000 * d.playerHpMult);
     b.player.walkSpeed       = 8.5 * d.playerSpdMult;
     b.player.sprintMultiplier= 1.9 * d.playerSpdMult;
+    // Vũ khí người chơi (+10% mỗi cấp)
+    const wm = d.weaponDmgMult || 1.0;
+    b.weapons.pistol.damage = Math.round(65  * wm);
+    b.weapons.smg.damage    = Math.round(40  * wm);
+    b.weapons.sniper.damage = Math.round(300 * wm);
+    // Unti (+20% mỗi cấp)
+    const um = d.ultiDmgMult || 1.0;
+    b.ultimate.damage = Math.round(800 * um);
     localStorage.setItem('difficulty', key);
 };
 
@@ -1040,6 +1056,11 @@ function startGame() {
     STATE.player.maxHp = window.GAME_CONFIG.player.maxHp;
     STATE.player.armor    = 0;
     STATE.player.maxArmor = window.GAME_CONFIG.player.maxArmor;
+
+    // Đồng bộ dame vũ khí vào STATE.weapons
+    STATE.weapons[0].damage = window.GAME_CONFIG.weapons.pistol.damage;
+    STATE.weapons[1].damage = window.GAME_CONFIG.weapons.smg.damage;
+    STATE.weapons[2].damage = window.GAME_CONFIG.weapons.sniper.damage;
 
     // Reset boss với HP đúng theo độ khó
     STATE.boss.hp    = window.GAME_CONFIG.boss.hp;
@@ -3122,10 +3143,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const diffBtns = document.querySelectorAll('.diff-btn');
     const diffDesc = document.getElementById('diff-desc');
     const diffDescTexts = {
-        easy:    '😊 Bot/Boss yếu hơn, máu player +20% — Phù hợp người mới',
-        normal:  '⚔️ Cân bằng tiêu chuẩn — Thử thách vừa phải',
-        hard:    '🔥 Bot/Boss mạnh & nhanh hơn, máu player -15% — Khó win',
-        extreme: '💀 Bot/Boss cực kỳ hung hãn, 10 con Lv3 — Gần như không thể win!',
+        easy:    '😊 Bot/Boss yếu, máu +20% | Súng cơ bản, Unti cơ bản',
+        normal:  '⚔️ Cân bằng | Súng +10%, Unti +20%',
+        hard:    '🔥 Bot/Boss mạnh | Súng +20%, Unti +40%',
+        extreme: '💀 Cực kỳ nguy hiểm | Súng +30%, Unti +60%!',
     };
     function syncDiffButtons() {
         diffBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.diff === window.CURRENT_DIFFICULTY));
