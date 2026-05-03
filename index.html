@@ -104,30 +104,38 @@
         </div>
 
         <div id="settings-modal" class="hidden" style="background: transparent; pointer-events: none;">
-            <div class="feedback-content"
-                style="width: 200px; padding: 10px; background: rgba(20,20,20,0.8); backdrop-filter: blur(5px); pointer-events: auto; margin-top: -100px; border-radius: 8px; border: 1px solid #555;">
-                <h3 style="font-size: 12px; margin-bottom: 3px;">⚙️ CÀI ĐẶT NÚT</h3>
-                <p style="color: #aaa; font-size: 9px; margin-bottom: 5px;">Chạm vào nút để chọn và kéo thanh trượt. Kéo
-                    thả để dời vị trí.</p>
-                <div style="margin-bottom: 10px; color: white; text-align: left;">
-                    <label for="hud-scale-slider" style="font-size: 10px;">Độ lớn: <span
-                            id="hud-scale-val">100%</span></label>
-                    <input type="range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-                        style="width: 100%; height: 2px;">
-                </div>
-                <div style="margin-bottom: 15px; color: white; text-align: left;">
-                    <label for="sensitivity-slider" style="font-size: 10px;">Độ nhạy xoay màn hình: <span
-                            id="sensitivity-val">2.0</span>x</label>
-                    <input type="range" id="sensitivity-slider" min="0.1" max="10.0" step="0.1" value="2.0"
-                        style="width: 100%; height: 2px;">
-                </div>
-                <div style="display:flex; gap:3px; justify-content:center;">
-                    <button id="btn-reset-hud" class="btn btn-outline-danger btn-sm"
-                        style="width:auto; min-width:unset; padding: 2px 5px; font-size: 8px;">MẶC ĐỊNH</button>
-                    <button id="btn-cancel-hud" class="btn btn-outline-light btn-sm"
-                        style="width:auto; min-width:unset; padding: 2px 5px; font-size: 8px;">HỦY</button>
-                    <button id="btn-save-hud" class="btn btn-success btn-sm"
-                        style="width:auto; min-width:unset; padding: 2px 5px; font-size: 8px;">LƯU</button>
+            <div class="card bg-dark text-white border-secondary shadow-lg"
+                style="width: 220px; pointer-events: auto; margin: -100px auto 0; border-radius: 12px; backdrop-filter: blur(10px); background: rgba(20,20,20,0.85) !important;">
+                <div class="card-body p-2">
+                    <h6 class="card-title text-center mb-1" style="font-size: 11px; color: #ffcc00;">⚙️ CÀI ĐẶT HUD</h6>
+                    <p class="text-muted text-center mb-2" style="font-size: 8px; line-height: 1.2;">Chạm nút để chọn & kéo thanh trượt. <br> Kéo thả nút để dời vị trí.</p>
+
+                    <div class="mb-2">
+                        <label class="form-label d-flex justify-content-between mb-0" style="font-size: 9px;">
+                            <span>Độ lớn:</span>
+                            <span id="hud-scale-val" class="text-warning">100%</span>
+                        </label>
+                        <input type="range" class="form-range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+                            style="height: 15px;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label d-flex justify-content-between mb-0" style="font-size: 9px;">
+                            <span>Độ nhạy xoay:</span>
+                            <span id="sensitivity-val" class="text-info">2.0x</span>
+                        </label>
+                        <input type="range" class="form-range" id="sensitivity-slider" min="0.1" max="10.0" step="0.1" value="2.0"
+                            style="height: 15px;">
+                    </div>
+
+                    <div class="d-flex gap-1 justify-content-center">
+                        <button id="btn-reset-hud" class="btn btn-outline-danger btn-sm py-1 px-2"
+                            style="font-size: 8px; font-weight: bold;">MẶC ĐỊNH</button>
+                        <button id="btn-cancel-hud" class="btn btn-outline-light btn-sm py-1 px-2"
+                            style="font-size: 8px; font-weight: bold;">HỦY</button>
+                        <button id="btn-save-hud" class="btn btn-success btn-sm py-1 px-2"
+                            style="font-size: 8px; font-weight: bold;">LƯU</button>
+                    </div>
                 </div>
             </div>
         </div>
