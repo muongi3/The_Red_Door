@@ -2960,7 +2960,7 @@ function showClickAnywhere(delay = 10000) {
             const sound = document.getElementById("hakariphonk-sound");
             if (cat) cat.style.display = "none";
             if (vBg) vBg.style.display = "none";
-            if (sound) { sound.pause(); sound.currentTime = 0; }
+            // Không tắt nhạc, để nó tiếp tục cháy
             overlay.onclick = null;
             endGame(true); // GỌI ENDGAME(TRUE) ĐỂ CHẠY ĐÚNG LOGIC!
         };
