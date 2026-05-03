@@ -64,7 +64,7 @@ window.GAME_CONFIG = {
         // CHIÊU 1: LƯỚT (DASH)
         skill1: {
             damage: 350,
-            prepareTime: 0.8,
+            prepareTime: 1.5,
             activeTime: 0.7,
             speed: 130,       // Lướt nhanh hơn
             width: 9
@@ -136,11 +136,11 @@ window.GAME_CONFIG = {
     // 🔥 KỸ NĂNG ĐẶC BIỆT (ULTIMATE SKILL)
     // ==========================================================================================
     ultimate: {
-        requiredDamage: 500,    // Gây 1000 dame để sạc đầy Unti
-        chargeTime: 1.0,         // Thời gian gồng (1s)
-        invincibleTime: 1.0,     // Bất tử 1s lúc tung chiêu
+        requiredDamage: 1000,    // Gây 1000 dame để sạc đầy Unti
+        chargeTime: 2.0,         // Thời gian gồng (1s)
+        invincibleTime: 2.0,     // Bất tử 1s lúc tung chiêu
         damage: 800,             // Sát thương nổ
-        explosionRange: 15,      // Tầm nổ
+        explosionRange: 20,      // Tầm nổ
         projectileSpeed: 100
     },
 
@@ -226,16 +226,17 @@ const M4 = {
 
 let gl;
 window.addEventListener('load', () => {
-    gl = document.getElementById('glcanvas').getContext('webgl2');
+    gl = document.getElementById('glcanvas').getContext('webgl2', { antialias: !isMobile, powerPreference: "high-performance" });
     if (!gl) {
         console.log("❌ WebGL2 KHÔNG HỖ TRỢ!");
         alert("Thiết bị của bác không hỗ trợ WebGL2. Vui lòng dùng trình duyệt khác!");
         return;
     }
     console.log("✅ WebGL2 OK");
-    // Cập nhật kích thước canvas ngay khi load
-    gl.canvas.width = window.innerWidth;
-    gl.canvas.height = window.innerHeight;
+    // Cập nhật kích thước canvas - Giảm 25% độ phân giải trên mobile để mượt hơn
+    const resScale = isMobile ? 0.75 : 1.0;
+    gl.canvas.width = window.innerWidth * resScale;
+    gl.canvas.height = window.innerHeight * resScale;
     console.log("🎨 Khởi tạo Graphics...");
     initGraphics();
     console.log("📦 Khởi tạo Assets...");
@@ -320,7 +321,7 @@ void main() {
     float specMask = smoothstep(0.7, 0.8, spec) * (uIsWater ? 0.8 : 0.3);
     
     float rim = 1.0 - max(dot(V, N), 0.0);
-    rim = pow(rim, 4.0) * 0.4;
+    rim = rim * rim * rim * rim * 0.4; // Dùng nhân trực tiếp thay cho pow() để nhanh hơn trên GPU yếu
     
     vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor;
     
@@ -592,36 +593,13 @@ function genSniperMesh() {
 function genCannonMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const gray = [0.03, 0.03, 0.03], lightGray = [0.1, 0.1, 0.1], cyan = [0, 1, 1], orange = [1, 0.4, 0];
-    
-    // Main Chassis (Reinforced) - Scaled down
-    push(getCube(gray, 0.25, 0.28, 0.7, 0, 0, -0.1)); 
-    push(getCube(lightGray, 0.28, 0.22, 0.45, 0, 0.05, -0.15)); 
-    
-    // Cooling Fins (Radiator plates)
-    for(let i=0; i<4; i++) {
-        push(getCube(lightGray, 0.3, 0.01, 0.2, 0, 0.15 + i*0.02, -0.05));
-    }
-    
-    // Futuristic Quad-Barrel Assembly
-    const bSize = 0.09;
-    push(getCube(gray, bSize, bSize, 0.75, 0.1, 0.1, 0.2));
-    push(getCube(gray, bSize, bSize, 0.75, -0.1, 0.1, 0.2));
-    push(getCube(gray, bSize, bSize, 0.75, 0.1, -0.1, 0.2));
-    push(getCube(gray, bSize, bSize, 0.75, -0.1, -0.1, 0.2));
-    
-    // Energy Rails (Glowing Cyan)
-    push(getCube(cyan, 0.3, 0.02, 0.5, 0, 0.14, 0)); 
-    push(getCube(cyan, 0.02, 0.3, 0.5, 0.14, 0, 0)); 
-    push(getCube(cyan, 0.02, 0.3, 0.5, -0.14, 0, 0)); 
-    
-    // Muzzle Accelerator
-    push(getCube(orange, 0.32, 0.32, 0.1, 0, 0, 0.55)); 
-    
-    // Modern Grip & Stock
-    push(getCube(gray, 0.1, 0.35, 0.2, 0, -0.25, -0.3)); 
-    push(getCube(lightGray, 0.22, 0.2, 0.35, 0, 0, -0.5)); 
-    
+    const gray = [0.08, 0.08, 0.08], cyan = [0, 0.9, 1], orange = [1, 0.4, 0];
+    push(getCube(gray, 0.4, 0.4, 1.4, 0, 0, 0)); // Sleek Black Body
+    push(getCube(cyan, 0.42, 0.05, 1.0, 0, 0.2, 0)); // Glowing Top Neon
+    push(getCube(cyan, 0.05, 0.42, 1.0, 0.2, 0, 0)); // Glowing Side Neon L
+    push(getCube(cyan, 0.05, 0.42, 1.0, -0.2, 0, 0)); // Glowing Side Neon R
+    push(getCube(orange, 0.45, 0.45, 0.1, 0, 0, 0.7)); // Energy Muzzle
+    push(getCube(gray, 0.1, 0.5, 0.2, 0, -0.3, -0.3)); // Grip
     return createMesh(V, N, C);
 }
 
@@ -1100,17 +1078,17 @@ function update(dt) {
     // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
-    if (p.isChargingUlti) { 
-        move.x = 0; move.z = 0; 
-        // Hiệu ứng Aura bùng nổ quanh người chơi
-        const t = performance.now() * 0.004;
-        const radius = 2.0;
-        for (let i = 0; i < 6; i++) { // Gấp đôi số hạt Aura
-            const ang = t + i * (Math.PI * 2 / 6);
+    if (p.isChargingUlti) {
+        move.x = 0; move.z = 0;
+        // Hiệu ứng Aura xoay chậm quanh người chơi (Vòng xoáy năng lượng)
+        const t = performance.now() * 0.003;
+        const radius = 1.8;
+        for (let i = 0; i < 3; i++) {
+            const ang = t + i * (Math.PI * 2 / 3);
             const px = p.pos.x + Math.cos(ang) * radius;
             const pz = p.pos.z + Math.sin(ang) * radius;
-            spawnParticles(V3.create(px, p.pos.y + 0.1 + Math.sin(t*4+i)*1.0, pz), 1, [0, 1, 1], 0.05); // Màu xanh Cyan cho Aura ngầu hơn
-            if (Math.random() < 0.3) spawnParticles(p.pos, 1, [1, 0.5, 0], 0.2); // Xen kẽ lửa cam
+            // Spawning glowing particles that hover
+            spawnParticles(V3.create(px, p.pos.y + 0.2 + Math.sin(t * 3 + i) * 0.8, pz), 1, [1, 0.6, 0], 0.02);
         }
     } // Đứng yên khi gồng UNTI
     if (V3.len(move) > 0) move = V3.norm(move);
@@ -1182,14 +1160,85 @@ function update(dt) {
         STATE.barrels.forEach(b => { if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.6, 0))) < 2.5) { b.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]); proj.dead = true; if (b.hp <= 0) createExplosion(b.pos); } });
 
         if (proj.isPlayer) {
-            // Hitbox quái thường (bot) - Nhắm vào tâm thân mình (y + 0.65)
-            STATE.bots.forEach(bot => { if (!bot.isEvolvingLv3 && V3.dist(nextPos, V3.add(bot.pos, V3.create(0, 0.65, 0))) < (isMobile ? 2.5 : 1.0)) { bot.hp -= proj.dmg; if (!proj.isUlti) STATE.player.damageDealt += proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0, 0]); proj.dead = true; } });
+            // Hitbox quái thường (bot) - Hỗ trợ Headshot
+            STATE.bots.forEach(bot => {
+                if (bot.hp <= 0 || bot.isEvolvingLv3) return;
+                
+                const dy = nextPos.y - bot.pos.y;
+                const dx = nextPos.x - bot.pos.x, dz = nextPos.z - bot.pos.z;
+                const distXZ = Math.sqrt(dx * dx + dz * dz);
+                
+                // Bán kính va chạm linh hoạt
+                const hitRadius = isMobile ? 2.0 : 0.7; 
+                
+                if (distXZ < hitRadius && dy > -0.5 && dy < 1.7) {
+                    let dmg = proj.dmg;
+                    let isHead = dy > 0.95; // Phần đầu nằm ở phía trên cao
+                    
+                    if (isHead) {
+                        dmg *= 1.5; 
+                        spawnParticles(nextPos, 8, [1, 1, 0], 1.5); // Tia lửa vàng khi trúng đầu
+                    } else {
+                        spawnParticles(nextPos, 5, [1, 0, 0], 1.0);
+                    }
+                    
+                    bot.hp -= dmg;
+                    if (!proj.isUlti) STATE.player.damageDealt += dmg;
+                    playAudio('hit');
+                    showHitMarker();
+                    proj.dead = true;
+                }
+            });
 
-            // Hitbox Boss hình trụ
+            // --- VA CHẠM BOSS: ĐA ĐIỂM (Thân & Đầu) ---
             if (STATE.boss && STATE.boss.active) {
-                const dx = nextPos.x - STATE.boss.pos.x, dz = nextPos.z - STATE.boss.pos.z, dy = nextPos.y - STATE.boss.pos.y;
-                if (Math.sqrt(dx * dx + dz * dz) < 4 && dy > -5 && dy < 15) {
-                    STATE.boss.hp -= proj.dmg; if (!proj.isUlti) STATE.player.damageDealt += proj.dmg; playAudio('hit'); showHitMarker(); proj.dead = true;
+                const b = STATE.boss;
+                const dx = nextPos.x - b.pos.x, dz = nextPos.z - b.pos.z, dy = nextPos.y - b.pos.y;
+                const distXZ = Math.sqrt(dx * dx + dz * dz);
+                
+                let hit = false;
+                let isHeadshot = false;
+
+                // 1. Thân (Hình trụ y: 0-17, bán kính 5)
+                if (distXZ < 5.0 && dy > -1 && dy < 17) {
+                    hit = true;
+                }
+                // 2. Đầu (Hình cầu tại y: 19, bán kính 2.8)
+                const headDist = V3.dist(nextPos, { x: b.pos.x, y: b.pos.y + 19, z: b.pos.z });
+                if (headDist < 2.8) {
+                    hit = true;
+                    isHeadshot = true;
+                }
+
+                if (hit) {
+                    let finalDmg = proj.dmg;
+                    if (isHeadshot) {
+                        finalDmg *= 1.5; // Thưởng 50% sát thương chí mạng đầu
+                        spawnParticles(nextPos, 15, [1, 1, 0], 1.5); // Tia lửa vàng
+                    }
+                    b.hp -= finalDmg;
+                    if (!proj.isUlti) STATE.player.damageDealt += finalDmg;
+                    
+                    proj.dead = true;
+                    playAudio('hit');
+                    showHitMarker();
+
+                    // Hiệu ứng Giật (Flinch) khi dính Unti
+                    if (proj.isUlti) {
+                        STATE.shake = 10.0;
+                        b.flinchTime = 0.6; 
+                        const pushDir = V3.norm(V3.sub(b.pos, STATE.player.pos));
+                        b.pos.x += pushDir.x * 2.5; b.pos.z += pushDir.z * 2.5; // Bị đẩy lùi nhẹ
+                    }
+
+                    if (b.hp <= 0 && !b.dead) {
+                        b.dead = true;
+                        showGlobalAnnouncement("HAKARI ĐÃ BỊ TRIỆT TIÊU!", 5000);
+                        STATE.player.kills += 10;
+                        STATE.shake = 20.0;
+                        spawnParticles(b.pos, 500, [1, 0, 0], 5.0);
+                        setTimeout(() => endGame(true), 4000);
+                    }
                 }
             }
         }
@@ -1359,14 +1408,16 @@ function update(dt) {
     STATE.particles.forEach(p => {
         p.pos.x += p.vel.x * dt; p.pos.y += p.vel.y * dt; p.pos.z += p.vel.z * dt;
         if (p.type === 'smoke') {
-            p.vel.y += 10 * dt; // Khói bay lên
-            p.vel.x *= 0.9; p.vel.z *= 0.9;
+            p.vel.y += 2 * dt; // Khói bay lên nhẹ hơn vì vel ban đầu đã cao
+            p.vel.x *= 0.95; p.vel.z *= 0.95;
         } else {
-            p.vel.y -= 20 * dt; // Trọng lực lửa
+            p.vel.y -= 35 * dt; // Trọng lực mạnh hơn cho lửa/máu
+            p.vel.x *= 0.98; p.vel.z *= 0.98;
         }
-        p.life -= dt * (p.type === 'smoke' ? 0.5 : 1.0); // Khói tồn tại lâu hơn lửa
+        p.life -= dt;
     });
     STATE.particles = STATE.particles.filter(p => p.life > 0);
+    if (STATE.particles.length > 1000) STATE.particles = STATE.particles.slice(-1000); // Giới hạn 1000 hạt để tránh lag
 
     if (closeLoot) {
         let pickedName = "";
@@ -1413,6 +1464,14 @@ function update(dt) {
             b.bodyRot += (0 - b.bodyRot) * 5 * dt;
         }
 
+        if (b.flinchTime > 0) {
+            b.flinchTime -= dt;
+            // Hiệu ứng rung nhẹ khi bị flinch
+            b.bodyRot = (Math.random() - 0.5) * 0.15;
+            b.bodyY = (Math.random() - 0.5) * 0.2;
+            return; // Đứng yên khi bị giật
+        }
+
         if (b.state === 'fight') {
             if (b.skillCD <= 0) {
                 // --- DANH SÁCH CHIÊU THỨC --- 
@@ -1436,6 +1495,7 @@ function update(dt) {
                 if (skill === 'chiêu 5') {
                     // [CHỈNH SỬA CHIÊU 5] Thời gian Boss "chìm" xuống (rặn chiêu)
                     b.state = 'teleport_start'; b.skillCD = window.GAME_CONFIG.boss.skill5.prepareTime;
+                    spawnParticles(b.pos, 60, [0.8, 0, 0], 3.0, 'smoke'); // Hiệu ứng biến mất rực rỡ hơn
                 } else if (skill === 'chiêu 4') {
                     // [CHỈNH SỬA CHIÊU 4] Thời gian Boss gồng tay (hiện vòng cảnh báo)
                     b.state = 'pillar_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill4.prepareTime; b.pillarSpots = [];
@@ -1443,6 +1503,7 @@ function update(dt) {
                 } else if (skill === 'chiêu 3') {
                     // [CHỈNH SỬA CHIÊU 3] Thời gian Boss rặn trước khi nhảy
                     b.state = 'jump_start'; b.skillCD = window.GAME_CONFIG.boss.skill3.prepareTime;
+                    spawnParticles(b.pos, 40, [1, 0.4, 0], 2.5, 'fire'); // Hiệu ứng lấy đà mạnh mẽ
                     const tx = p.pos.x, tz = p.pos.z;
                     b.targetPos = V3.create(tx, getHeight(tx, tz), tz);
                     if (b.indicatorMesh) deleteMesh(b.indicatorMesh);
@@ -1476,6 +1537,10 @@ function update(dt) {
                 b.armLift += (walkCycle * 2 - b.armLift) * 0.1;
 
                 if (isRage && Math.random() < 0.2) spawnParticles(b.pos, 2, [1, 0, 0]);
+                // Subtle Dark Aura particles for Boss - More frequent
+                if (Math.random() < 0.3) {
+                    spawnParticles(V3.add(b.pos, V3.create((Math.random() - 0.5) * 8, Math.random() * 15, (Math.random() - 0.5) * 8)), 3, [0.1, 0, 0], 0.8, 'smoke');
+                }
             }
             // Xoay mặt mượt mà về phía người chơi
             const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
@@ -1483,7 +1548,7 @@ function update(dt) {
             let diff = b.targetAng - b.rotY;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
-            b.rotY += diff * 0.1;
+            b.rotY += diff * 0.3; // Tăng tốc độ quay mặt (từ 0.1 lên 0.3)
 
         } else if (b.state === 'jump_start') {
             b.bodyRot += (0.4 - b.bodyRot) * 0.1; // Cúi người lấy đà hơi hơi thôi
@@ -1514,8 +1579,10 @@ function update(dt) {
                     takeDamage(p, window.GAME_CONFIG.boss.skill3.damage);
                     STATE.shake = 5.0;
                 }
-                spawnParticles(b.pos, isMobile ? 30 : 300, [1, 0, 0], 2.5);
-                STATE.shake = 10.0;
+                spawnParticles(b.pos, isMobile ? 50 : 400, [1, 0, 0], 2.5);
+                spawnParticles(b.pos, isMobile ? 30 : 200, [0.2, 0.2, 0.2], 1.5, 'smoke'); // Thêm khói đen
+                spawnParticles(b.pos, isMobile ? 20 : 150, [1, 0.5, 0], 3.0, 'fire');   // Thêm tia lửa
+                STATE.shake = 15.0; // Tăng rung
             }
         } else if (b.state === 'recover') {
             b.bodyRot += (0.6 - b.bodyRot) * 0.2;
@@ -1528,9 +1595,10 @@ function update(dt) {
             const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z;
             b.targetAng = Math.atan2(dx, dz);
             b.bodyRot = 0;
-            // Boss rung nhanh 2 bên trước khi lướt
-            b.pos.x += (Math.random() - 0.5) * 1.5;
-            b.pos.z += (Math.random() - 0.5) * 1.5;
+            // Boss rung nhẹ trước khi lướt và xả khói
+            b.pos.x += (Math.random() - 0.5) * 0.8;
+            b.pos.z += (Math.random() - 0.5) * 0.8;
+            if (Math.random() < 0.5) spawnParticles(b.pos, 5, [0.1, 0.1, 0.1], 1.0, 'smoke');
             if (b.skillCD <= 0) {
                 b.state = 'dashing'; b.skillCD = 0.8;
                 playAudio('shoot');
@@ -1544,9 +1612,13 @@ function update(dt) {
                 const dist = V3.dist(b.pos, p.pos);
                 if (dist < window.GAME_CONFIG.boss.skill1.width) {
                     takeDamage(p, window.GAME_CONFIG.boss.skill1.damage);
+                    STATE.shake = 8.0;
+                    spawnParticles(p.pos, 30, [1, 0, 0], 2.0);
                     b.hasHit = true;
                 }
             }
+            // Trail effects during dash
+            if (Math.random() < 0.8) spawnParticles(b.pos, 5, [1, 0, 0], 0.5);
             if (b.skillCD <= 0) {
                 b.state = 'fight'; b.skillCD = window.GAME_CONFIG.boss.postSkillRest;
                 if (b.dashMesh) { deleteMesh(b.dashMesh); b.dashMesh = null; }
@@ -1659,11 +1731,11 @@ function update(dt) {
 
                 // 4. THỜI ĐIỂM GÂY SÁT THƯƠNG: Khoảng 0.15s sau khi bắt đầu đập (1.0 - 0.15 = 0.85)
                 if (b.skillCD < 0.85 && !b.hasHit) {
-                    // Hiệu ứng đất gãy, vỡ vụn tại vị trí tay đập
-                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 100, [0.8, 0.4, 0.1], 3.0); // Bụi đất cam
-                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 150, [0.2, 0.2, 0.2], 2.0); // Đá vỡ vụn xám
-                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 50, [2.0, 0, 0], 1.5); // Tia đỏ xé toạc
-                    STATE.shake = 15; // Rung màn hình cực mạnh
+                    // Hiệu ứng đất gãy, vỡ vụn tại vị trí tay đập - CỰC MẠNH
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 150, [0.8, 0.4, 0.1], 3.0);
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 200, [0.1, 0.1, 0.1], 2.5, 'smoke');
+                    spawnParticles({ x: handX, y: getHeight(handX, handZ), z: handZ }, 100, [1.0, 0, 0], 2.0);
+                    STATE.shake = 25; // Siêu rung
 
                     const d = V3.dist(b.pos, p.pos);
                     const pAng = Math.atan2(p.pos.x - b.pos.x, p.pos.z - b.pos.z);
@@ -1761,11 +1833,11 @@ function update(dt) {
 
 }
 
-function createExplosion(pos, customRange, customDamage, isFriendly = false, noCharge = false) { 
-    STATE.shake = 0.8; playAudio('shoot'); 
+function createExplosion(pos, customRange, customDamage, isFriendly = false, noCharge = false) {
+    STATE.shake = 0.8; playAudio('shoot');
     spawnParticles(pos, 40, [1, 0.5, 0], 1.5, 'fire'); // Lửa cam
     spawnParticles(pos, 25, [0.4, 0.4, 0.4], 0.8, 'smoke'); // Khói xám
-    const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange; 
+    const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange;
     const damage = customDamage || window.GAME_CONFIG.misc.barrelExplosionDamage;
     if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage);
     STATE.bots.forEach(b => {
@@ -1801,7 +1873,7 @@ function takeDamage(p, amt, silent = false) {
     } else p.hp -= amt;
 
     if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
-    
+
     // Cooldown âm thanh trúng đòn
     const now = performance.now();
     if (!silent && now - p.lastDamageSoundTime > 200) {
@@ -1824,18 +1896,23 @@ function takeDamage(p, amt, silent = false) {
 
 function showHitMarker() { const el = document.getElementById('hit-marker'); el.style.opacity = 1; setTimeout(() => el.style.opacity = 0, 100); }
 function spawnParticles(pos, count, color, speedMult = 1.0, type = 'fire') {
-    // Giới hạn particles trên mobile để giữ FPS
-    if (isMobile) count = Math.min(count, 8);
+    // Giới hạn particles trên mobile thấp hơn để tránh lag CPU
+    if (isMobile) count = Math.min(count, 12);
     for (let i = 0; i < count; i++) {
+        const spread = 0.5;
         STATE.particles.push({
-            pos: { x: pos.x, y: pos.y, z: pos.z },
+            pos: {
+                x: pos.x + (Math.random() - 0.5) * spread,
+                y: pos.y + (Math.random() - 0.5) * spread,
+                z: pos.z + (Math.random() - 0.5) * spread
+            },
             vel: {
-                x: (Math.random() - 0.5) * 0.2 * speedMult,
-                y: (Math.random() - 0.5) * 0.2 * speedMult,
-                z: (Math.random() - 0.5) * 0.2 * speedMult
+                x: (Math.random() - 0.5) * 15 * speedMult,
+                y: (Math.random() - 0.5) * 15 * speedMult + (type === 'smoke' ? 5 : 2),
+                z: (Math.random() - 0.5) * 15 * speedMult
             },
             color: color,
-            life: 1.0,
+            life: 1.0 + Math.random() * 0.5,
             type: type
         });
     }
@@ -2070,8 +2147,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Giảm grass trên mobile để giảm draw call
-const GRASS_PATCHES = []; for (let i = 0; i < (isMobile ? 30 : 200); i++) { const x = Math.sin(i * 12.989) * MAP_SIZE * 0.45, z = Math.cos(i * 78.233) * MAP_SIZE * 0.45, y = getHeight(x, z), scale = 0.6 + Math.random() * 0.6; GRASS_PATCHES.push({ x, y, z, scale }); }
+// Giảm mạnh grass trên mobile để giảm draw call cực đoan
+const GRASS_PATCHES = []; for (let i = 0; i < (isMobile ? 12 : 200); i++) { const x = Math.sin(i * 12.989) * MAP_SIZE * 0.45, z = Math.cos(i * 78.233) * MAP_SIZE * 0.45, y = getHeight(x, z), scale = 0.6 + Math.random() * 0.6; GRASS_PATCHES.push({ x, y, z, scale }); }
 
 function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -2233,9 +2310,9 @@ function draw() {
         else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
     });
     STATE.particles.forEach(p => {
-        gl.uniform3f(locs.emitColor, p.color[0] * 2.0, p.color[1] * 2.0, p.color[2] * 2.0); // Rực rỡ hơn nữa
-        const sz = (p.type === 'smoke' ? 0.7 : 0.3) * p.life; // Khói vừa phải, rõ nét
-        drawMeshActual(ASSETS.crate, p.pos, sz, 0);
+        gl.uniform3f(locs.emitColor, p.color[0], p.color[1], p.color[2]);
+        const size = (p.type === 'smoke' ? 0.8 : 0.4) * p.life;
+        drawMeshActual(ASSETS.crate, p.pos, size, 0);
     });
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
@@ -2539,15 +2616,15 @@ function activateUltimate() {
     p.damageDealt = 0; // Reset điểm
     showGlobalAnnouncement("🔥 ĐANG GỒM ĐẠI BÁC... 🔥", 1000);
     STATE.shake = 1.0; // Rung nhẹ khi gồng
-    
+
     // Gồng 1s
     setTimeout(() => {
         p.isChargingUlti = false;
-        
+
         // Bắn đại bác
         const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
         const dir = { x: Math.sin(yaw) * Math.cos(pitch), y: Math.sin(pitch), z: -Math.cos(yaw) * Math.cos(pitch) };
-        
+
         const proj = {
             pos: V3.add(p.pos, V3.create(0, 1.2, 0)),
             dir: dir,
@@ -2563,7 +2640,7 @@ function activateUltimate() {
         setTimeout(() => {
             p.isInvincible = false;
         }, window.GAME_CONFIG.ultimate.invincibleTime * 1000);
-        
+
     }, window.GAME_CONFIG.ultimate.chargeTime * 1000);
 }
 
@@ -2599,8 +2676,8 @@ window.addEventListener('keydown', e => {
             }
         }
     }
+    if (e.code === 'KeyE') activateUltimate();
     if (e.code && e.code.startsWith('Digit')) STATE.keys[e.code] = true;
-
 });
 window.addEventListener('keyup', e => STATE.keys[e.code] = false);
 window.addEventListener('mousedown', e => {
@@ -2809,8 +2886,9 @@ function checkOrientation() {
 }
 window.onresize = () => {
     if (gl && gl.canvas) {
-        gl.canvas.width = window.innerWidth;
-        gl.canvas.height = window.innerHeight;
+        const resScale = isMobile ? 0.75 : 1.0;
+        gl.canvas.width = window.innerWidth * resScale;
+        gl.canvas.height = window.innerHeight * resScale;
     }
     checkOrientation();
 };
