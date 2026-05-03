@@ -273,6 +273,7 @@ window.STATE = {
     gameEnded: false,
     playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
     enragedAnnounced: false,
+    finalAnnounced:   false,
     hasExited: false
 };
 const STATE = window.STATE;
@@ -1080,6 +1081,8 @@ function startGame() {
     STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
 
     STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = [];
+    STATE.enragedAnnounced = false;
+    STATE.finalAnnounced   = false;
     // Reset game state
 
     const minimap = document.getElementById('minimap');
@@ -2801,12 +2804,26 @@ function updateHUD() {
         }
     }
 
-    // CẢNH BÁO CUỒNG BẠO LV2 (40%)
-    const enragedThreshold = (STATE.config.botCount || 25) * 0.4;
-    if (!STATE.enragedAnnounced && STATE.bots.length > 0 && STATE.bots.length <= enragedThreshold) {
-        showGlobalAnnouncement("⚠️ CẢNH BÁO: QUÁI VẬT ĐÃ HÓA CUỒNG BẠO!", 4000);
+    // CẢNH BÁO CUỒNG BẠO — dùng đúng ngưỡng theo độ khó
+    const _bc        = STATE.bots.length;
+    const _total     = STATE.config.botCount || 25;
+    const _enragePct = window.GAME_CONFIG.bot.enrageLv2Pct || 0.40;
+    const _lv3Count  = window.GAME_CONFIG.bot.lv3Count     || 5;
+    const _lv2Thresh = Math.round(_total * _enragePct);
+
+    // Lv2: Cuồng Bạo
+    if (!STATE.enragedAnnounced && _bc > 0 && _bc <= _lv2Thresh) {
+        const pct = Math.round(_enragePct * 100);
+        showGlobalAnnouncement(`⚠️ CẢNH BÁO: ${_bc} QUÁI VẬT HÓA CUỒNG BẠO! (${pct}% còn lại)`, 4000);
         STATE.enragedAnnounced = true;
         STATE.shake = 5.0;
+    }
+
+    // Lv3: Giai đoạn cuối — thông báo riêng
+    if (!STATE.finalAnnounced && _bc > 0 && _bc <= _lv3Count) {
+        showGlobalAnnouncement(`💀 GIAI ĐOẠN CUỐI: ${_bc} CON CUỐI CÙNG — SIÊU NGUY HIỂM!`, 5000);
+        STATE.finalAnnounced = true;
+        STATE.shake = 8.0;
     }
 }
 
