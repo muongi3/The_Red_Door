@@ -39,9 +39,9 @@ window.GAME_CONFIG = {
         hpLv2: 240,          // Máu quái hóa đỏ
         hpLv3: 300,          // Máu 3 con cuối (Trở thành mini-boss thực thụ)
 
-        speedLv1: 7.5,       // Tốc độ quái Lv1
-        speedLv2: 12,        // Tốc độ quái Lv2
-        speedLv3: 17,        // Tốc độ quái Lv3 (Rất nhanh)
+        speedLv1: 5.0,       // Tốc độ quái Lv1 (chậm lại cho người chơi kịp phản xạ)
+        speedLv2: 8.0,        // Tốc độ quái Lv2
+        speedLv3: 12.0,       // Tốc độ quái Lv3 (nguy hiểm nhưng vẫn trốn được)
 
         baseDamage: 15,       // Sát thương Lv1
         enragedDamageLv2: 45, // Sát thương Lv2
@@ -161,7 +161,7 @@ window.GAME_CONFIG = {
 window.DIFFICULTY_PRESETS = {
     easy: {
         label: '😊 DỄ', color: '#00e676',
-        botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.8,
+        botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.75,  // giảm tốc độ thêm
         enrageLv2Pct: 0.30, lv3Count: 3,
         bossHpMult: 0.6, bossDmgMult: 0.5, bossSkillCdMult: 1.5, bossSpeedMult: 0.7,
         playerHpMult: 1.2, playerSpdMult: 1.0,
@@ -175,14 +175,14 @@ window.DIFFICULTY_PRESETS = {
     },
     hard: {
         label: '🔥 KHÓ', color: '#ff6600',
-        botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.3,
+        botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.2,  // không tăng quá nhiều
         enrageLv2Pct: 0.55, lv3Count: 7,
         bossHpMult: 1.5, bossDmgMult: 1.6, bossSkillCdMult: 0.75, bossSpeedMult: 1.3,
         playerHpMult: 0.85, playerSpdMult: 0.9,
     },
     extreme: {
         label: '💀 CỰC KHÓ', color: '#ff0033',
-        botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.6,
+        botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.4,  // tốc độ giảm từ 1.6 xuống 1.4
         enrageLv2Pct: 0.70, lv3Count: 10,
         bossHpMult: 2.2, bossDmgMult: 2.5, bossSkillCdMult: 0.55, bossSpeedMult: 1.6,
         playerHpMult: 0.7, playerSpdMult: 0.85,
