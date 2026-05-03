@@ -1285,10 +1285,7 @@ function update(dt) {
                     proj.dead = true; playAudio('hit'); showHitMarker();
                     if (proj.isUlti) { STATE.shake = 10.0; b.flinchTime = 0.6; }
                     if (b.hp <= 0 && !b.dead) {
-                        b.dead = true;
-                        showGlobalAnnouncement("HAKARI ĐÃ BỊ TRIỆT TIÊU!", 5000);
-                        STATE.player.kills += 10;
-                        // Không gọi endGame ngay, đợi user bấm Tiếp tục ở showClickAnywhere
+                        killBoss();
                     }
                 }
             }
@@ -1864,20 +1861,7 @@ function update(dt) {
         if (b.state === 'fight' && dist < 10) takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt, true); // [YÊU CẦU] Im lặng khi dính dame áp sát Boss
 
         if (b.hp <= 0 && !b.dead) {
-            b.dead = true;
-            b.active = false;
-            // DỌN DẸP MESH KHI BOSS CHẾT
-            if (b.indicatorMesh) { deleteMesh(b.indicatorMesh); b.indicatorMesh = null; }
-            if (b.dashMesh) { deleteMesh(b.dashMesh); b.dashMesh = null; }
-            if (b.fanMesh) { deleteMesh(b.fanMesh); b.fanMesh = null; }
-            if (b.pillarSpots) {
-                b.pillarSpots.forEach(s => { if (s.mesh) deleteMesh(s.mesh); });
-                b.pillarSpots = [];
-            }
-            document.getElementById('boss-hp-container').style.display = 'none';
-            spawnOiiaCat(); 
-            playBossSound(); 
-            showClickAnywhere(5000); // Đợi 5s rồi hiện chữ Tiếp tục
+            killBoss();
         }
         if (b.active) {
             const bossHpContainer = document.getElementById('boss-hp-container');
@@ -1894,6 +1878,34 @@ function update(dt) {
     if (STATE.player.hp <= 0) endGame(false);
 
 
+}
+
+function killBoss() {
+    const b = STATE.boss;
+    if (!b || b.dead) return;
+
+    b.dead = true;
+    b.active = false;
+    STATE.player.kills += 10;
+    showGlobalAnnouncement("HAKARI ĐÃ BỊ TRIỆT TIÊU!", 5000);
+
+    // DỌN DẸP MESH KHI BOSS CHẾT
+    if (b.indicatorMesh) { deleteMesh(b.indicatorMesh); b.indicatorMesh = null; }
+    if (b.dashMesh) { deleteMesh(b.dashMesh); b.dashMesh = null; }
+    if (b.fanMesh) { deleteMesh(b.fanMesh); b.fanMesh = null; }
+    if (b.pillarSpots) {
+        b.pillarSpots.forEach(s => { if (s.mesh) deleteMesh(s.mesh); });
+        b.pillarSpots = [];
+    }
+
+    document.getElementById('boss-hp-container').style.display = 'none';
+    spawnOiiaCat();
+    playBossSound();
+    showClickAnywhere(5000); // Đợi 5s rồi hiện chữ Tiếp tục
+    
+    // Hiệu ứng nổ lớn
+    STATE.shake = 20.0;
+    spawnParticles(b.pos, 500, [1, 0, 0], 5.0);
 }
 
 function createExplosion(pos, customRange, customDamage, isFriendly = false, noCharge = false) {
