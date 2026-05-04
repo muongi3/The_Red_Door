@@ -1,4 +1,4 @@
-let canClickContinue = false;
+﻿let canClickContinue = false;
 const isMobile = window.matchMedia("(max-width: 800px), (pointer: coarse)").matches;
 const isFacebookApp = /FBAN|FBAV|Messenger/i.test(navigator.userAgent);
 
@@ -164,9 +164,10 @@ window.DIFFICULTY_PRESETS = {
         botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.75,
         enrageLv2Pct: 0.30, lv3Count: 3,
         bossHpMult: 0.6, bossDmgMult: 0.5, bossSkillCdMult: 1.5, bossSpeedMult: 0.7,
+        bossSkillPreTimeMult: 1.4, // Boss "rặn" chiêu cực chậm
         playerHpMult: 1.2, playerSpdMult: 1.0,
         weaponDmgMult: 1.0,
-        ultiDmgMult:   1.0,
+        ultiDmgMult: 1.0,
         ultiChargeMult: 0.75,  // Cần 1500 dame — DỄ charge Unti
     },
     normal: {
@@ -174,9 +175,10 @@ window.DIFFICULTY_PRESETS = {
         botHpMult: 1.0, botDmgMult: 1.0, botSpeedMult: 1.0,
         enrageLv2Pct: 0.40, lv3Count: 5,
         bossHpMult: 1.0, bossDmgMult: 1.0, bossSkillCdMult: 1.0, bossSpeedMult: 1.0,
+        bossSkillPreTimeMult: 1.0, // Chuẩn
         playerHpMult: 1.0, playerSpdMult: 1.0,
         weaponDmgMult: 1.1,
-        ultiDmgMult:   1.2,
+        ultiDmgMult: 1.2,
         ultiChargeMult: 1.0,   // Cần 2000 dame — cơ bản
     },
     hard: {
@@ -184,9 +186,10 @@ window.DIFFICULTY_PRESETS = {
         botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.2,
         enrageLv2Pct: 0.55, lv3Count: 7,
         bossHpMult: 1.5, bossDmgMult: 1.6, bossSkillCdMult: 0.75, bossSpeedMult: 1.3,
+        bossSkillPreTimeMult: 0.85, // Boss "rặn" chiêu nhanh hơn
         playerHpMult: 0.85, playerSpdMult: 0.9,
         weaponDmgMult: 1.2,
-        ultiDmgMult:   1.4,
+        ultiDmgMult: 1.4,
         ultiChargeMult: 1.3,   // Cần 2600 dame — phải đánh thật nhiều
     },
     extreme: {
@@ -194,16 +197,17 @@ window.DIFFICULTY_PRESETS = {
         botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.4,
         enrageLv2Pct: 0.70, lv3Count: 10,
         bossHpMult: 2.2, bossDmgMult: 2.5, bossSkillCdMult: 0.55, bossSpeedMult: 1.6,
+        bossSkillPreTimeMult: 0.7, // Boss tung chiêu cực chớp nhoáng
         playerHpMult: 0.7, playerSpdMult: 0.85,
         weaponDmgMult: 1.3,
-        ultiDmgMult:   1.6,
-        ultiChargeMult: 1.75,  // Cần 3500 dame — cần kỹ năng thực sự
+        ultiDmgMult: 1.6,
+        ultiChargeMult: 1.5,  // Cần 3500 dame — cần kỹ năng thực sự
     }
 };
 
 window.CURRENT_DIFFICULTY = 'normal';
 
-window.applyDifficulty = function(key) {
+window.applyDifficulty = function (key) {
     window.CURRENT_DIFFICULTY = key;
     const d = window.DIFFICULTY_PRESETS[key];
     const b = window.GAME_CONFIG;
@@ -212,40 +216,49 @@ window.applyDifficulty = function(key) {
     b.bot.hpLv2 = Math.round(240 * d.botHpMult);
     b.bot.hpLv3 = Math.round(300 * d.botHpMult);
     b.bot.speedLv1 = 7.5 * d.botSpeedMult;
-    b.bot.speedLv2 = 12  * d.botSpeedMult;
-    b.bot.speedLv3 = 17  * d.botSpeedMult;
-    b.bot.baseDamage       = Math.round(15 * d.botDmgMult);
+    b.bot.speedLv2 = 12 * d.botSpeedMult;
+    b.bot.speedLv3 = 17 * d.botSpeedMult;
+    b.bot.baseDamage = Math.round(15 * d.botDmgMult);
     b.bot.enragedDamageLv2 = Math.round(45 * d.botDmgMult);
     b.bot.enragedDamageLv3 = Math.round(80 * d.botDmgMult);
     b.bot.enrageLv2Pct = d.enrageLv2Pct;
-    b.bot.lv3Count     = d.lv3Count;
+    b.bot.lv3Count = d.lv3Count;
     // Boss
-    b.boss.hp             = Math.round(20000 * d.bossHpMult);
-    b.boss.passiveDamage  = Math.round(150   * d.bossDmgMult);
-    b.boss.skill1.damage  = Math.round(350   * d.bossDmgMult);
-    b.boss.skill1.speed   = Math.round(130   * d.bossSpeedMult);
-    b.boss.skill2.damage  = Math.round(100   * d.bossDmgMult);
-    b.boss.skill2.speed   = Math.round(120   * d.bossSpeedMult);
-    b.boss.skill3.damage  = Math.round(550   * d.bossDmgMult);
-    b.boss.skill4.damage  = Math.round(350   * d.bossDmgMult);
-    b.boss.skill5.damage  = Math.round(450   * d.bossDmgMult);
-    b.boss.skillCD        = 4.5 * d.bossSkillCdMult;
-    b.boss.postSkillRest  = 2.5 * d.bossSkillCdMult;
+    b.boss.hp = Math.round(20000 * d.bossHpMult);
+    b.boss.passiveDamage = Math.round(150 * d.bossDmgMult);
+    b.boss.skill1.damage = Math.round(350 * d.bossDmgMult);
+    b.boss.skill1.speed = Math.round(130 * d.bossSpeedMult);
+    b.boss.skill2.damage = Math.round(100 * d.bossDmgMult);
+    b.boss.skill2.speed = Math.round(120 * d.bossSpeedMult);
+    b.boss.skill3.damage = Math.round(550 * d.bossDmgMult);
+    b.boss.skill4.damage = Math.round(350 * d.bossDmgMult);
+    b.boss.skill5.damage = Math.round(450 * d.bossDmgMult);
+    b.boss.skillCD = 4.5 * d.bossSkillCdMult;
+    b.boss.postSkillRest = 2.5 * d.bossSkillCdMult;
+
+    // Thời gian gồng chiêu (rặn chiêu)
+    const pm = d.bossSkillPreTimeMult || 1.0;
+    b.boss.skill1.prepareTime = 1.5 * pm;
+    b.boss.skill2.prepareTime = 1.0 * pm;
+    b.boss.skill3.prepareTime = 1.8 * pm;
+    b.boss.skill4.prepareTime = 2.2 * pm;
+    b.boss.skill4.pillarTimer = 1.8 * pm;
+    b.boss.skill5.prepareTime = 1.8 * pm;
     // Player
-    b.player.maxHp           = Math.round(1000 * d.playerHpMult);
-    b.player.maxArmor        = Math.round(1000 * d.playerHpMult);
-    b.player.walkSpeed       = 8.5 * d.playerSpdMult;
-    b.player.sprintMultiplier= 1.9 * d.playerSpdMult;
+    b.player.maxHp = Math.round(1000 * d.playerHpMult);
+    b.player.maxArmor = Math.round(1000 * d.playerHpMult);
+    b.player.walkSpeed = 8.5 * d.playerSpdMult;
+    b.player.sprintMultiplier = 1.9 * d.playerSpdMult;
     // Vũ khí người chơi
     const wm = d.weaponDmgMult || 1.0;
-    b.weapons.pistol.damage = Math.round(65  * wm);
-    b.weapons.smg.damage    = Math.round(40  * wm);
+    b.weapons.pistol.damage = Math.round(65 * wm);
+    b.weapons.smg.damage = Math.round(40 * wm);
     b.weapons.sniper.damage = Math.round(300 * wm);
     // Unti — dame và ngưỡng tích lũy
-    const um = d.ultiDmgMult    || 1.0;
+    const um = d.ultiDmgMult || 1.0;
     const cm = d.ultiChargeMult || 1.0;
-    b.ultimate.damage        = Math.round(800  * um);
-    b.ultimate.requiredDamage= Math.round(2000 * cm); // Càng khó càng phải gom dame nhiều
+    b.ultimate.damage = Math.round(800 * um);
+    b.ultimate.requiredDamage = Math.round(2000 * cm); // Càng khó càng phải gom dame nhiều
     localStorage.setItem('difficulty', key);
 };
 
@@ -273,7 +286,7 @@ window.STATE = {
     gameEnded: false,
     playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
     enragedAnnounced: false,
-    finalAnnounced:   false,
+    finalAnnounced: false,
     hasExited: false
 };
 const STATE = window.STATE;
@@ -1059,9 +1072,9 @@ function startGame() {
     // Áp dụng lại độ khó (đảm bảo stats đúng khi bắt đầu trận)
     window.applyDifficulty(window.CURRENT_DIFFICULTY);
 
-    STATE.player.hp    = window.GAME_CONFIG.player.maxHp;
+    STATE.player.hp = window.GAME_CONFIG.player.maxHp;
     STATE.player.maxHp = window.GAME_CONFIG.player.maxHp;
-    STATE.player.armor    = 0;
+    STATE.player.armor = 0;
     STATE.player.maxArmor = window.GAME_CONFIG.player.maxArmor;
 
     // Đồng bộ dame vũ khí vào STATE.weapons
@@ -1070,7 +1083,7 @@ function startGame() {
     STATE.weapons[2].damage = window.GAME_CONFIG.weapons.sniper.damage;
 
     // Reset boss với HP đúng theo độ khó
-    STATE.boss.hp    = window.GAME_CONFIG.boss.hp;
+    STATE.boss.hp = window.GAME_CONFIG.boss.hp;
     STATE.boss.maxHp = window.GAME_CONFIG.boss.hp;
     STATE.boss.active = false; STATE.boss.dead = false;
     STATE.bossTriggered = false;
@@ -1082,7 +1095,7 @@ function startGame() {
 
     STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = [];
     STATE.enragedAnnounced = false;
-    STATE.finalAnnounced   = false;
+    STATE.finalAnnounced = false;
     // Reset game state
 
     const minimap = document.getElementById('minimap');
@@ -1435,8 +1448,8 @@ function update(dt) {
         // --- 3 GIAI ĐOẠN TIẾN HÓA CỦA BOT ---
         const botCount = STATE.bots.length;
         const initialCount = STATE.config.botCount || 25;
-        const enragePct   = window.GAME_CONFIG.bot.enrageLv2Pct || 0.40;
-        const lv3Count    = window.GAME_CONFIG.bot.lv3Count     || 5;
+        const enragePct = window.GAME_CONFIG.bot.enrageLv2Pct || 0.40;
+        const lv3Count = window.GAME_CONFIG.bot.lv3Count || 5;
         const isEnragedLv2 = botCount <= initialCount * enragePct; // Cuồng bạo theo độ khó
         const isEnragedLv3 = botCount <= lv3Count;                  // Lv3 count theo độ khó
 
@@ -2806,10 +2819,10 @@ function updateHUD() {
     }
 
     // CẢNH BÁO CUỒNG BẠO — dùng đúng ngưỡng theo độ khó
-    const _bc        = STATE.bots.length;
-    const _total     = STATE.config.botCount || 25;
+    const _bc = STATE.bots.length;
+    const _total = STATE.config.botCount || 25;
     const _enragePct = window.GAME_CONFIG.bot.enrageLv2Pct || 0.40;
-    const _lv3Count  = window.GAME_CONFIG.bot.lv3Count     || 5;
+    const _lv3Count = window.GAME_CONFIG.bot.lv3Count || 5;
     const _lv2Thresh = Math.round(_total * _enragePct);
 
     // Lv2: Cuồng Bạo
@@ -3167,9 +3180,9 @@ window.addEventListener('DOMContentLoaded', () => {
     const diffBtns = document.querySelectorAll('.diff-btn');
     const diffDesc = document.getElementById('diff-desc');
     const diffDescTexts = {
-        easy:    '😊 Bot/Boss yếu, máu +20% | Unti: cần 1500 dame (dễ charge)',
-        normal:  '⚔️ Cân bằng | Unti: cần 2000 dame, dame +20%',
-        hard:    '🔥 Bot/Boss mạnh | Unti: cần 2600 dame, dame +40%',
+        easy: '😊 Bot/Boss yếu, máu +20% | Unti: cần 1500 dame (dễ charge)',
+        normal: '⚔️ Cân bằng | Unti: cần 2000 dame, dame +20%',
+        hard: '🔥 Bot/Boss mạnh | Unti: cần 2600 dame, dame +40%',
         extreme: '💀 Cực nguy hiểm | Unti: cần 3500 dame, dame +60%!',
     };
     function syncDiffButtons() {
@@ -3417,6 +3430,8 @@ window.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('mousedown', onWeaponSelect);
     });
 });
+
+
 
 
 
