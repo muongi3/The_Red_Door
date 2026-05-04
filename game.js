@@ -1,4 +1,4 @@
-﻿let canClickContinue = false;
+let canClickContinue = false;
 const isMobile = window.matchMedia("(max-width: 800px), (pointer: coarse)").matches;
 const isFacebookApp = /FBAN|FBAV|Messenger/i.test(navigator.userAgent);
 
@@ -165,6 +165,7 @@ window.DIFFICULTY_PRESETS = {
         enrageLv2Pct: 0.30, lv3Count: 3,
         bossHpMult: 0.6, bossDmgMult: 0.5, bossSkillCdMult: 1.5, bossSpeedMult: 0.7,
         bossSkillPreTimeMult: 1.4, // Boss "rặn" chiêu cực chậm
+        bossSkillActiveTimeMult: 1.2, // Hiệu ứng chiêu kéo dài/kết thúc chậm
         playerHpMult: 1.2, playerSpdMult: 1.0,
         weaponDmgMult: 1.0,
         ultiDmgMult: 1.0,
@@ -176,6 +177,7 @@ window.DIFFICULTY_PRESETS = {
         enrageLv2Pct: 0.40, lv3Count: 5,
         bossHpMult: 1.0, bossDmgMult: 1.0, bossSkillCdMult: 1.0, bossSpeedMult: 1.0,
         bossSkillPreTimeMult: 1.0, // Chuẩn
+        bossSkillActiveTimeMult: 1.0,
         playerHpMult: 1.0, playerSpdMult: 1.0,
         weaponDmgMult: 1.1,
         ultiDmgMult: 1.2,
@@ -187,6 +189,7 @@ window.DIFFICULTY_PRESETS = {
         enrageLv2Pct: 0.55, lv3Count: 7,
         bossHpMult: 1.5, bossDmgMult: 1.6, bossSkillCdMult: 0.75, bossSpeedMult: 1.3,
         bossSkillPreTimeMult: 0.85, // Boss "rặn" chiêu nhanh hơn
+        bossSkillActiveTimeMult: 0.85,
         playerHpMult: 0.85, playerSpdMult: 0.9,
         weaponDmgMult: 1.2,
         ultiDmgMult: 1.4,
@@ -198,6 +201,7 @@ window.DIFFICULTY_PRESETS = {
         enrageLv2Pct: 0.70, lv3Count: 10,
         bossHpMult: 2.2, bossDmgMult: 2.5, bossSkillCdMult: 0.55, bossSpeedMult: 1.6,
         bossSkillPreTimeMult: 0.7, // Boss tung chiêu cực chớp nhoáng
+        bossSkillActiveTimeMult: 0.7,
         playerHpMult: 0.7, playerSpdMult: 0.85,
         weaponDmgMult: 1.3,
         ultiDmgMult: 1.6,
@@ -230,20 +234,30 @@ window.applyDifficulty = function (key) {
     b.boss.skill1.speed = Math.round(130 * d.bossSpeedMult);
     b.boss.skill2.damage = Math.round(100 * d.bossDmgMult);
     b.boss.skill2.speed = Math.round(120 * d.bossSpeedMult);
-    b.boss.skill3.damage = Math.round(550 * d.bossDmgMult);
-    b.boss.skill4.damage = Math.round(350 * d.bossDmgMult);
-    b.boss.skill5.damage = Math.round(450 * d.bossDmgMult);
-    b.boss.skillCD = 4.5 * d.bossSkillCdMult;
-    b.boss.postSkillRest = 2.5 * d.bossSkillCdMult;
+    // --- HỆ THỐNG THỜI GIAN CHIÊU BOSS (DYNAMIC TIMING) ---
+    // Tính toán dựa trên tốc độ chạy (Sprint) của người chơi để đảm bảo "sít sát mé né được"
+    const sprintSpeed = b.player.walkSpeed * b.player.sprintMultiplier;
+    const pm = d.bossSkillPreTimeMult || 1.0;   // Multiplier cho Gồng (Prepare)
+    const am = d.bossSkillActiveTimeMult || 1.0; // Multiplier cho Thực thi (Active/Recovery)
 
-    // Thời gian gồng chiêu (rặn chiêu)
-    const pm = d.bossSkillPreTimeMult || 1.0;
-    b.boss.skill1.prepareTime = 1.5 * pm;
+    // Chiêu 1 (Dash): Né ngang (Width=9). Cần né ~4.5 units.
+    b.boss.skill1.prepareTime = (5 / sprintSpeed) * 2.5 * pm; // Cần ~0.3s để né, cho hẳn ~0.8-1.5s
+    b.boss.skill1.activeTime = 0.7 * am;
+
+    // Chiêu 2 (Shoot): Không đổi vì là đạn bay
     b.boss.skill2.prepareTime = 1.0 * pm;
-    b.boss.skill3.prepareTime = 1.8 * pm;
+
+    // Chiêu 3 (Jump/Slam): Range=28. Cần thoát khỏi tâm.
+    // DỄ: ~2.5s | THƯỜNG: ~1.9s | CỰC KHÓ: ~1.4s (Sít sao!)
+    b.boss.skill3.prepareTime = (28 / sprintSpeed) * 1.1 * pm;
+
+    // Chiêu 4 (Pillar): Range=10. Cần thoát khỏi tâm.
     b.boss.skill4.prepareTime = 2.2 * pm;
-    b.boss.skill4.pillarTimer = 1.8 * pm;
-    b.boss.skill5.prepareTime = 1.8 * pm;
+    b.boss.skill4.pillarTimer = (10 / sprintSpeed) * 1.5 * pm; // Thời gian từ lúc hiện vòng đến lúc nổ
+
+    // Chiêu 5 (Teleport): Range=35.
+    b.boss.skill5.prepareTime = (35 / sprintSpeed) * 1.05 * pm;
+    b.boss.skill5.activeTime = 2.5 * am;
     // Player
     b.player.maxHp = Math.round(1000 * d.playerHpMult);
     b.player.maxArmor = Math.round(1000 * d.playerHpMult);
@@ -1861,7 +1875,9 @@ function update(dt) {
         } else if (b.state === 'teleport_start') {
             b.bodyY -= 15 * dt;
             b.armLift += (0 - b.armLift) * 0.1; // Chìm xuống đứng yên không giơ tay làm gì
-            if (b.skillCD > 1.0) {
+            const totalPre = window.GAME_CONFIG.boss.skill5.prepareTime;
+            // Dành 60% thời gian đầu để bám theo vị trí người chơi
+            if (b.skillCD > totalPre * 0.4) {
                 b.targetPos = V3.create(p.pos.x, 0, p.pos.z);
                 b.targetPos.y = getHeight(b.targetPos.x, b.targetPos.z);
 
@@ -1875,7 +1891,8 @@ function update(dt) {
             }
             if (b.skillCD <= 0) {
                 // [YÊU CẦU] Dịch chuyển và quay mặt về phía người chơi
-                b.state = 'teleport_strike'; b.skillCD = 3.0;
+                b.state = 'teleport_strike';
+                b.skillCD = window.GAME_CONFIG.boss.skill5.activeTime;
                 if (b.targetPos) {
                     b.pos.x = b.targetPos.x; b.pos.z = b.targetPos.z; b.pos.y = b.targetPos.y;
                     // Quay mặt về phía người chơi ngay khi trồi lên
@@ -1889,18 +1906,21 @@ function update(dt) {
                 b.fanMesh = genTerrainFanMesh(b.fanMeshParams.x, b.fanMeshParams.z, b.fanMeshParams.ang, b.fanMeshParams.arc, b.fanMeshParams.r);
             }
         } else if (b.state === 'teleport_strike') {
-            // --- THỜI GIAN CHIÊU 5 (Đếm ngược từ 3.0 về 0) ---
+            // --- THỜI GIAN CHIÊU 5 (DYNAMIC) ---
+            const totalActive = window.GAME_CONFIG.boss.skill5.activeTime;
+            const riseLimit = totalActive * 0.83;  // Tương đương 2.5s/3.0s
+            const strikeLimit = totalActive * 0.33; // Tương đương 1.0s/3.0s
 
-            // 1. THỜI GIAN TRỒI LÊN: Khi skillCD giảm từ 3.0 xuống 2.5 (mất 0.5 giây)
-            if (b.skillCD > 2.5) {
+            // 1. THỜI GIAN TRỒI LÊN
+            if (b.skillCD > riseLimit) {
                 b.bodyY += 40 * dt; if (b.bodyY > 0) b.bodyY = 0;
                 b.armLift += (-1.8 - b.armLift) * 0.1; // Tay giơ cao chuẩn bị đập
 
-                // 2. THỜI GIAN GỒNG CHỜ: Khi skillCD từ 2.5 xuống 1.0 (rặn trong 1.5 giây)
-            } else if (b.skillCD > 1.0) {
+                // 2. THỜI GIAN GỒNG CHỜ (Rặn chiêu)
+            } else if (b.skillCD > strikeLimit) {
                 b.armLift = -1.8;
 
-                // 3. VUNG TAY ĐẬP XUỐNG: Khi skillCD < 1.0
+                // 3. VUNG TAY ĐẬP XUỐNG
             } else {
                 b.armLift += (-0.2 - b.armLift) * 0.4; // Tay phải đập thẳng xuống chạm đất phía trước
                 b.bodyRot += (0.6 - b.bodyRot) * 0.2; // Hơi cúi người thôi
@@ -3167,7 +3187,7 @@ window.addEventListener('DOMContentLoaded', () => {
         botSlider.value = STATE.config.botCount;
         botVal.innerText = STATE.config.botCount;
         const updateBotVal = (e) => {
-            const val = Math.max(5, parseInt(e.target.value) || 5);
+            const val = Math.max(1, parseInt(e.target.value) || 1);
             botVal.innerText = val;
             STATE.config.botCount = val;
             localStorage.setItem('botCount', val);
