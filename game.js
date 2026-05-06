@@ -213,7 +213,7 @@ window.DIFFICULTY_PRESETS = {
         playerHpMult: 0.7, playerSpdMult: 0.85,
         weaponDmgMult: 1.3,
         ultiDmgMult: 1.6,
-        ultiChargeMult: 1.5,  // Cần 3500 dame — cần kỹ năng thực sự
+        ultiChargeMult: 1.5,  // Cần 3000 dame — cần kỹ năng thực sự
     }
 };
 
@@ -1447,7 +1447,7 @@ function update(dt) {
         if (proj.isPlayer && !proj.dead) {
             // --- 3. VA CHẠM QUÁI (BOT) ---
             STATE.bots.forEach(bot => {
-                if (proj.dead || bot.hp <= 0 || bot.isEvolvingLv3) return; // Dừng ngay nếu đạn đã trúng
+                if (proj.dead || bot.hp <= 0 || bot.isEvolvingLv2 || bot.isEvolvingLv3) return;
 
                 const dy = nextPos.y - bot.pos.y;
                 const dx = nextPos.x - bot.pos.x, dz = nextPos.z - bot.pos.z;
@@ -1546,17 +1546,17 @@ function update(dt) {
         const isEnragedLv2 = botCount <= initialCount * enragePct; // Cuồng bạo theo độ khó
         const isEnragedLv3 = botCount <= lv3Count;                  // Lv3 count theo độ khó
 
-        // [MỚI] Tăng máu khi tiến hóa
+        // [MỚI] Tăng máu khi tiến hóa + CƠ CHẾ BẤT TỬ
         if (isEnragedLv2 && !bot.hasEvolvedLv2) {
             bot.hasEvolvedLv2 = true;
             bot.hp += (window.GAME_CONFIG.bot.hpLv2 - window.GAME_CONFIG.bot.hpLv1);
+            bot.isEvolvingLv2 = true;
+            bot.evolveTimer = 1.2; // Bất tử 1.2 giây khi lên Lv2
+            playAudio('hit');
         }
         if (isEnragedLv3 && !bot.hasEvolvedLv3) {
             bot.hasEvolvedLv3 = true;
-            // Nếu đã là Lv2 thì tăng thêm (Lv3 - Lv2), nếu chưa kịp là Lv2 (nhảy vọt) thì tăng (Lv3 - Lv1)
-            const currentBaseHp = bot.hasEvolvedLv2 ? window.GAME_CONFIG.bot.hpLv2 : window.GAME_CONFIG.bot.hpLv1;
-            bot.hp += (window.GAME_CONFIG.bot.hpLv3 - currentBaseHp);
-
+            bot.hp = window.GAME_CONFIG.bot.hpLv3; // Hồi đầy máu Lv3
             bot.isEvolvingLv3 = true;
             bot.evolveTimer = window.GAME_CONFIG.bot.evolveTime;
             playAudio('hit');
@@ -1565,17 +1565,20 @@ function update(dt) {
         bot.isHorror = isEnragedLv2 || isEnragedLv3;
         bot.isFinal = isEnragedLv3; // Cờ cho Lv3
 
-        if (bot.isEvolvingLv3) {
+        if (bot.isEvolvingLv2 || bot.isEvolvingLv3) {
             bot.evolveTimer -= dt;
+            const color = bot.isEvolvingLv3 ? [1.0, 0.2, 0.2] : [1.0, 1.0, 0.0];
             if (Math.random() < 0.4) {
-                spawnParticles(V3.add(bot.pos, V3.create((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)), 2, [1.0, 0.2, 0.2]);
-                spawnParticles(V3.add(bot.pos, V3.create((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)), 1, [1.0, 0.8, 0.0]);
+                spawnParticles(V3.add(bot.pos, V3.create((Math.random() - 0.5) * 2, Math.random() * 2, (Math.random() - 0.5) * 2)), 2, color);
             }
             if (bot.evolveTimer <= 0) {
+                if (bot.isEvolvingLv3) {
+                    spawnParticles(bot.pos, 50, [1.0, 0.0, 0.0]);
+                    STATE.shake = 3.0;
+                    playAudio('shoot');
+                }
+                bot.isEvolvingLv2 = false;
                 bot.isEvolvingLv3 = false;
-                spawnParticles(bot.pos, 50, [1.0, 0.0, 0.0]); // Nổ hiệu ứng
-                STATE.shake = 3.0; // Rung màn hình
-                playAudio('shoot');
             }
         } else if (isEnragedLv2 || isEnragedLv3 || dist < window.GAME_CONFIG.bot.detectRadius) {
             const dir = V3.norm(V3.sub(p.pos, bot.pos));
@@ -2204,11 +2207,34 @@ function createExplosion(pos, customRange, customDamage, isFriendly = false, noC
     const damage = customDamage || window.GAME_CONFIG.misc.barrelExplosionDamage;
     // Player chỉ nhận 30% dame từ thùng nổ (để khỏ thùng nổ thoải mái hơn)
     if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage * 0.3);
-    STATE.bots.forEach(b => {
-        if (!b.isEvolvingLv3 && V3.dist(pos, b.pos) < range) {
-            b.hp -= damage;
-            spawnDamageNumber(V3.add(b.pos, V3.create(0, 1, 0)), damage, false); // Hiện số dame lan
-            if (!noCharge) STATE.player.damageDealt += damage;
+    // [CƠ CHẾ MỚI] Giới hạn số bot chết để không bỏ qua giai đoạn tiến hóa
+    const aliveBots = STATE.bots.filter(b => b.hp > 0);
+    const initialCount = STATE.config.botCount || 25;
+    const t2 = Math.floor(initialCount * (window.GAME_CONFIG.bot.enrageLv2Pct || 0.4));
+    const t3 = window.GAME_CONFIG.bot.lv3Count || 5;
+
+    let floor = 0;
+    if (aliveBots.length > t2) floor = t2;
+    else if (aliveBots.length > t3) floor = t3;
+
+    let deathsInThisExplosion = 0;
+    const botsInRange = STATE.bots
+        .filter(b => b.hp > 0 && !b.isEvolvingLv2 && !b.isEvolvingLv3 && V3.dist(pos, b.pos) < range)
+        .sort((a, b) => V3.dist(pos, a.pos) - V3.dist(pos, b.pos));
+
+    botsInRange.forEach(b => {
+        let finalDmg = damage;
+        if (b.hp <= finalDmg) {
+            if (aliveBots.length - deathsInThisExplosion <= floor) {
+                finalDmg = 0; // Bỏ qua sát thương hoàn toàn để giữ máu cho quái chuyển dạng
+            } else {
+                deathsInThisExplosion++;
+            }
+        }
+        if (finalDmg > 0) {
+            b.hp -= finalDmg;
+            spawnDamageNumber(V3.add(b.pos, V3.create(0, 1, 0)), Math.round(finalDmg), false);
+            if (!noCharge) STATE.player.damageDealt += finalDmg;
         }
     });
     if (STATE.boss && STATE.boss.active && V3.dist(pos, STATE.boss.pos) < range + 5) {
@@ -3311,7 +3337,7 @@ window.addEventListener('load', () => {
 // --- CẤU HÌNH SỐ LƯỢNG BOT (ĐÃ FIX OVERWRITE & CLAMP MIN 1) ---
 const savedBotCount = localStorage.getItem('botCount');
 if (savedBotCount) {
-    STATE.config.botCount = Math.max(1, parseInt(savedBotCount) || 25);
+    STATE.config.botCount = Math.max(10, parseInt(savedBotCount) || 25);
 } else {
     STATE.config.botCount = isMobile ? 15 : 25;
 }
@@ -3327,7 +3353,7 @@ window.addEventListener('DOMContentLoaded', () => {
         botSlider.value = STATE.config.botCount;
         botVal.innerText = STATE.config.botCount;
         const updateBotVal = (e) => {
-            const val = Math.max(1, parseInt(e.target.value) || 1);
+            const val = Math.max(10, parseInt(e.target.value) || 10);
             botVal.innerText = val;
             STATE.config.botCount = val;
             localStorage.setItem('botCount', val);
@@ -3421,10 +3447,7 @@ window.addEventListener('DOMContentLoaded', () => {
             STATE.keys['KeyW'] = false; STATE.keys['KeyS'] = false;
             STATE.keys['KeyA'] = false; STATE.keys['KeyD'] = false;
 
-            // Hủy chạy nhanh khi thả joystick
-            STATE.keys['ShiftLeft'] = false;
-            const btnSprint = document.getElementById('btn-sprint');
-            if (btnSprint) btnSprint.classList.remove('pressed');
+            // [FIX] Bỏ reset ShiftLeft ở đây để giữ trạng thái CHẠY khi bỏ tay ra (Sticky Sprint)
         }, { passive: false });
 
         function updateJoystick(touch) {
