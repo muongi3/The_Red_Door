@@ -68,11 +68,16 @@ window.startStory = function () {
     let charSpeed = 45;
     let lineSpeed = 2200;
 
-    // Chạm vào màn hình để tua nhanh
-    storyScreen.onclick = () => {
-        charSpeed = 10;
-        lineSpeed = 400;
-    };
+    // Đè vào màn hình để tua nhanh
+    const speedUp = () => { charSpeed = 10; lineSpeed = 400; };
+    const slowDown = () => { charSpeed = 45; lineSpeed = 2200; };
+    
+    storyScreen.addEventListener('mousedown', speedUp);
+    storyScreen.addEventListener('touchstart', speedUp);
+    storyScreen.addEventListener('mouseup', slowDown);
+    storyScreen.addEventListener('mouseleave', slowDown);
+    storyScreen.addEventListener('touchend', slowDown);
+    storyScreen.addEventListener('touchcancel', slowDown);
 
     function typeLine() {
         if (isSkipped) return;

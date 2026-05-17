@@ -2308,9 +2308,17 @@ function endGame(win) {
                 };
             }
             
-            // Chạm màn hình để tua nhanh chữ
+            // Đè màn hình để tua nhanh chữ, thả ra sẽ chạy chậm lại
             let endingLineSpeed = 3500;
-            pcScreen.onclick = () => { endingLineSpeed = 800; };
+            const speedUpEnding = () => { endingLineSpeed = 800; };
+            const slowDownEnding = () => { endingLineSpeed = 3500; };
+            
+            pcScreen.addEventListener('mousedown', speedUpEnding);
+            pcScreen.addEventListener('touchstart', speedUpEnding);
+            pcScreen.addEventListener('mouseup', slowDownEnding);
+            pcScreen.addEventListener('mouseleave', slowDownEnding);
+            pcScreen.addEventListener('touchend', slowDownEnding);
+            pcScreen.addEventListener('touchcancel', slowDownEnding);
             
             setTimeout(() => {
                 pcScreen.style.opacity = '1';
