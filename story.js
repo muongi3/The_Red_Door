@@ -1,0 +1,94 @@
+// story.js — Cốt truyện "LOST ISLAND"
+const STORY_LINES = [
+    "Một bí mật cấm kỵ đã bị chôn giấu suốt nhiều thế hệ của dòng họ xưa.",
+    "",
+    "Ở thế hệ của bạn, mọi thứ xung quanh bắt đầu sụp đổ khi từng người biến mất một cách kỳ lạ.",
+    "Người thân cận nhất bên bạn cũng dần xuất hiện những biểu hiện tương tự...",
+    "",
+    "Sau nhiều ngày quan sát những người bị nhiễm bệnh và mất tích, bạn bỗng tìm thấy một tờ giấy.",
+    "Đó là manh mối duy nhất dẫn đường đến một vùng hoang đảo bị lãng quên.",
+    "Bạn tin rằng, có thể nơi đó ẩn chứa nguồn thông tin cứu chữa mà bạn cần.",
+    "",
+    "Nhưng khi vừa tiếp cận ranh giới của vùng hoang tàn ấy...",
+    "Trời đất đột nhiên tối sầm lại. Bạn hoàn toàn mất đi ý thức.",
+    "",
+    "Khi tỉnh lại... bạn bỗng thấy mình đang rơi tự do từ trên cao xuống.",
+    "Nhưng kỳ lạ thay, cú va chạm mạnh ấy lại không hề làm bạn bị thương tổn gì.",
+    "",
+    "Nhìn xung quanh, vùng căn cứ hoang vu này phủ đầy vết tích của những trận chiến khốc liệt từng diễn ra.",
+    "Máu me, súng đạn, xác chết và vô số thứ vũ khí khác nằm rải rác khắp mọi nơi.",
+    "",
+    "Bạn tự nhủ: Phải chăng ta đã kẹt trong vòng lặp thời gian vô tận này từ trước?",
+    "",
+    "Nhiệm vụ của bạn:",
+    "Thu thập đủ các hộp thông tin bí ẩn tùy theo độ khó để giải mã sự thật.",
+    "Tiêu diệt sinh vật đột biến và tìm cách sống sót bằng mọi giá.",
+    "",
+    "Hãy nhớ... chiếc hộp rực đỏ cuối cùng nằm trong tay Kẻ Gác Cổng."
+];
+
+window.startStory = function () {
+    const splashScreen = document.getElementById('splash-screen');
+    const storyScreen = document.getElementById('story-screen');
+    const storyContainer = document.getElementById('story-text-container');
+    const btnSkip = document.getElementById('btn-skip-story');
+
+    if (splashScreen) {
+        splashScreen.style.opacity = '0';
+        setTimeout(() => splashScreen.style.display = 'none', 800);
+    }
+
+    storyScreen.classList.remove('hidden');
+    storyScreen.style.opacity = '1';
+
+    let currentLine = 0;
+    let isSkipped = false;
+    let typeTimeout = null;
+
+    function endStory() {
+        if (isSkipped) return;
+        isSkipped = true;
+        storyScreen.style.opacity = '0';
+        setTimeout(() => {
+            storyScreen.classList.add('hidden');
+            storyContainer.innerHTML = '';
+        }, 1500);
+        const chillTheme = document.getElementById('chill-theme-sound');
+        if (chillTheme) {
+            chillTheme.volume = 0.45;
+            chillTheme.play().catch(() => { });
+        }
+    }
+
+    btnSkip.onclick = () => { clearTimeout(typeTimeout); endStory(); };
+
+    function typeLine() {
+        if (isSkipped) return;
+        if (currentLine >= STORY_LINES.length) {
+            typeTimeout = setTimeout(endStory, 2500);
+            return;
+        }
+
+        const lineText = STORY_LINES[currentLine];
+        const p = document.createElement('p');
+        p.className = 'story-paragraph';
+        storyContainer.appendChild(p);
+        storyContainer.scrollTo({ top: storyContainer.scrollHeight, behavior: 'smooth' });
+
+        let charIndex = 0;
+        function typeChar() {
+            if (isSkipped) return;
+            if (charIndex < lineText.length) {
+                p.textContent += lineText.charAt(charIndex);
+                charIndex++;
+                typeTimeout = setTimeout(typeChar, lineText === '' ? 0 : 22);
+            } else {
+                currentLine++;
+                typeTimeout = setTimeout(typeLine, lineText === '' ? 300 : 1100);
+            }
+        }
+        typeChar();
+    }
+
+    setTimeout(typeLine, 1000);
+};

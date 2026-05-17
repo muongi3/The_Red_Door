@@ -49,7 +49,10 @@ function handlePlayerExit(reason) {
     sendExitToDiscord(reason);
 }
 
+let hasSentFinalResult = false;
 function finishGameAndSendToDiscord() {
+    if (hasSentFinalResult) return;
+    hasSentFinalResult = true;
     const STATE = window.STATE;
     if (STATE.finalStats) {
         const s = STATE.finalStats;
@@ -60,7 +63,7 @@ function finishGameAndSendToDiscord() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                content: `🎮 **KẾT QUẢ TRẬN ĐẤU** 🎮\n━━━━━━━━━━━━━━━\n👤 Người chơi: **${STATE.playerName}**\n⚔️ Chế độ: **${diffLabel}**\n🏁 Kết quả: **${resultLabel}**\n🔫 Kills: \`${s.kills}\` mạng\n⏱️ Thời gian: \`${s.duration} giây\`\n📅 Ngày: \`${s.date}\`\n━━━━━━━━━━━━━━━`
+                content: `🎮 **KẾT QUẢ TRẬN ĐẤU** 🎮\n━━━━━━━━━━━━━━━\n👤 Người chơi: **${STATE.playerName}**\n⚔️ Chế độ: **${diffLabel}**\n🏁 Kết quả: **${resultLabel}**\n🔫 Kills: \`${s.kills}\` mạng\n📦 Hộp giải mã: \`${window.QuestManager ? window.QuestManager.totalCollected : 0}/${window.getLoreFragments ? window.getLoreFragments().length : '?'}\` hộp\n⏱️ Thời gian: \`${s.duration} giây\`\n📅 Ngày: \`${s.date}\`\n━━━━━━━━━━━━━━━`
             })
         }).finally(() => location.reload());
     } else {
@@ -121,6 +124,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btn-join-discord')?.addEventListener('click', () => {
         log(`💬 **${STATE.playerName}** định gia nhập Discord cộng đồng!`);
+        // Bác thay URL bên dưới bằng link Discord thật của bác nhé!
+        window.open('https://discord.gg/YOUR_LINK_HERE', '_blank');
     });
 
     // Logic Thùng Góp Ý

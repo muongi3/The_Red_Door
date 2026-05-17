@@ -1,0 +1,822 @@
+/* ================================================================
+   HUD.CSS — Mobile HUD System v1.0
+   Giống Free Fire / PUBG Mobile / COD Mobile
+   KHÔNG dùng Bootstrap class, KHÔNG scale toàn container
+   ================================================================ */
+
+/* ---------- CSS Variables ---------- */
+:root {
+  /* Kích thước nút theo clamp(min, viewport, max) để đồng bộ tỷ lệ PC & Mobile */
+  --fire-size:    clamp(54px, 11vh, 220px);   /* Nút BẮN */
+  --btn-size:     clamp(40px, 8.5vh, 180px);   /* NHẢY / NGẮM / NẠP */
+  --mini-size:    clamp(30px, 6.5vh, 140px);   /* CHẠY / INTERACT */
+  --ulti-size:    clamp(42px, 10vh,   200px);   /* UNTI */
+  --hud-gap:      clamp(5px,  1.2vh,   25px);
+  --map-size:     clamp(110px, 21vh, 400px);
+
+  /* Màu nền nút */
+  --col-fire:    rgba(220, 40, 40, 0.72);
+  --col-jump:    rgba(220,180,  0, 0.72);
+  --col-aim:     rgba(  0,140,240, 0.72);
+  --col-reload:  rgba(160,160,160, 0.68);
+  --col-sprint:  rgba(255,255,255, 0.50);
+  --col-ulti:    rgba(  0,  0,  0, 0.85);
+  --col-interact:rgba(160,  0,  0, 0.85);
+
+  /* Hiệu năng */
+  --hud-blur:    8px;
+  --hud-radius:  50%;
+  --hud-border:  2.5px solid rgba(255,255,255,0.55);
+  --hud-shadow:  0 3px 12px rgba(0,0,0,0.45);
+}
+
+/* Landscape: xoay ngang - đồng bộ tỷ lệ vàng của PC và Mobile */
+@media (orientation: landscape) {
+  :root {
+    --fire-size:  clamp(42px, 11vh, 220px);
+    --btn-size:   clamp(32px, 8.5vh, 180px);
+    --mini-size:  clamp(24px, 6.5vh, 140px);
+    --ulti-size:  clamp(40px, 10vh, 200px);
+    --map-size:   clamp(90px, 21vh, 400px);
+    --hud-gap:    clamp(3px, 1.2vh, 25px);
+  }
+}
+
+/* Portrait: xoay dọc */
+@media (orientation: portrait) {
+  :root {
+    --fire-size:  clamp(48px, 11vh, 220px);
+    --btn-size:   clamp(36px, 8.5vh, 180px);
+    --mini-size:  clamp(26px, 6.5vh, 140px);
+    --ulti-size:  clamp(42px, 10vh, 200px);
+    --map-size:   clamp(95px, 21vh, 400px);
+    --hud-gap:    clamp(4px, 1.2vh, 25px);
+  }
+}
+
+/* ================================================================
+   100% PHYSICAL HUD SCALING SYSTEM
+   ================================================================ */
+#btn-shoot {
+  width: calc(var(--fire-size) * var(--btn-scale, 1.0)) !important;
+  height: calc(var(--fire-size) * var(--btn-scale, 1.0)) !important;
+  font-size: calc(clamp(11px, 2.5vh, 32px) * var(--btn-scale, 1.0)) !important;
+}
+
+#btn-jump, #btn-aim, #btn-reload {
+  width: calc(var(--btn-size) * var(--btn-scale, 1.0)) !important;
+  height: calc(var(--btn-size) * var(--btn-scale, 1.0)) !important;
+  font-size: calc(clamp(10px, 2.2vh, 26px) * var(--btn-scale, 1.0)) !important;
+}
+
+#btn-sprint, #btn-interact {
+  width: calc(var(--mini-size) * var(--btn-scale, 1.0)) !important;
+  height: calc(var(--mini-size) * var(--btn-scale, 1.0)) !important;
+  font-size: calc(clamp(9px, 1.8vh, 22px) * var(--btn-scale, 1.0)) !important;
+}
+
+#btn-ulti {
+  width: calc(var(--ulti-size) * var(--btn-scale, 1.0)) !important;
+  height: calc(var(--ulti-size) * var(--btn-scale, 1.0)) !important;
+  font-size: calc(clamp(10px, 2vh, 24px) * var(--btn-scale, 1.0)) !important;
+}
+
+#minimap-container {
+  width: calc(var(--map-size) * var(--btn-scale, 1.0)) !important;
+  height: calc(var(--map-size) * var(--btn-scale, 1.0)) !important;
+}
+
+#mobile-weapons {
+  gap: calc(clamp(3px, 0.8vw, 8px) * var(--btn-scale, 1.0)) !important;
+}
+#mobile-weapons .weapon-btn {
+  width: calc(clamp(38px, 6vw, 52px) * var(--btn-scale, 1.0)) !important;
+  height: calc(clamp(24px, 3.5vh, 32px) * var(--btn-scale, 1.0)) !important;
+  font-size: calc(clamp(9px, 1.8vh, 20px) * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(8px * var(--btn-scale, 1.0)) !important;
+}
+
+#health-bar-container {
+  width: calc(220px * var(--btn-scale, 1.0)) !important;
+  height: calc(10px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(6px * var(--btn-scale, 1.0)) !important;
+}
+#armor-bar-container {
+  width: calc(150px * var(--btn-scale, 1.0)) !important;
+  height: calc(7px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(4px * var(--btn-scale, 1.0)) !important;
+}
+
+#ammo-display {
+  font-size: calc(clamp(12px, 2.8vh, 36px) * var(--btn-scale, 1.0)) !important;
+  padding: calc(4px * var(--btn-scale, 1.0)) calc(12px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(10px * var(--btn-scale, 1.0)) !important;
+}
+
+#stats-display {
+  font-size: calc(clamp(8px, 1.3vh, 14px) * var(--btn-scale, 1.0)) !important;
+  padding: calc(4px * var(--btn-scale, 1.0)) calc(7px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(6px * var(--btn-scale, 1.0)) !important;
+  min-width: calc(clamp(60px, 8vw, 85px) * var(--btn-scale, 1.0)) !important;
+}
+#lore-counter {
+  font-size: calc(clamp(7px, 1.1vh, 11px) * var(--btn-scale, 1.0)) !important;
+}
+#difficulty-display {
+  font-size: calc(clamp(7px, 1.1vh, 11px) * var(--btn-scale, 1.0)) !important;
+}
+
+#loot-legend {
+  font-size: calc(clamp(7px, 1.1vh, 12px) * var(--btn-scale, 1.0)) !important;
+  padding: calc(4px * var(--btn-scale, 1.0)) calc(7px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(6px * var(--btn-scale, 1.0)) !important;
+  min-width: calc(clamp(60px, 8vw, 85px) * var(--btn-scale, 1.0)) !important;
+}
+
+#quest-tracker-ui {
+  font-size: calc(clamp(7.5px, 1.2vh, 13px) * var(--btn-scale, 1.0)) !important;
+  padding: calc(4px * var(--btn-scale, 1.0)) calc(7px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(6px * var(--btn-scale, 1.0)) !important;
+  min-width: calc(clamp(70px, 10vw, 95px) * var(--btn-scale, 1.0)) !important;
+  max-width: calc(clamp(100px, 15vw, 135px) * var(--btn-scale, 1.0)) !important;
+}
+#quest-tracker-header {
+  font-size: calc(clamp(8px, 1.3vh, 15px) * var(--btn-scale, 1.0)) !important;
+  padding-bottom: calc(2px * var(--btn-scale, 1.0)) !important;
+}
+.quest-desc {
+  font-size: calc(clamp(7px, 1.1vh, 12px) * var(--btn-scale, 1.0)) !important;
+}
+.quest-bar-wrap {
+  height: calc(8px * var(--btn-scale, 1.0)) !important;
+  border-radius: calc(2px * var(--btn-scale, 1.0)) !important;
+}
+.quest-progress-txt {
+  font-size: calc(clamp(6.5px, 1vh, 10px) * var(--btn-scale, 1.0)) !important;
+  line-height: calc(7px * var(--btn-scale, 1.0)) !important;
+}
+
+#btn-settings {
+  width: calc(32px * var(--btn-scale, 1.0)) !important;
+  height: calc(32px * var(--btn-scale, 1.0)) !important;
+  font-size: calc(14px * var(--btn-scale, 1.0)) !important;
+}
+
+#kill-feed {
+  font-size: calc(clamp(8px, 1.4vw, 11px) * var(--btn-scale, 1.0)) !important;
+  max-width: calc(clamp(140px, 25vw, 200px) * var(--btn-scale, 1.0)) !important;
+}
+
+/* ================================================================
+   HUD ROOT — fixed, full screen, no scroll, pointer-events:none
+   ================================================================ */
+#hud-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+  overflow: hidden;
+  /* Safe area */
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
+}
+
+/* ================================================================
+   HUD BUTTON BASE
+   ================================================================ */
+.hud-btn {
+  position: absolute;
+  pointer-events: auto;
+  border-radius: var(--hud-radius);
+  border: var(--hud-border);
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: clamp(6px, 0.9vw, 9px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--hud-shadow);
+  backdrop-filter: blur(var(--hud-blur));
+  -webkit-backdrop-filter: blur(var(--hud-blur));
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+  transition: opacity 0.1s, transform 0.1s;
+  will-change: transform;
+  /* Hitbox lớn hơn icon nhờ padding */
+  padding: 0;
+  overflow: hidden;
+  /* Ngăn Bootstrap override */
+  box-sizing: border-box !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.hud-btn:active,
+.hud-btn.pressed { transform: scale(0.88); opacity: 0.85; }
+
+/* Khi đang edit HUD */
+.hud-editing {
+  outline: 2px dashed #ffcc00 !important;
+  outline-offset: 3px !important;
+  opacity: 0.9 !important;
+  animation: hudEditPulse 1s ease-in-out infinite;
+  pointer-events: auto !important;
+}
+@keyframes hudEditPulse {
+  0%,100% { outline-color: #ffcc00; }
+  50%      { outline-color: #ff4444; }
+}
+.hud-selected {
+  outline: 3px solid #00ffcc !important;
+  outline-offset: 4px !important;
+  z-index: 99999 !important;
+}
+
+/* ================================================================
+   NÚT BẮN (FIRE)
+   ================================================================ */
+#btn-shoot {
+  width:  var(--fire-size);
+  height: var(--fire-size);
+  background: var(--col-fire);
+  border-color: rgba(255,80,80,0.8);
+  box-shadow: 0 0 16px rgba(255,50,50,0.55), var(--hud-shadow);
+  font-size: clamp(9px, 2vw, 15px);
+  /* Góc phải dưới */
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right:  calc(10px + env(safe-area-inset-right));
+  z-index: 2100;
+}
+#btn-shoot:active, #btn-shoot.pressed {
+  background: rgba(255,60,60,0.95);
+  box-shadow: 0 0 28px rgba(255,50,50,0.9);
+}
+
+/* ================================================================
+   NÚT NHẢY (JUMP)
+   ================================================================ */
+#btn-jump {
+  width:  var(--btn-size);
+  height: var(--btn-size);
+  background: var(--col-jump);
+  border-color: rgba(255,220,0,0.7);
+  /* Trên bên trái nút bắn */
+  bottom: calc(10px + env(safe-area-inset-bottom) + var(--fire-size) + var(--hud-gap));
+  right:  calc(10px + env(safe-area-inset-right));
+  z-index: 2050;
+}
+#btn-jump:active { background: rgba(255,220,0,0.95); }
+
+/* ================================================================
+   NÚT NGẮM (AIM)
+   ================================================================ */
+#btn-aim {
+  width:  var(--btn-size);
+  height: var(--btn-size);
+  background: var(--col-aim);
+  border-color: rgba(0,170,255,0.7);
+  /* Bên trái nút bắn, cùng hàng */
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right:  calc(10px + env(safe-area-inset-right) + var(--fire-size) + var(--hud-gap));
+  z-index: 2050;
+}
+#btn-aim:active, #btn-aim.pressed { background: rgba(0,180,255,0.95); }
+
+/* ================================================================
+   NÚT NẠP ĐẠN (RELOAD)
+   ================================================================ */
+#btn-reload {
+  width:  var(--btn-size);
+  height: var(--btn-size);
+  background: var(--col-reload);
+  /* Trên nút NGẮM */
+  bottom: calc(10px + env(safe-area-inset-bottom) + var(--btn-size) + var(--hud-gap));
+  right:  calc(10px + env(safe-area-inset-right) + var(--fire-size) + var(--hud-gap));
+  z-index: 2050;
+}
+#btn-reload:active, #btn-reload.pressed {
+  background: rgba(240,240,240,0.95);
+  color: #000;
+}
+
+/* ================================================================
+   NÚT CHẠY (SPRINT)
+   ================================================================ */
+#btn-sprint {
+  width:  var(--mini-size);
+  height: var(--mini-size);
+  background: var(--col-sprint);
+  border-color: rgba(255,255,255,0.7);
+  font-size: clamp(7px, 1.5vw, 11px);
+  /* Dưới góc trái trên, bên phải loot-legend */
+  top: calc(10px + env(safe-area-inset-top) + var(--map-size) + 12px);
+  left: calc(10px + env(safe-area-inset-left) + 105px);
+  z-index: 2050;
+}
+#btn-sprint:active, #btn-sprint.pressed {
+  background: rgba(255,255,255,0.9);
+  color: #000;
+}
+
+/* ================================================================
+   NÚT ULTIMATE (UNTI)
+   ================================================================ */
+#btn-ulti {
+  width:  var(--ulti-size);
+  height: var(--ulti-size);
+  background: var(--col-ulti);
+  border: 2px solid #00f2ff;
+  color: #00f2ff;
+  font-size: clamp(8px, 1.6vw, 12px);
+  box-shadow: 0 0 16px rgba(0,242,255,0.5), inset 0 0 10px rgba(0,242,255,0.2);
+  animation: ultiPulse 2s infinite ease-in-out;
+  text-shadow: 0 0 8px #00f2ff;
+  overflow: hidden;
+  /* Trên nút NHẢY */
+  bottom: calc(10px + env(safe-area-inset-bottom) + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2);
+  right:  calc(10px + env(safe-area-inset-right));
+  z-index: 2050;
+}
+#btn-ulti.hidden { display: none !important; }
+@keyframes ultiPulse {
+  0%,100% { box-shadow: 0 0 12px rgba(0,242,255,0.4); }
+  50%     { box-shadow: 0 0 28px rgba(0,242,255,0.9), 0 0 50px rgba(255,106,0,0.4);
+            border-color: #ff6a00; color: #ff6a00; text-shadow: 0 0 16px #ff6a00; }
+}
+#btn-ulti::after {
+  content: '';
+  position: absolute; top: -100%; left: 0;
+  width: 100%; height: 200%;
+  background: linear-gradient(0deg, transparent 0%, rgba(0,242,255,0.18) 50%, transparent 100%);
+  animation: scanline 3s infinite linear;
+  pointer-events: none;
+}
+@keyframes scanline { 0% { top: -100%; } 100% { top: 100%; } }
+
+/* ================================================================
+   NÚT TƯƠNG TÁC (INTERACT / QUEST PICKUP)
+   ================================================================ */
+#btn-interact {
+  width:  var(--mini-size);
+  height: var(--mini-size);
+  background: var(--col-interact);
+  border-color: #ff0000;
+  font-size: 18px;
+  box-shadow: 0 0 12px rgba(255,0,0,0.5);
+  animation: glowRed 1.2s ease-in-out infinite;
+  /* Bên trái NGẮM, cùng hàng dưới */
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right:  calc(10px + env(safe-area-inset-right) + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2);
+  z-index: 2050;
+}
+#btn-interact.hidden { display: none !important; }
+@keyframes glowRed {
+  0%,100% { box-shadow: 0 0 8px rgba(255,0,0,0.5); }
+  50%     { box-shadow: 0 0 20px rgba(255,0,0,0.9); }
+}
+
+/* ================================================================
+   NÚT CÀI ĐẶT (SETTINGS)
+   ================================================================ */
+#btn-settings {
+  width:  var(--mini-size);
+  height: var(--mini-size);
+  background: rgba(0,0,0,0.6);
+  border: 1.5px solid rgba(255,255,255,0.5);
+  font-size: 16px;
+  border-radius: 50%;
+  /* Góc phải trên */
+  top:   calc(10px + env(safe-area-inset-top));
+  right: calc(10px + env(safe-area-inset-right));
+  z-index: 3000;
+  padding: 0;
+  pointer-events: auto;
+}
+
+/* ================================================================
+   MINIMAP
+   ================================================================ */
+#minimap-container {
+  position: absolute;
+  top:  calc(8px + env(safe-area-inset-top));
+  left: calc(8px + env(safe-area-inset-left));
+  width:  var(--map-size);
+  height: var(--map-size);
+  border: 1.5px solid rgba(255,255,255,0.35);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.4);
+  overflow: hidden;
+  z-index: 1100;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+#minimap { width: 100%; height: 100%; opacity: 0.85; }
+
+/* ================================================================
+   WEAPON SELECTOR
+   ================================================================ */
+#mobile-weapons {
+  position: absolute;
+  top:  calc(10px + env(safe-area-inset-top) + 48px);
+  right: calc(10px + env(safe-area-inset-right));
+  display: flex;
+  flex-direction: row;
+  gap: clamp(3px, 0.8vw, 8px);
+  pointer-events: auto;
+  z-index: 2200;
+}
+.weapon-btn {
+  background: rgba(0,0,0,0.6);
+  color: rgba(255,255,255,0.85);
+  border: 1.5px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  width:  clamp(38px, 6vw, 52px);
+  height: clamp(24px, 3.5vh, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(7px, 1.5vw, 11px);
+  font-weight: 800;
+  font-family: 'Outfit', sans-serif;
+  backdrop-filter: blur(2px);
+  transition: all 0.15s;
+  pointer-events: auto;
+  cursor: pointer;
+  padding: 0;
+  user-select: none;
+}
+.weapon-btn.active {
+  color: #ffcc00;
+  border-color: #ffcc00;
+  background: rgba(0,0,0,0.82);
+  box-shadow: 0 0 8px rgba(255,204,0,0.4);
+}
+
+/* ================================================================
+   STATS PANEL (Sống / Kills / Lore / Độ khó)
+   ================================================================ */
+#stats-display {
+  position: absolute;
+  top:  calc(10px + env(safe-area-inset-top));
+  right: calc(10px + env(safe-area-inset-right) + var(--mini-size) + 12px);
+  pointer-events: none;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: clamp(9px, 1.6vw, 13px);
+  font-weight: 700;
+  text-align: right;
+  color: #fff;
+  min-width: clamp(80px, 15vw, 110px);
+  border: 1px solid rgba(255,255,255,0.08);
+  z-index: 1500;
+  line-height: 1.5;
+}
+
+/* ================================================================
+   STATS DISPLAY (Tối giản / Ammo / Đạn)
+   ================================================================ */
+#ammo-display {
+  position: absolute;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  right: calc(10px + env(safe-area-inset-right) + var(--fire-size) + var(--btn-size) + 20px);
+  top: auto; left: auto;
+  transform: none;
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-radius: 10px;
+  padding: 4px 12px;
+  font-size: clamp(12px, 2.2vw, 18px);
+  text-align: center;
+  z-index: 1200;
+  pointer-events: none;
+  white-space: nowrap;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+/* ================================================================
+   HP / ARMOR BARS
+   ================================================================ */
+#health-bar-container {
+  position: absolute;
+  bottom: calc(10px + env(safe-area-inset-bottom));
+  left:   calc(10px + env(safe-area-inset-left));
+  width:  clamp(120px, 22vw, 175px);
+  height: 10px;
+  z-index: 1200;
+  border-radius: 5px;
+  background: rgba(0,0,0,0.6);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 0 !important;
+}
+#health-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff2353, #ff5e3a);
+  border-radius: 5px;
+  transition: width 0.3s;
+}
+
+#armor-bar-container {
+  position: absolute;
+  bottom: calc(10px + env(safe-area-inset-bottom) + 14px);
+  left:   calc(10px + env(safe-area-inset-left));
+  width:  clamp(90px, 17vw, 130px);
+  height: 7px;
+  z-index: 1200;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.6);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 0 !important;
+}
+#armor-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0055ff, #00d4ff);
+  border-radius: 4px;
+  transition: width 0.3s;
+}
+
+/* ================================================================
+   LOOT LEGEND (HOP TIEP TE)
+   ================================================================ */
+#loot-legend {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top) + var(--map-size) + 10px);
+  left: calc(10px + env(safe-area-inset-left));
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: clamp(7px, 1.4vw, 10px);
+  z-index: 1300;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  min-width: clamp(75px, 12vw, 100px);
+  line-height: 1.7;
+}
+
+/* ================================================================
+   KILL FEED
+   ================================================================ */
+#kill-feed {
+  position: absolute;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  left:   calc(10px + env(safe-area-inset-left));
+  font-size: clamp(8px, 1.4vw, 11px);
+  color: rgba(255,255,255,0.75);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  pointer-events: none;
+  z-index: 1100;
+  max-width: clamp(140px, 25vw, 200px);
+}
+
+/* ================================================================
+   QUEST TRACKER (lore fragments)
+   ================================================================ */
+#quest-tracker-ui {
+  position: absolute;
+  top: calc(10px + env(safe-area-inset-top));
+  left: calc(10px + env(safe-area-inset-left) + var(--map-size) + 12px);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: clamp(7.5px, 1.4vw, 10px);
+  z-index: 1300;
+  pointer-events: none;
+  border: 1px solid rgba(255, 0, 0, 0.35);
+  color: #fff;
+  min-width: clamp(90px, 16vw, 130px);
+  max-width: clamp(130px, 24vw, 200px);
+  line-height: 1.5;
+}
+
+#quest-tracker-header {
+  color: #ff3333;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: clamp(8px, 1.5vw, 11px);
+  font-weight: 900;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+  padding-bottom: 3px;
+}
+
+.quest-item {
+  margin-bottom: 6px;
+}
+
+.quest-desc {
+  font-family: 'Outfit', sans-serif !important;
+  font-size: clamp(7px, 1.3vw, 9.5px);
+  color: #ddd;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.quest-bar-wrap {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 0, 0, 0.2);
+  height: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.quest-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #880000, #ff0000);
+  transition: width 0.4s ease;
+}
+
+.quest-progress-txt {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: 'Outfit', sans-serif !important;
+  font-size: clamp(6.5px, 1.2vw, 8px);
+  line-height: 8px;
+  color: #fff;
+  font-weight: 900;
+}
+
+/* ================================================================
+   INTERACTION MESSAGE
+   ================================================================ */
+#interaction-msg {
+  position: fixed;
+  bottom: calc(100px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(10px, 2vw, 14px);
+  color: #ffcc00;
+  display: none;
+  background: rgba(0,0,0,0.72);
+  padding: 5px 14px;
+  border-radius: 18px;
+  border: 1px solid #ffcc00;
+  pointer-events: none;
+  z-index: 3500;
+  white-space: nowrap;
+}
+
+/* ================================================================
+   LORE COUNTER (0/7)
+   ================================================================ */
+#lore-counter {
+  font-size: clamp(8px, 1.5vw, 12px);
+  color: #ffcc00;
+  font-weight: 900;
+  margin-top: 3px;
+  letter-spacing: 1px;
+}
+
+/* ================================================================
+   HUD SETTINGS MODAL
+   ================================================================ */
+#settings-modal { position: fixed; inset: 0; display: flex !important; align-items: center; justify-content: center; z-index: 999999; pointer-events: none; }
+
+/* ================================================================
+   AUTO RELOAD ANIMATION
+   ================================================================ */
+@keyframes pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.3; }
+}
+
+/* ================================================================
+   PORTRAIT: phone đứng — nút lớn hơn chút
+   ================================================================ */
+@media (orientation: portrait) {
+  /* Các phần tử tự động thừa kế toạ độ kéo thả phần trăm hoặc mặc định mới */
+}
+
+/* ================================================================
+   LAPTOP / DESKTOP LANDSCAPE (Mặc định Laptop cực nét, rộng rãi)
+   ================================================================ */
+@media (orientation: landscape) and (min-width: 1025px) {
+  :root {
+    --fire-size:  clamp(54px, 11vh, 220px);
+    --btn-size:   clamp(40px, 8.5vh, 180px);
+    --mini-size:  clamp(30px, 6.5vh, 140px);
+    --ulti-size:  clamp(42px, 10vh, 200px);
+    --map-size:   clamp(110px, 21vh, 400px);
+    --hud-gap:    clamp(5px, 1.2vh, 25px);
+  }
+
+  /* Toạ độ mặc định chuẩn Laptop giống ảnh */
+  #minimap-container { top: 15px; left: 15px; bottom: auto; right: auto; }
+  #loot-legend { top: calc(15px + var(--map-size) + 12px); left: 15px; bottom: auto; right: auto; }
+  #quest-tracker-ui { top: 15px; left: calc(15px + var(--map-size) + 15px); bottom: auto; right: auto; }
+  #btn-sprint { top: calc(15px + var(--map-size) + 12px); left: calc(15px + 105px); bottom: auto; right: auto; }
+  #health-bar-container { bottom: 15px; left: 15px; top: auto; right: auto; }
+  #armor-bar-container { bottom: calc(15px + 14px); left: 15px; top: auto; right: auto; }
+
+  #btn-settings { top: 15px; right: 15px; bottom: auto; left: auto; }
+  #stats-display { top: 15px; right: calc(15px + var(--mini-size) + 15px); bottom: auto; left: auto; }
+  #mobile-weapons { top: calc(15px + var(--mini-size) + 12px); right: 15px; bottom: auto; left: auto; }
+
+  #btn-shoot { bottom: 15px; right: 15px; top: auto; left: auto; }
+  #btn-jump { bottom: calc(15px + var(--fire-size) + var(--hud-gap)); right: 15px; top: auto; left: auto; }
+  #btn-aim { bottom: 15px; right: calc(15px + var(--fire-size) + var(--hud-gap)); top: auto; left: auto; }
+  #btn-reload { bottom: calc(15px + var(--btn-size) + var(--hud-gap)); right: calc(15px + var(--fire-size) + var(--hud-gap)); top: auto; left: auto; }
+  #btn-ulti { bottom: calc(15px + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2); right: 15px; top: auto; left: auto; }
+  #btn-interact { bottom: 15px; right: calc(15px + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2); top: auto; left: auto; }
+  #ammo-display { bottom: 15px; right: calc(15px + var(--fire-size) + var(--btn-size) + 30px); top: auto; left: auto; }
+}
+
+/* ================================================================
+   MOBILE / TABLET LANDSCAPE (Mặc định Điện thoại / Máy tính bảng)
+   ================================================================ */
+@media (orientation: landscape) and (max-width: 1024px) {
+  :root {
+    --fire-size:  clamp(42px, 11vh, 90px);
+    --btn-size:   clamp(32px, 8.5vh, 70px);
+    --mini-size:  clamp(24px, 6.5vh, 50px);
+    --ulti-size:  clamp(40px, 10vh, 80px);
+    --map-size:   clamp(90px, 21vh, 160px);
+    --hud-gap:    clamp(3px, 1.2vh, 12px);
+  }
+
+  /* Toạ độ mặc định chuẩn Mobile gọn gàng chống vỡ */
+  #minimap-container { top: 10px; left: 10px; bottom: auto; right: auto; }
+  #loot-legend { top: calc(10px + var(--map-size) + 8px); left: 10px; bottom: auto; right: auto; }
+  #quest-tracker-ui { top: 10px; left: calc(10px + var(--map-size) + 10px); bottom: auto; right: auto; }
+  #btn-sprint { top: calc(10px + var(--map-size) + 8px); left: calc(10px + 65px); bottom: auto; right: auto; }
+  #health-bar-container { bottom: 10px; left: 10px; top: auto; right: auto; }
+  #armor-bar-container { bottom: calc(10px + 11px); left: 10px; top: auto; right: auto; }
+
+  #btn-settings { top: 10px; right: 10px; bottom: auto; left: auto; }
+  #stats-display { top: 10px; right: calc(10px + var(--mini-size) + 10px); bottom: auto; left: auto; }
+  #mobile-weapons { top: calc(10px + var(--mini-size) + 8px); right: 10px; bottom: auto; left: auto; }
+
+  #btn-shoot { bottom: 10px; right: 10px; top: auto; left: auto; }
+  #btn-jump { bottom: calc(10px + var(--fire-size) + var(--hud-gap)); right: 10px; top: auto; left: auto; }
+  #btn-aim { bottom: 10px; right: calc(10px + var(--fire-size) + var(--hud-gap)); top: auto; left: auto; }
+  #btn-reload { bottom: calc(10px + var(--btn-size) + var(--hud-gap)); right: calc(10px + var(--fire-size) + var(--hud-gap)); top: auto; left: auto; }
+  #btn-ulti { bottom: calc(10px + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2); right: 10px; top: auto; left: auto; }
+  #btn-interact { bottom: 10px; right: calc(10px + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2); top: auto; left: auto; }
+  #ammo-display { bottom: 10px; right: calc(10px + var(--fire-size) + var(--btn-size) + 15px); top: auto; left: auto; }
+}
+
+/* === HUD SETTINGS MODAL === */
+#settings-modal { position: fixed; inset: 0; display: flex !important; align-items: center; justify-content: center; z-index: 999999; pointer-events: none; }
+#settings-modal.hidden {
+  display: none !important;
+}
+#settings-modal-content {
+  pointer-events: auto;
+  background: rgba(12, 15, 26, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 8px;
+  width: clamp(160px, 35vw, 210px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.85);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Khi thu nhỏ bảng cài đặt */
+#settings-modal-content.minimized {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0) !important;
+  width: auto !important;
+  min-width: clamp(80px, 15vw, 110px);
+  max-width: clamp(120px, 22vw, 160px);
+  padding: 2px 6px !important;
+  border-radius: 0 0 6px 6px;
+  border-top: none;
+  background: rgba(0, 0, 0, 0.88);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+#settings-modal-content.minimized #settings-header,
+#settings-modal-content.minimized #settings-body {
+  display: none !important;
+}
+#settings-modal-content.minimized #settings-minimized-header {
+  display: flex !important;
+}

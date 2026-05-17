@@ -17,314 +17,10 @@ const V3 = {
     clone: (a) => ({ x: a.x, y: a.y, z: a.z })
 };
 
-window.GAME_CONFIG = {
-    // ==========================================================================================
-    // 👤 THÔNG SỐ NGƯỜI CHƠI (PLAYER STATS)
-    // ==========================================================================================
-    player: {
-        maxHp: 1000,                // Máu tối đa
-        maxArmor: 1000,             // Giáp tối đa (Tăng lên để giáp quan trọng hơn)
-        walkSpeed: 8.5,             // Tốc độ đi bộ (Tăng nhẹ)
-        sprintMultiplier: 1.9,      // Hệ số chạy nhanh (Giảm nhẹ để quái có cơ hội đuổi kịp)
-        jumpPower: 11,              // Lực nhảy cao
-        sniperSpeed: 6.5,           // Tốc độ khi cầm Sniper
-        powerupSpeedMultiplier: 1.6 // Hệ số tăng tốc khi ăn bùa
-    },
-
-    // ==========================================================================================
-    // 🤖 THÔNG SỐ QUÁI VẬT (BOT AI STATS)
-    // ==========================================================================================
-    bot: {
-        hpLv1: 180,          // Máu quái thường
-        hpLv2: 240,          // Máu quái hóa đỏ
-        hpLv3: 300,          // Máu 3 con cuối (Trở thành mini-boss thực thụ)
-
-        speedLv1: 5.0,       // Tốc độ quái Lv1 (chậm lại cho người chơi kịp phản xạ)
-        speedLv2: 8.0,        // Tốc độ quái Lv2
-        speedLv3: 12.0,       // Tốc độ quái Lv3 (nguy hiểm nhưng vẫn trốn được)
-
-        baseDamage: 15,       // Sát thương Lv1
-        enragedDamageLv2: 45, // Sát thương Lv2
-        enragedDamageLv3: 80, // Sát thương Lv3 (Cực đau)
-        detectRadius: 45,     // Tầm nhìn
-        attackRange: 2.8,     // Khoảng cách cào
-        attackCD: 0.7,        // Hồi chiêu cào
-        evolveTime: 1.5       // Thời gian gồng hóa Lv3 (Nhanh hơn)
-    },
-
-    // ==========================================================================================
-    // 👹 THÔNG SỐ TRÙM CUỐI (HAKARI)
-    // ==========================================================================================
-    boss: {
-        hp: 20000,            // Máu của Boss (Tăng lên 12k để trận đấu epic hơn)
-        passiveDamage: 150,   // Sát thương áp sát
-        skillCD: 4.5,         // Hồi chiêu giữa các đòn (Nhanh hơn chút)
-        postSkillRest: 2.5,   // Thời gian nghỉ sau chiêu
-
-        // CHIÊU 1: LƯỚT (DASH)
-        skill1: {
-            damage: 350,
-            prepareTime: 1.5,
-            activeTime: 0.7,
-            speed: 130,       // Lướt nhanh hơn
-            width: 9
-        },
-        // CHIÊU 2: ĐẠI BÁC (SHOOT)
-        skill2: {
-            damage: 100,       // Sát thương mỗi viên (Cân bằng lại để không bị sốc chết ngay)
-            prepareTime: 1.0,
-            shotCount: 20,    // Bắn nhiều đạn hơn (20 viên)
-            interval: 0.08,   // Tốc độ xả đạn nhanh hơn
-            speed: 120,
-        },
-        // CHIÊU 3: NHẢY DẬM (JUMP/SLAM)
-        skill3: {
-            damage: 550,
-            prepareTime: 1.8,
-            range: 28,
-            jumpPower: 48,
-            gravity: 55
-        },
-        // CHIÊU 4: CỘT MÁU (CRIMSON PILLARS)
-        skill4: {
-            damage: 350,
-            prepareTime: 2.2,
-            count: 25,        // Nhiều cột hơn
-            pillarRange: 10,
-            pillarTimer: 1.8
-        },
-        // CHIÊU 5: DỊCH CHUYỂN (TELEPORT STRIKE)
-        skill5: {
-            damage: 450,
-            prepareTime: 1.8,
-            activeTime: 2.5,
-            range: 35
-        }
-    },
-
-    // ==========================================================================================
-    // 🔫 THÔNG SỐ VŨ KHÍ (WEAPON STATS)
-    // ==========================================================================================
-    weapons: {
-        pistol: {
-            damage: 65,
-            rate: 250,
-            spread: 0.03,
-            range: 60,
-            maxAmmo: 15,
-            res: 150
-        },
-        smg: {
-            damage: 50,
-            rate: 150,
-            spread: 0.08,
-            range: 45,
-            maxAmmo: 40,
-            res: 200
-        },
-        sniper: {
-            damage: 200,
-            rate: 1200,
-            spread: 0.1,
-            range: 300,
-            maxAmmo: 5,
-            res: 20
-        }
-    },
-
-    // ==========================================================================================
-    // 🔥 KỸ NĂNG ĐẶC BIỆT (ULTIMATE SKILL)
-    // ==========================================================================================
-    ultimate: {
-        requiredDamage: 2000,    // Gây 1000 dame để sạc đầy Unti
-        chargeTime: 2.0,         // Thời gian gồng (1s)
-        invincibleTime: 2.0,     // Bất tử 1s lúc tung chiêu
-        damage: 800,             // Sát thương nổ
-        explosionRange: 30,      // Tầm nổ
-        projectileSpeed: 100
-    },
-
-    // ==========================================================================================
-    // ⚙️ THÔNG SỐ KHÁC (MISC STATS)
-    // ==========================================================================================
-    misc: {
-        barrelHp: 15,
-        barrelExplosionDamage: 400,  // Đủ one-hit Lv2 Hard (HP=336), tăng lên từ 300
-        barrelExplosionRange: 15,
-        playerProjectileSpeed: 120
-    }
-};
-
-// --- [QUAN TRỌNG] SAO LƯU THÔNG SỐ GỐC ĐỂ DÙNG TRONG ĐỘ KHÓ ---
-// Bác chỉnh gì ở GAME_CONFIG trên kia thì nó sẽ lấy cái đó làm mốc gốc
-window.ORIGINAL_CONFIG = JSON.parse(JSON.stringify(window.GAME_CONFIG));
-
-// ==========================================================================================
-// 🎮 HỆ THỐNG ĐỘ KHÓ
-// ==========================================================================================
-window.DIFFICULTY_PRESETS = {
-    easy: {
-        label: '😊 DỄ', color: '#00e676',
-        botHpMult: 0.7, botDmgMult: 0.6, botSpeedMult: 0.75,
-        enrageLv2Pct: 0.30, lv3Count: 3,
-        bossHpMult: 0.6, bossDmgMult: 0.5, bossSkillCdMult: 1.5, bossSpeedMult: 0.7,
-        bossSkillPreTimeMult: 1.5, // Boss "rặn" chiêu cực chậm (Chậm)
-        bossSkillActiveTimeMult: 1.2, // Hiệu ứng chiêu kéo dài/kết thúc chậm
-        bossSkill5Buffer: 1.5,        // Dễ: Dư 1.5s
-        playerHpMult: 1.2, playerSpdMult: 1.0,
-        weaponDmgMult: 1.0,
-        ultiDmgMult: 1.0,
-        ultiChargeMult: 0.75,  // Cần 1500 dame — DỄ charge Unti
-    },
-    normal: {
-        label: '⚔️ THƯỜNG', color: '#ffcc00',
-        botHpMult: 1.0, botDmgMult: 1.0, botSpeedMult: 1.0,
-        enrageLv2Pct: 0.40, lv3Count: 5,
-        bossHpMult: 1.0, bossDmgMult: 1.0, bossSkillCdMult: 1.0, bossSpeedMult: 1.0,
-        bossSkillPreTimeMult: 1.0, // Chuẩn (Standard)
-        bossSkillActiveTimeMult: 1.0,
-        bossSkill5Buffer: 1.0,        // Thường: Dư 1.0s
-        playerHpMult: 1.0, playerSpdMult: 1.0,
-        weaponDmgMult: 1.1,
-        ultiDmgMult: 1.2,
-        ultiChargeMult: 1.0,   // Cần 2000 dame — cơ bản
-    },
-    hard: {
-        label: '🔥 KHÓ', color: '#ff6600',
-        botHpMult: 1.4, botDmgMult: 1.5, botSpeedMult: 1.2,
-        enrageLv2Pct: 0.55, lv3Count: 7,
-        bossHpMult: 1.5, bossDmgMult: 1.1, bossSkillCdMult: 0.75, bossSpeedMult: 1.3,
-        bossSkillPreTimeMult: 0.8, // Boss "rặn" chiêu nhanh (Hơi nhanh tý)
-        bossSkillActiveTimeMult: 0.85,
-        bossSkill5Buffer: 0.5,        // Khó: Dư 0.5s
-        playerHpMult: 0.85, playerSpdMult: 0.9,
-        weaponDmgMult: 1.2,
-        ultiDmgMult: 1.4,
-        ultiChargeMult: 1.3,   // Cần 2600 dame — phải đánh thật nhiều
-    },
-    extreme: {
-        label: '💀 CỰC KHÓ', color: '#ff0033',
-        botHpMult: 2.0, botDmgMult: 2.2, botSpeedMult: 1.4,
-        enrageLv2Pct: 0.70, lv3Count: 10,
-        bossHpMult: 2.2, bossDmgMult: 1.2, bossSkillCdMult: 0.55, bossSpeedMult: 1.6,
-        bossSkillPreTimeMult: 0.65, // Boss tung chiêu cực chớp nhoáng (Sít)
-        bossSkillActiveTimeMult: 0.7,
-        bossSkill5Buffer: 0.2,        // Cực khó: Dư 0.2s (Vừa thoát là đập)
-        playerHpMult: 0.7, playerSpdMult: 0.85,
-        weaponDmgMult: 1.3,
-        ultiDmgMult: 1.6,
-        ultiChargeMult: 1.5,  // Cần 3000 dame — cần kỹ năng thực sự
-    }
-};
-
-window.CURRENT_DIFFICULTY = 'normal';
-
-/**
- * Hàm áp dụng độ khó và tính toán lại các chỉ số game
- * ĐẶC BIỆT: Tính toán thời gian chiêu của Boss dựa trên tốc độ chạy của người chơi.
- */
-window.applyDifficulty = function (key) {
-    window.CURRENT_DIFFICULTY = key;
-    const d = window.DIFFICULTY_PRESETS[key];
-    const b = window.GAME_CONFIG;
-    const orig = window.ORIGINAL_CONFIG;
-
-    // --- CẬP NHẬT THÔNG SỐ BOT ---
-    b.bot.hpLv1 = Math.round(orig.bot.hpLv1 * d.botHpMult);
-    b.bot.hpLv2 = Math.round(orig.bot.hpLv2 * d.botHpMult);
-    b.bot.hpLv3 = Math.round(orig.bot.hpLv3 * d.botHpMult);
-    b.bot.speedLv1 = orig.bot.speedLv1 * d.botSpeedMult;
-    b.bot.speedLv2 = orig.bot.speedLv2 * d.botSpeedMult;
-    b.bot.speedLv3 = orig.bot.speedLv3 * d.botSpeedMult;
-    b.bot.baseDamage = Math.round(orig.bot.baseDamage * d.botDmgMult);
-    b.bot.enragedDamageLv2 = Math.round(orig.bot.enragedDamageLv2 * d.botDmgMult);
-    b.bot.enragedDamageLv3 = Math.round(orig.bot.enragedDamageLv3 * d.botDmgMult);
-    b.bot.enrageLv2Pct = d.enrageLv2Pct;
-    b.bot.lv3Count = d.lv3Count;
-
-    // --- CẬP NHẬT THÔNG SỐ BOSS ---
-    b.boss.hp = Math.round(orig.boss.hp * d.bossHpMult);
-    b.boss.passiveDamage = Math.round(orig.boss.passiveDamage * d.bossDmgMult);
-    b.boss.skill1.damage = Math.round(orig.boss.skill1.damage * d.bossDmgMult);
-    b.boss.skill1.speed = Math.round(orig.boss.skill1.speed * d.bossSpeedMult);
-    b.boss.skill2.damage = Math.round(orig.boss.skill2.damage * d.bossDmgMult);
-    b.boss.skill2.speed = Math.round(orig.boss.skill2.speed * d.bossSpeedMult);
-
-    // ==========================================================================================
-    // ⚡ HỆ THỐNG THỜI GIAN CHIÊU BOSS (DYNAMIC TIMING)
-    // Công thức: (Khoảng cách cần né / Tốc độ chạy của người chơi) * Hệ số an toàn * Multiplier độ khó
-    // ==========================================================================================
-    const sprintSpeed = b.player.walkSpeed * b.player.sprintMultiplier;
-    const pm = d.bossSkillPreTimeMult || 1.0;   // Multiplier cho giai đoạn Gồng (Prepare)
-    const am = d.bossSkillActiveTimeMult || 1.0; // Multiplier cho giai đoạn Thực thi/Hồi (Active/Recovery)
-
-    // CHIÊU 1 (DASH - Lướt): Né ngang (Width=9). Cần né ít nhất 4.5 units để thoát khỏi đường lướt.
-    // Công thức: (4.5 / sprintSpeed) * 2.5 (hệ số an toàn) * pm
-    b.boss.skill1.prepareTime = (5 / sprintSpeed) * 2.5 * pm;
-    b.boss.skill1.activeTime = 0.7 * am;
-
-    // CHIÊU 2 (SHOOT - Đại bác): Thời gian chuẩn bị trước khi xả đạn
-    b.boss.skill2.prepareTime = 1.0 * pm;
-
-    // CHIÊU 3 (JUMP/SLAM - Nhảy dậm): Tầm đánh 28 units. Cần chạy từ tâm ra rìa.
-    // DỄ: ~2.5s | THƯỜNG: ~1.9s | CỰC KHÓ: ~1.4s (Vừa khít thời gian chạy nếu phản xạ ngay)
-    b.boss.skill3.prepareTime = (28 / sprintSpeed) * 1.1 * pm;
-
-    // CHIÊU 4 (PILLAR - Cột máu): Mỗi cột tầm 10 units.
-    b.boss.skill4.prepareTime = 2.2 * pm;
-    b.boss.skill4.pillarTimer = (10 / sprintSpeed) * 1.5 * pm; // Thời gian từ lúc hiện vòng đỏ đến lúc nổ
-
-    // CHIÊU 5 (TELEPORT - Trồi lên đập): Tầm đánh 20m (từ tâm).
-    // Người chơi chạy từ tâm (0m) ra rìa (20m).
-    const r5 = 20;
-    b.boss.skill5.range = r5;
-    const escapeTime5 = r5 / sprintSpeed;
-    const buffer5 = d.bossSkill5Buffer || 1.0;
-    // holdTime = (Thgian chạy thoát - 1s gồng ngầm - 0.4s trồi lên) + Buffer
-    // Giúp Boss đập ngay sau khi người chơi vừa kịp chạy ra khỏi vòng
-    const holdTime = Math.max(0.1, (escapeTime5 - 1.0 - 0.4) + buffer5);
-    b.boss.skill5.holdTime = holdTime;
-    b.boss.skill5.prepareTime = (r5 / sprintSpeed) * 1.3 * pm;
-    b.boss.skill5.activeTime = 0.4 + holdTime + 0.4 + 0.5;
-
-    // --- THÔNG SỐ NGƯỜI CHƠI ---
-    b.player.maxHp = Math.round(orig.player.maxHp * d.playerHpMult);
-    b.player.maxArmor = Math.round(orig.player.maxArmor * d.playerHpMult);
-    b.player.walkSpeed = orig.player.walkSpeed * d.playerSpdMult;
-    b.player.sprintMultiplier = orig.player.sprintMultiplier * d.playerSpdMult;
-
-    // --- VŨ KHÍ & KỸ NĂNG ---
-    const wm = d.weaponDmgMult || 1.0;
-    // Sử dụng giá trị gốc bác đã chỉnh ở đầu file để nhân hệ số
-    b.weapons.pistol.damage = Math.round(orig.weapons.pistol.damage * wm);
-    b.weapons.smg.damage = Math.round(orig.weapons.smg.damage * wm);
-    b.weapons.sniper.damage = Math.round(orig.weapons.sniper.damage * wm);
-
-    const um = d.ultiDmgMult || 1.0;
-    const cm = d.ultiChargeMult || 1.0;
-    b.ultimate.damage = Math.round(orig.ultimate.damage * um);
-    b.ultimate.requiredDamage = Math.round(orig.ultimate.requiredDamage * cm);
-
-    localStorage.setItem('difficulty', key);
-
-    // LOG ĐỂ KIỂM TRA (F12)
-    console.log(`%c[ĐỘ KHÓ] Đã chuyển sang: ${key.toUpperCase()}`, "color: #ffcc00; font-weight: bold;");
-    console.table({
-        "Pistol Damage": b.weapons.pistol.damage,
-        "SMG Damage": b.weapons.smg.damage,
-        "Sniper Damage": b.weapons.sniper.damage,
-        "Bot HP": Math.round(180 * d.botHpMult),
-        "Boss HP": b.boss.hp
-    });
-};
-
-// Load độ khó đã lưu
-const _savedDiff = localStorage.getItem('difficulty') || 'normal';
-window.applyDifficulty(_savedDiff);
 
 window.STATE = {
     screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
-    mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [],
+    mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [], questItems: [],
 
     player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0 },
     weapons: [
@@ -343,7 +39,8 @@ window.STATE = {
     playerName: localStorage.getItem('savedPlayerName') || "Người chơi",
     enragedAnnounced: false,
     finalAnnounced: false,
-    hasExited: false
+    hasExited: false,
+    finalPaper: null
 };
 const STATE = window.STATE;
 
@@ -1144,6 +841,14 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 const HAKARI_DANCE = { spawned: false, active: false };
 
 function startGame() {
+    const chillSound = document.getElementById('chill-theme-sound');
+    if (chillSound) chillSound.pause();
+    
+    const combatSound1 = document.getElementById('combat-theme1-sound');
+    if (combatSound1) {
+        combatSound1.currentTime = 0;
+        combatSound1.play().catch(e => console.log("Audio play failed:", e));
+    }
     const nameInput = document.getElementById('player-name-input');
     const name = nameInput.value.trim();
     if (!name) {
@@ -1186,7 +891,17 @@ function startGame() {
 
     STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
 
-    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = [];
+    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null;
+    // Reset QuestManager
+    if (window.QuestManager) {
+        window.QuestManager.totalCollected = 0;
+        window.QuestManager.activeQuests = [];
+        window.QuestManager.completedTypes = []; // Cực kỳ quan trọng để bắt đầu game mới không bị kẹt quest cũ!
+        window.QuestManager.damageTracker = 0;
+        const qt = document.getElementById('quest-tracker-ui');
+        if (qt) qt.classList.add('hidden');
+        window.QuestManager.updateUI();
+    }
     STATE.enragedAnnounced = false;
     STATE.finalAnnounced = false;
     // Reset game state
@@ -1225,6 +940,18 @@ function startGame() {
             y = getHeight(x, z);
         } while (y <= -8.5);
         STATE.barrels.push({ pos: V3.create(x, y, z), hp: 20 });
+    }
+    const activePreset = dPreset || window.DIFFICULTY_PRESETS['normal'];
+    const qCount = activePreset.questCount || 5;
+    // Mỗi chế độ đều thiếu 1 hộp trên bản đồ (N - 1), chỉ khi kill Boss mới rớt hộp cuối!
+    for (let i = 0; i < qCount - 1; i++) {
+        let x, z, y;
+        do {
+            x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
+            z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
+            y = getHeight(x, z);
+        } while (y <= -8.5);
+        STATE.questItems.push({ pos: V3.create(x, y + 1.0, z) });
     }
     for (let i = 0; i < 40; i++) {
         let x, z, y;
@@ -1323,6 +1050,86 @@ function project3DToScreen(pos) {
 
 function update(dt) {
     if (STATE.screen === 'pause' || STATE.inputLocked) return;
+
+    if (!STATE.gameEnded && STATE.screen === 'game' && Math.random() < 0.0005) {
+        // Random lore ambient sounds/texts if needed
+    }
+
+    const P = window.GAME_CONFIG.player;
+
+    // Quest System Update
+    if (window.QuestManager) window.QuestManager.update(dt);
+
+    // Quest item: E-key pickup
+    let nearQuestItem = false;
+    STATE.questItems = STATE.questItems.filter(q => {
+        const dist = V3.dist(STATE.player.pos, q.pos);
+        if (dist < 4.0) {
+            nearQuestItem = true;
+            if (STATE.keys['KeyE'] && window.QuestManager) {
+                STATE.keys['KeyE'] = false; // consume key
+                window.QuestManager.assignQuest();
+                playAudio('ammo');
+                return false;
+            }
+        }
+        // Aura pulse particles (floating high into the sky like a beacon)
+        if (Math.random() < 0.35) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = 0.3 + Math.random() * 0.6;
+            STATE.particles.push({
+                pos: V3.create(q.pos.x + Math.cos(angle)*r, q.pos.y + 0.2, q.pos.z + Math.sin(angle)*r),
+                vel: V3.create((Math.random() - 0.5) * 0.4, 8.0 + Math.random() * 6.0, (Math.random() - 0.5) * 0.4),
+                life: 1.8 + Math.random() * 1.2,
+                color: [1.0, 0.7, 0.0], // Rực rỡ màu cam vàng dễ thấy từ xa
+                type: 'fire'
+            });
+        }
+        return true;
+    });
+
+    // finalPaper: E-key pickup
+    let nearFinalPaper = false;
+    if (STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp) {
+        const dist = V3.dist(STATE.player.pos, STATE.finalPaper.pos);
+        if (dist < 4.0) {
+            nearFinalPaper = true;
+            if (STATE.keys['KeyE']) {
+                STATE.keys['KeyE'] = false; // consume key
+                STATE.finalPaper.pickedUp = true;
+                STATE.finalPaper.active = false;
+                playAudio('ammo');
+                
+                if (window.QuestManager) {
+                    window.QuestManager.totalCollected = getLoreFragments().length; // Đạt tối đa!
+                    window.QuestManager.updateUI();
+                }
+
+                // Kích hoạt Chiến thắng và kết thúc game
+                spawnHakariDance();
+                playBossSound();
+                showClickAnywhere(2000); // Đợi 2s rồi hiện Tiếp tục
+            }
+        }
+    }
+
+    // Show E-key hint for quest items / final paper
+    const interMsg = document.getElementById('interaction-msg');
+    const btnInteractEl = document.getElementById('btn-interact');
+    if (nearQuestItem || nearFinalPaper) {
+        if (interMsg) {
+            interMsg.style.display = 'block';
+            if (nearFinalPaper) {
+                interMsg.innerText = '🔥 [E] NHẶT CHIẾC HỘP RỰC ĐỎ';
+            } else {
+                interMsg.innerText = '📦 [E] NHẶT CHIẾC HỘP THÔNG TIN';
+            }
+        }
+        if (btnInteractEl) btnInteractEl.classList.remove('hidden');
+    } else {
+        if (btnInteractEl) btnInteractEl.classList.add('hidden');
+    }
+
     STATE.shake *= 0.9;
     if (STATE.player.damageFlash > 0) STATE.player.damageFlash -= dt;
     const prevCount = STATE.bots.length;
@@ -1409,8 +1216,37 @@ function update(dt) {
     if (p.weaponSwitchTime < 1.0) p.weaponSwitchTime += dt * 4.0; // Rút súng nhanh trong 0.25s
 
     p.recoil *= 0.8; if (STATE.keys['Digit1']) p.weaponIdx = 0; if (STATE.keys['Digit2']) p.weaponIdx = 1; if (STATE.keys['Digit3']) p.weaponIdx = 2;
-    // Nạp đạn dùng maxAmmo theo loại súng (Pistol:12, SMG:30, Sniper:5)
-    if (STATE.keys['KeyR'] && weapon.ammo < weapon.maxAmmo) { let needed = weapon.maxAmmo - weapon.ammo; if (weapon.res >= needed) { weapon.res -= needed; weapon.ammo = weapon.maxAmmo; } else { weapon.ammo += weapon.res; weapon.res = 0; } }
+    // Nạp đạn thủ công
+    if (STATE.keys['KeyR'] && weapon.ammo < weapon.maxAmmo && !p.isReloading) {
+        let needed = weapon.maxAmmo - weapon.ammo;
+        if (weapon.res > 0) {
+            p.isReloading = true; p.reloadTimer = 2.0;
+            const rd = document.getElementById('ammo-current');
+            if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.4s infinite'; }
+        }
+    }
+    // Tự động nạp khi hết đạn
+    if (weapon.ammo <= 0 && weapon.res > 0 && !p.isReloading) {
+        p.isReloading = true; p.reloadTimer = 2.0;
+        const rd = document.getElementById('ammo-current');
+        if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.4s infinite'; }
+    }
+    // Đếm nghiều nạp
+    if (p.isReloading) {
+        p.reloadTimer = (p.reloadTimer || 2.0) - dt;
+        const wn = document.getElementById('weapon-name');
+        if (wn) wn.innerText = 'NẠP ĐẠN... ' + Math.ceil(Math.max(0, p.reloadTimer)) + 's';
+        if (p.reloadTimer <= 0) {
+            p.isReloading = false;
+            let needed = weapon.maxAmmo - weapon.ammo;
+            if (weapon.res >= needed) { weapon.res -= needed; weapon.ammo = weapon.maxAmmo; }
+            else { weapon.ammo += weapon.res; weapon.res = 0; }
+            const rd = document.getElementById('ammo-current');
+            if (rd) { rd.style.color = ''; rd.style.animation = ''; }
+            const wn2 = document.getElementById('weapon-name');
+            if (wn2) wn2.innerText = ['ASSAULT RIFLE','SMG','SNIPER'][p.weaponIdx] || '';
+        }
+    }
     STATE.projectiles.forEach((proj, i) => {
         const speed = proj.speed || (proj.isBoss ? 40 : window.GAME_CONFIG.misc.playerProjectileSpeed);
         const step = V3.mul(proj.dir, speed * dt), nextPos = V3.add(proj.pos, step);
@@ -1437,7 +1273,7 @@ function update(dt) {
 
         // --- 2. VA CHẠM THÙNG NỔ ---
         STATE.barrels.forEach(b => {
-            if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.6, 0))) < 2.5) {
+            if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.8, 0))) < 4.0) {
                 b.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]);
                 proj.dead = true;
                 if (b.hp <= 0) createExplosion(b.pos);
@@ -1470,13 +1306,17 @@ function update(dt) {
                     if (isHead) {
                         dmg = Math.round(proj.dmg * 1.5);
                         spawnParticles(nextPos, 8, [1, 1, 0], 1.5);
+                        if (window.QuestManager) window.QuestManager.onEvent('headshot', 1);
                     } else {
                         spawnParticles(nextPos, 5, [1, 0, 0], 1.0);
                     }
 
                     bot.hp -= dmg;
                     spawnDamageNumber(nextPos, dmg, isHead);
-                    if (!proj.isUlti) STATE.player.damageDealt += dmg;
+                    if (!proj.isUlti) {
+                        STATE.player.damageDealt += dmg;
+                        if (window.QuestManager) window.QuestManager.onEvent('damage', dmg);
+                    }
                     playAudio('hit');
                     showHitMarker();
                     proj.dead = true; // Dánh dấu ngay để khỏng chế frame tiếp
@@ -1497,7 +1337,10 @@ function update(dt) {
 
                 if (isHeadshot || isBodyHit) {
                     let finalDmg = proj.dmg; // Đảm bảo là số nguyên (round)
-                    if (isHeadshot) finalDmg = Math.round(proj.dmg * 1.5);
+                    if (isHeadshot) {
+                        finalDmg = Math.round(proj.dmg * 1.5);
+                        if (window.QuestManager) window.QuestManager.onEvent('headshot', 1);
+                    }
                     b.hp -= finalDmg;
                     spawnDamageNumber(nextPos, finalDmg, isHeadshot);
 
@@ -1658,6 +1501,13 @@ function update(dt) {
             bot.grounded = false;
         }
     });
+    let barrelKills = 0;
+    STATE.bots.forEach(bot => {
+        if (bot.hp <= 0 && bot.killedByBarrel) {
+            barrelKills++;
+        }
+    });
+
     STATE.bots = STATE.bots.filter(b => b.hp > 0);
     // Tự động kích hoạt Boss CHỈ khi diệt sạch bot
     if (prevCount > 0 && STATE.bots.length === 0 && !STATE.bossTriggered) {
@@ -1666,14 +1516,24 @@ function update(dt) {
     STATE.barrels = STATE.barrels.filter(b => b.hp > 0);
 
     if (STATE.bots.length < prevCount) {
-        const killsMade = prevCount - STATE.bots.length; p.kills += killsMade; const n = performance.now(); if (n - p.lastKillTime < 5000) p.streak += killsMade; else p.streak = killsMade; p.lastKillTime = n;
+        const killsMade = prevCount - STATE.bots.length; 
+        p.kills += killsMade; 
+        if (window.QuestManager) {
+            window.QuestManager.onEvent('kill', killsMade);
+            if (barrelKills > 0) {
+                window.QuestManager.onEvent('barrel_kill', barrelKills);
+            }
+        }
+        const n = performance.now(); if (n - p.lastKillTime < 5000) p.streak += killsMade; else p.streak = killsMade; p.lastKillTime = n;
         const sm = document.getElementById('streak-msg'); if (p.streak > 1) { sm.innerText = p.streak === 2 ? "DOUBLE KILL!" : (p.streak === 3 ? "TRIPLE KILL!" : "RAMPAGE!"); sm.style.transform = "translate(-50%, -50%) scale(1.5)"; setTimeout(() => sm.style.transform = "translate(-50%, -50%) scale(0)", 1500); }
         const feed = document.getElementById('kill-feed'); feed.innerHTML += `<div>Enemy eliminated</div>`; setTimeout(() => feed.removeChild(feed.firstChild), 3000);
         spawnParticles(p.pos, 20, [Math.random(), Math.random(), Math.random()]);
     }
     let closeLoot = null; STATE.loot.forEach(l => { if (V3.dist(p.pos, l.pos) < 2) closeLoot = l; });
     const msg = document.getElementById('interaction-msg');
-    msg.style.display = 'none'; // Ẩn thông báo bấm E vì giờ nhặt tự động
+    if (!nearQuestItem) {
+        msg.style.display = 'none';
+    }
 
     // Cập nhật hạt (Particles)
     STATE.particles.forEach(p => {
@@ -1707,11 +1567,13 @@ function update(dt) {
             p.hp = Math.min(p.maxHp, p.hp + 200);
             p.damageFlash = 0;
             pickedName = "HỒI MÁU";
+            if (window.QuestManager) window.QuestManager.onEvent('heal', 200);
         }
         else if (closeLoot.type === 2) { p.armor = Math.min(p.maxArmor, p.armor + 150); pickedName = "NHẬN GIÁP"; }
         else if (closeLoot.type === 3) {
             const puType = Math.random() < 0.5 ? 0 : 1;
             const hasActive = p.powerup && p.powerup.time > 0;
+            if (window.QuestManager) window.QuestManager.onEvent('pickup_powerup', 1);
 
             if (hasActive && p.powerup.type !== puType && p.powerup.type !== 3) {
                 // Đang có 1 cái khác loại -> Lên SIÊU CẤP (3)
@@ -1767,7 +1629,10 @@ function update(dt) {
         p.powerup.time -= dt;
         let color = "0, 255, 255"; // Mặc định Cyan
         if (p.powerup.type === 1) color = "255, 102, 0"; // Cam
-        if (p.powerup.type === 3) color = "191, 0, 255"; // Tím Siêu Cấp
+        if (p.powerup.type === 3) {
+            color = "191, 0, 255"; // Tím Siêu Cấp
+            if (window.QuestManager) window.QuestManager.onEvent('purple_time', dt);
+        }
 
         if (puOverlay) {
             puOverlay.style.boxShadow = `inset 0 0 200px rgba(${color}, 0.6), inset 0 0 50px rgba(${color}, 0.4)`;
@@ -2172,6 +2037,10 @@ function update(dt) {
 }
 
 function killBoss() {
+    const combatSound1 = document.getElementById('combat-theme1-sound');
+    if (combatSound1) combatSound1.pause();
+    const combatSound2 = document.getElementById('combat-theme2-sound');
+    if (combatSound2) combatSound2.pause();
     const b = STATE.boss;
     if (!b || b.dead) return;
 
@@ -2190,9 +2059,15 @@ function killBoss() {
     }
 
     document.getElementById('boss-hp-container').style.display = 'none';
-    spawnHakariDance();
-    playBossSound();
-    showClickAnywhere(5000); // Đợi 5s rồi hiện chữ Tiếp tục
+    
+    // Tạo chiếc hộp rực đỏ cuối cùng rơi tại vị trí của Boss
+    STATE.finalPaper = {
+        pos: V3.create(b.pos.x, b.pos.y + 0.2, b.pos.z),
+        active: true,
+        pickedUp: false
+    };
+
+    showGlobalAnnouncement("KẺ CANH GIỮ ĐÃ BỊ TRIỆT TIÊU! HÃY NHẶT CHIẾC HỘP RỰC ĐỎ CỦA HẮN!", 6000);
 
     // Hiệu ứng nổ lớn
     STATE.shake = 20.0;
@@ -2229,6 +2104,9 @@ function createExplosion(pos, customRange, customDamage, isFriendly = false, noC
                 finalDmg = 0; // Bỏ qua sát thương hoàn toàn để giữ máu cho quái chuyển dạng
             } else {
                 deathsInThisExplosion++;
+                if (!isFriendly) {
+                    b.killedByBarrel = true;
+                }
             }
         }
         if (finalDmg > 0) {
@@ -2325,12 +2203,154 @@ function spawnParticles(pos, count, color, speedMult = 1.0, type = 'fire') {
     }
 }
 function endGame(win) {
+    const combatSound1 = document.getElementById('combat-theme1-sound');
+    if (combatSound1) combatSound1.pause();
+    const combatSound2 = document.getElementById('combat-theme2-sound');
+    if (combatSound2) combatSound2.pause();
     if (STATE.gameEnded) return;
     STATE.gameEnded = true;
 
-    // STATE.gameEnded = true; (đã có ở trên)
-    STATE.screen = 'end'; document.exitPointerLock(); document.getElementById('ui-layer').style.display = 'none';
     const duration = Math.floor((Date.now() - STATE.startTime) / 1000);
+
+    if (win) {
+        const pcScreen = document.getElementById('post-credit-screen');
+        const pcContent = document.getElementById('post-credit-content');
+        if (pcScreen && pcContent) {
+            document.exitPointerLock(); 
+            document.getElementById('ui-layer').style.display = 'none';
+            pcScreen.style.display = 'flex';
+            
+            // DỪNG CÁC ÂM THANH RÈ (Oscillators/Boss synthesized drones)
+            if (window.bossOsc) {
+                try { window.bossOsc.stop(); } catch(e) {}
+                window.bossOsc = null;
+            }
+            if (window.bossNodes && window.bossNodes.length > 0) {
+                window.bossNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+                window.bossNodes = [];
+            }
+            
+            // PHÁT NHẠC NỀN COMBAT 1 HÀO HÙNG CHO CẢ 2 ENDING
+            const combatSound1 = document.getElementById('combat-theme1-sound');
+            const combatSound2 = document.getElementById('combat-theme2-sound');
+            if (combatSound2) combatSound2.pause();
+            if (combatSound1) {
+                combatSound1.volume = 0.55;
+                combatSound1.currentTime = 0;
+                combatSound1.loop = true;
+                combatSound1.play().catch(() => {});
+            }
+            
+            let lines = [];
+            const totalExtreme = 9; // Tổng số thông tin bí ẩn cao nhất
+            const currentFragments = getLoreFragments();
+            const currentMax = currentFragments.length;
+            const collectedCount = window.QuestManager ? window.QuestManager.totalCollected : 0;
+            const pName = STATE.playerName || "bạn";
+            
+            lines.push(`--- BÁO CÁO GIẢI MÃ THÔNG TIN CỦA ${pName.toUpperCase()} (${collectedCount}/${totalExtreme}) ---`);
+            
+            for (let i = 0; i < totalExtreme; i++) {
+                if (i < collectedCount) {
+                    lines.push(`[PHẦN ${i + 1}]: ${currentFragments[i].text}`);
+                } else if (i < currentMax) {
+                    lines.push(`[PHẦN ${i + 1}]: ??????????????????? (Yêu cầu hoàn thành thêm nhiệm vụ để giải mã)`);
+                } else {
+                    lines.push(`[PHẦN ${i + 1}]: ⚠ DỮ LIỆU BỊ MÃ HÓA CẤP CAO ⚠ (Yêu cầu chơi chế độ Khó hơn để mở khóa)`);
+                }
+            }
+            
+            lines.push("");
+            
+            if (collectedCount >= currentMax) {
+                lines = lines.concat([
+                    "Mảnh giấy rực đỏ cuối cùng đã phơi bày toàn bộ sự thật...",
+                    "Thực thể bóng tối canh giữ nơi đây thực chất là chốt chặn cuối cùng ngăn rò rỉ.",
+                    "Sự thật đã được phơi bày trọn vẹn, bạn đã có đủ công thức hóa giải!",
+                    "Người thân cận và tất cả những người mất tích đã được cứu sống hoàn hảo.",
+                    "Sứ mệnh giải cứu của bạn kết thúc vô cùng thành công mỹ mãn!"
+                ]);
+            } else {
+                lines = lines.concat([
+                    `Thông tin giải mã bị đứt gãy nghiêm trọng (${collectedCount}/${maxFrag} Hộp)!`,
+                    "Bạn chưa thể hóa giải hoàn toàn triệu chứng kỳ dị cho người thân cận.",
+                    "Hãy quay lại vùng hoang tàn và hoàn thành mọi thử thách để giải khóa sự thật tối thượng!"
+                ]);
+            }
+            
+            let endingTimeout = null;
+            let ended = false;
+            
+            const btnSkipEnding = document.getElementById('btn-skip-ending');
+            if (btnSkipEnding) {
+                // Thiết lập nhãn ban đầu của nút là BỎ QUA
+                btnSkipEnding.innerText = 'BỎ QUA ⏭';
+                btnSkipEnding.style.opacity = '0';
+                btnSkipEnding.style.pointerEvents = 'none';
+                
+                // Đợi 5 giây mới hiển thị nút Bỏ qua Ending để kích thích sự tò mò
+                setTimeout(() => {
+                    if (!ended) {
+                        btnSkipEnding.style.opacity = '1';
+                        btnSkipEnding.style.pointerEvents = 'auto';
+                    }
+                }, 5000);
+
+                btnSkipEnding.onclick = () => {
+                    if (ended) return;
+                    ended = true;
+                    if (endingTimeout) clearTimeout(endingTimeout);
+                    
+                    // Tắt nhạc lặp khi thoát ra bảng điểm
+                    if (combatSound1) combatSound1.loop = false;
+                    
+                    showRealEndScreen(win, duration);
+                };
+            }
+            
+            setTimeout(() => {
+                pcScreen.style.opacity = '1';
+                let lineIdx = 0;
+                
+                function showLine() {
+                    if (ended) return;
+                    if (lineIdx >= lines.length) {
+                        // KHI HIỂN THỊ HẾT: Không tự thoát, mà đổi nhãn nút thành XEM KẾT QUẢ và bắt buộc bấm!
+                        if (btnSkipEnding) {
+                            btnSkipEnding.innerText = 'XEM KẾT QUẢ ⏭';
+                            btnSkipEnding.style.opacity = '1';
+                            btnSkipEnding.style.pointerEvents = 'auto';
+                        }
+                        return;
+                    }
+                    const p = document.createElement('div');
+                    p.className = 'post-credit-text';
+                    p.innerText = lines[lineIdx];
+                    pcContent.appendChild(p);
+                    
+                    // Trigger reflow to animate opacity
+                    void p.offsetWidth;
+                    p.style.opacity = '1';
+                    
+                    // Auto-scroll the credits to keep the latest text visible
+                    pcContent.scrollTop = pcContent.scrollHeight;
+                    
+                    lineIdx++;
+                    endingTimeout = setTimeout(showLine, 2200);
+                }
+                showLine();
+            }, 500);
+            return;
+        }
+    }
+
+    showRealEndScreen(win, duration);
+}
+
+function showRealEndScreen(win, duration) {
+    STATE.screen = 'end'; document.exitPointerLock(); document.getElementById('ui-layer').style.display = 'none';
+    const pcScreen = document.getElementById('post-credit-screen');
+    if (pcScreen) pcScreen.style.display = 'none';
     STATE.finalStats = { win, kills: STATE.player.kills, duration, date: new Date().toLocaleString('vi-VN') };
 
     const gameOver = document.getElementById('game-over-screen'), playAgainBtn = document.getElementById('play-again-btn');
@@ -2357,9 +2377,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnSaveHud = document.getElementById('btn-save-hud');
     const btnResetHud = document.getElementById('btn-reset-hud');
     const mobileBtns = [
-        'btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint',
+        'btn-shoot', 'btn-jump', 'btn-aim', 'btn-reload',
+        'btn-ulti', 'btn-interact', 'btn-sprint',
         'mobile-weapons', 'health-bar-container', 'armor-bar-container',
-        'ammo-display', 'stats-display', 'loot-legend', 'btn-ulti'
+        'ammo-display', 'stats-display', 'loot-legend',
+        'minimap-container', 'btn-settings', 'quest-tracker-ui', 'kill-feed'
     ];
     let draggedBtn = null;
 
@@ -2368,10 +2390,27 @@ document.addEventListener('DOMContentLoaded', () => {
         mobileBtns.forEach(id => {
             const btn = document.getElementById(id);
             if (btn && savedHUD[id]) {
-                Object.assign(btn.style, savedHUD[id]);
-                if (savedHUD[id].scale) btn.style.setProperty('--btn-scale', savedHUD[id].scale);
+                const settings = savedHUD[id];
+                // Tự động chuyển đổi toạ độ pixel (px) cũ sang dạng phần trăm (%) để đồng bộ thiết bị
+                if (settings.left && settings.left.includes('px')) {
+                    const pxVal = parseFloat(settings.left);
+                    settings.left = ((pxVal / window.innerWidth) * 100).toFixed(3) + '%';
+                }
+                if (settings.top && settings.top.includes('px')) {
+                    const pxVal = parseFloat(settings.top);
+                    settings.top = ((pxVal / window.innerHeight) * 100).toFixed(3) + '%';
+                }
+                
+                Object.assign(btn.style, settings);
+                if (settings.scale) btn.style.setProperty('--btn-scale', settings.scale);
+                // Triệt tiêu translateX(-50%) của bảng đạn khi có vị trí kéo thả tuỳ chỉnh
+                if (id === 'ammo-display') {
+                    btn.style.transform = 'none';
+                }
             }
         });
+        // Lưu lại dữ liệu đã tự động migrate vào localStorage
+        localStorage.setItem('hudSettings', JSON.stringify(savedHUD));
     }
 
     let activeEditBtn = null;
@@ -2379,10 +2418,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const scaleVal = document.getElementById('hud-scale-val');
 
     function selectEditBtn(btn) {
-        if (activeEditBtn) activeEditBtn.classList.remove('selected-edit-btn');
+        if (activeEditBtn) activeEditBtn.classList.remove('hud-selected');
         activeEditBtn = btn;
         if (btn) {
-            btn.classList.add('selected-edit-btn');
+            btn.classList.add('hud-selected');
             const currentScale = btn.style.getPropertyValue('--btn-scale') || '1.0';
             if (slider) {
                 slider.value = currentScale;
@@ -2430,10 +2469,37 @@ document.addEventListener('DOMContentLoaded', () => {
                         position: btn.style.position,
                         scale: btn.style.getPropertyValue('--btn-scale') || '1.0'
                     };
-                    btn.classList.add('editing-btn');
+                    btn.classList.add('hud-editing');
                     btn.style.pointerEvents = 'auto'; // Cho phép touch khi edit
                 }
             });
+
+            // Hiển thị bản xem trước của bảng nhiệm vụ để dễ căn chỉnh trong chế độ Edit
+            const qt = document.getElementById('quest-tracker-ui');
+            if (qt) {
+                qt.classList.remove('hidden');
+                if (!window.QuestManager || window.QuestManager.activeQuests.length === 0) {
+                    const list = document.getElementById('quest-list');
+                    if (list) {
+                        list.innerHTML = `
+                            <div class="quest-item">
+                                <div class="quest-desc">[PREVIEW] Tiêu diệt quái</div>
+                                <div class="quest-bar-wrap">
+                                    <div class="quest-bar-fill" style="width:60%"></div>
+                                    <span class="quest-progress-txt">3/5</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            // Hiển thị nút Unti để dễ căn chỉnh trong chế độ Edit
+            const btnUlti = document.getElementById('btn-ulti');
+            if (btnUlti) {
+                btnUlti.classList.remove('hidden');
+            }
+
             // Tự động chọn nút Bắn mặc định
             const btnShoot = document.getElementById('btn-shoot');
             if (btnShoot) selectEditBtn(btnShoot);
@@ -2448,14 +2514,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.isEditingHUD = false;
             if (STATE.screen === 'pause') STATE.screen = 'game'; // Tiếp tục
             modalSettings.classList.add('hidden');
-            if (activeEditBtn) activeEditBtn.classList.remove('selected-edit-btn');
+            if (activeEditBtn) activeEditBtn.classList.remove('hud-selected');
             activeEditBtn = null;
 
             mobileBtns.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn && preEditHUD[id]) {
-                    btn.classList.remove('editing-btn');
-                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
+                    btn.classList.remove('hud-editing');
+                    if (!['action-bar', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
                         btn.style.pointerEvents = ''; // Trả về mặc định
                     }
                     btn.style.top = preEditHUD[id].top;
@@ -2466,6 +2532,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     btn.style.setProperty('--btn-scale', preEditHUD[id].scale);
                 }
             });
+
+            // Khôi phục trạng thái bảng nhiệm vụ
+            if (window.QuestManager) {
+                window.QuestManager.updateUI();
+                if (window.QuestManager.activeQuests.length === 0) {
+                    const qt = document.getElementById('quest-tracker-ui');
+                    if (qt) qt.classList.add('hidden');
+                }
+            }
+
+            // Khôi phục trạng thái nút Unti
+            const btnUlti = document.getElementById('btn-ulti');
+            if (btnUlti && STATE.player) {
+                if (STATE.player.damageDealt < window.GAME_CONFIG.ultimate.requiredDamage) {
+                    btnUlti.classList.add('hidden');
+                }
+            }
         });
     }
 
@@ -2474,14 +2557,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.isEditingHUD = false;
             if (STATE.screen === 'pause') STATE.screen = 'game'; // Tiếp tục
             modalSettings.classList.add('hidden');
-            if (activeEditBtn) activeEditBtn.classList.remove('selected-edit-btn');
+            if (activeEditBtn) activeEditBtn.classList.remove('hud-selected');
             activeEditBtn = null;
             let newHUD = {};
             mobileBtns.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
-                    btn.classList.remove('editing-btn');
-                    if (!['btn-shoot', 'btn-aim', 'btn-jump', 'btn-reload', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
+                    btn.classList.remove('hud-editing');
+                    if (!['action-bar', 'btn-sprint', 'mobile-weapons', 'btn-ulti'].includes(id)) {
                         btn.style.pointerEvents = ''; // Trả về mặc định
                     }
                     newHUD[id] = {
@@ -2493,6 +2576,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
             localStorage.setItem('hudSettings', JSON.stringify(newHUD));
+
+            // Khôi phục trạng thái bảng nhiệm vụ
+            if (window.QuestManager) {
+                window.QuestManager.updateUI();
+                if (window.QuestManager.activeQuests.length === 0) {
+                    const qt = document.getElementById('quest-tracker-ui');
+                    if (qt) qt.classList.add('hidden');
+                }
+            }
+
+            // Khôi phục trạng thái nút Unti
+            const btnUltiSave = document.getElementById('btn-ulti');
+            if (btnUltiSave && STATE.player) {
+                if (STATE.player.damageDealt < window.GAME_CONFIG.ultimate.requiredDamage) {
+                    btnUltiSave.classList.add('hidden');
+                }
+            }
         });
     }
 
@@ -2509,6 +2609,15 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('hudSettings');
             if (activeEditBtn) {
                 if (slider) { slider.value = 1.0; scaleVal.innerText = '100%'; }
+            }
+
+            // Khôi phục trạng thái bảng nhiệm vụ
+            if (window.QuestManager) {
+                window.QuestManager.updateUI();
+                if (window.QuestManager.activeQuests.length === 0) {
+                    const qt = document.getElementById('quest-tracker-ui');
+                    if (qt) qt.classList.add('hidden');
+                }
             }
         });
     }
@@ -2534,12 +2643,47 @@ document.addEventListener('DOMContentLoaded', () => {
         const t = e.changedTouches[0];
         draggedBtn.style.position = 'fixed';
         draggedBtn.style.bottom = 'auto'; draggedBtn.style.right = 'auto';
-        draggedBtn.style.left = (t.clientX - draggedBtn.offsetWidth / 2) + 'px';
-        draggedBtn.style.top = (t.clientY - draggedBtn.offsetHeight / 2) + 'px';
-        draggedBtn.style.transform = 'scale(var(--btn-scale, 1.0))'; // Bỏ các transform khác khi drag
+        
+        // Tính toán vị trí theo phần trăm màn hình (%) để đồng bộ tuyệt đối giữa PC và Mobile
+        const rect = draggedBtn.getBoundingClientRect();
+        const pctLeft = ((t.clientX - rect.width / 2) / window.innerWidth) * 100;
+        const pctTop = ((t.clientY - rect.height / 2) / window.innerHeight) * 100;
+        
+        draggedBtn.style.left = Math.max(0, Math.min(95, pctLeft)).toFixed(3) + '%';
+        draggedBtn.style.top = Math.max(0, Math.min(95, pctTop)).toFixed(3) + '%';
+        draggedBtn.style.transform = 'none'; // Bỏ các transform scale để dùng kích thước thật trong CSS
     }, { passive: false });
 
     document.addEventListener('touchend', () => { draggedBtn = null; });
+
+    // Mouse drag (PC HUD edit)
+    document.addEventListener('mousedown', (e) => {
+        if (!window.isEditingHUD) return;
+        let targetId = null;
+        for (let id of mobileBtns) {
+            if (e.target.closest('#' + id)) { targetId = id; break; }
+        }
+        if (targetId) {
+            draggedBtn = document.getElementById(targetId);
+            selectEditBtn(draggedBtn);
+            e.preventDefault();
+        }
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (!window.isEditingHUD || !draggedBtn) return;
+        draggedBtn.style.position = 'fixed';
+        draggedBtn.style.bottom = 'auto'; draggedBtn.style.right = 'auto';
+        
+        // Tính toán vị trí theo phần trăm màn hình (%) để đồng bộ tuyệt đối giữa PC và Mobile
+        const rect = draggedBtn.getBoundingClientRect();
+        const pctLeft = ((e.clientX - rect.width / 2) / window.innerWidth) * 100;
+        const pctTop = ((e.clientY - rect.height / 2) / window.innerHeight) * 100;
+        
+        draggedBtn.style.left = Math.max(0, Math.min(95, pctLeft)).toFixed(3) + '%';
+        draggedBtn.style.top = Math.max(0, Math.min(95, pctTop)).toFixed(3) + '%';
+        draggedBtn.style.transform = 'none'; // Bỏ các transform scale để dùng kích thước thật trong CSS
+    });
+    document.addEventListener('mouseup', () => { draggedBtn = null; });
 });
 
 
@@ -2592,7 +2736,8 @@ function draw() {
     const fov = 1.2 - (STATE.aimLerp * zoomFactor) + (STATE.sprintLerp * 0.3);
 
     const proj = M4.perspective(fov, aspect, 0.1, isMobile ? 2500 : 10000);
-    const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
+    // Thêm visual recoil (giật camera lên rồi tự động hồi về khi p.recoil giảm)
+    const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x + (p.recoil * (p.weaponIdx === 2 ? 0.4 : 0.05));
 
     // Giật cam chỉ trên PC (mobile tắt để mượt hơn)
     const shakeAmt = isMobile ? 0 : STATE.shake;
@@ -2691,6 +2836,45 @@ function draw() {
         if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
     });
     STATE.barrels.forEach(b => drawMeshActual(ASSETS.barrel, b.pos, 3, 0));
+    
+    // Draw Quest Items — dạng hình thoi nổi
+    STATE.questItems.forEach(q => {
+        const bob = Math.sin(Date.now() / 400) * 0.3;
+        drawMeshActual(ASSETS.lootAmmo, { x: q.pos.x, y: q.pos.y + bob + 1.2, z: q.pos.z }, 2.0, Date.now() / 500);
+        
+        // Hạt vàng bay lên thay vì cột sáng cứng
+        if (Math.random() < 0.35) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.6;
+            STATE.particles.push({
+                pos: V3.create(q.pos.x + Math.cos(angle)*r, q.pos.y + bob + 1.2, q.pos.z + Math.sin(angle)*r),
+                vel: V3.create((Math.random() - 0.5) * 0.5, 6.0 + Math.random() * 5.0, (Math.random() - 0.5) * 0.5),
+                life: 1.5 + Math.random() * 1.0,
+                color: [1.0, 0.8, 0.0], // Vàng óng
+                type: 'fire'
+            });
+        }
+    });
+
+    // Draw Final Red Box (Chiếc hộp rực đỏ)
+    if (STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp) {
+        const bob = Math.sin(Date.now() / 250) * 0.4;
+        drawMeshActual(ASSETS.lootAmmo, { x: STATE.finalPaper.pos.x, y: STATE.finalPaper.pos.y + bob + 1.2, z: STATE.finalPaper.pos.z }, 2.8, Date.now() / 300);
+        
+        // Hạt đỏ bay lên với tốc độ và số lượng lớn thay vì cột cứng
+        if (Math.random() < 0.6) {
+            const angle = Math.random() * Math.PI * 2;
+            const r = Math.random() * 0.8;
+            STATE.particles.push({
+                pos: V3.create(STATE.finalPaper.pos.x + Math.cos(angle)*r, STATE.finalPaper.pos.y + bob + 1.2, STATE.finalPaper.pos.z + Math.sin(angle)*r),
+                vel: V3.create((Math.random() - 0.5) * 0.6, 12.0 + Math.random() * 8.0, (Math.random() - 0.5) * 0.6),
+                life: 2.0 + Math.random() * 1.5,
+                color: [1.0, 0.05, 0.05], // Đỏ rực rỡ đặc trưng của Hộp Kẻ Gác Cổng
+                type: 'fire'
+            });
+        }
+    }
+
     // Grass:
     if (GRASS_PATCHES.length > 0) { gl.disable(gl.CULL_FACE); GRASS_PATCHES.forEach(g => drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0)); gl.enable(gl.CULL_FACE); }
     STATE.pads.forEach(p => drawMeshActual(ASSETS.pad, p.pos, 2, 0));
@@ -3034,6 +3218,7 @@ function activateUltimate() {
     p.isChargingUlti = true;
     p.isInvincible = true; // Bất tử NGAY LẬP TỨC khi bắt đầu gồng
     p.damageDealt = 0; // Reset điểm
+    if (window.QuestManager) window.QuestManager.onEvent('use_ultimate', 1);
     showGlobalAnnouncement("🔥 ĐANG GỒM ĐẠI BÁC... 🔥", 1000);
     STATE.shake = 1.0; // Rung nhẹ khi gồng
 
@@ -3096,7 +3281,13 @@ window.addEventListener('keydown', e => {
             }
         }
     }
-    if (e.code === 'KeyE') activateUltimate();
+    if (e.code === 'KeyE') {
+        const nearQuest = STATE.questItems && STATE.questItems.some(q =>
+            V3.dist(STATE.player.pos, q.pos) < 4.0);
+        const nearFinal = STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp &&
+            V3.dist(STATE.player.pos, STATE.finalPaper.pos) < 4.0;
+        if (nearQuest || nearFinal) { STATE.keys['KeyE'] = true; } else { activateUltimate(); }
+    }
     if (e.code && e.code.startsWith('Digit')) STATE.keys[e.code] = true;
 });
 window.addEventListener('keyup', e => STATE.keys[e.code] = false);
@@ -3135,6 +3326,30 @@ setTimeout(() => {
 function triggerBossEvent() {
     if (STATE.bossTriggered) return;
     STATE.bossTriggered = true;
+
+    // Hiệu ứng rung màn hình và chớp đỏ cực mạnh
+    const uiLayer = document.getElementById('ui-layer');
+    if (uiLayer) {
+        uiLayer.style.animation = 'cameraShake 0.1s infinite';
+        const flash = document.createElement('div');
+        flash.style.position = 'fixed';
+        flash.style.inset = '0';
+        flash.style.backgroundColor = 'rgba(255, 0, 0, 0.4)';
+        flash.style.zIndex = '999999';
+        flash.style.pointerEvents = 'none';
+        flash.style.transition = 'opacity 3s ease';
+        document.body.appendChild(flash);
+        setTimeout(() => { flash.style.opacity = '0'; setTimeout(() => flash.remove(), 3000); }, 500);
+        setTimeout(() => uiLayer.style.animation = '', 4000);
+    }
+
+    const combatSound1 = document.getElementById('combat-theme1-sound');
+    if (combatSound1) combatSound1.pause();
+    const combatSound2 = document.getElementById('combat-theme2-sound');
+    if (combatSound2) {
+        combatSound2.currentTime = 0;
+        combatSound2.play().catch(e => console.log(e));
+    }
 
     STATE.inputLocked = true;
     STATE.keys = {};
@@ -3571,6 +3786,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const onUlti = e => { if (window.isEditingHUD) return; e.preventDefault(); activateUltimate(); };
         btnUlti.addEventListener('touchstart', onUlti);
         btnUlti.addEventListener('mousedown', onUlti);
+    }
+
+    const btnInteract = document.getElementById('btn-interact');
+    if (btnInteract) {
+        const onInteract = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
+        btnInteract.addEventListener('touchstart', onInteract);
+        btnInteract.addEventListener('mousedown', onInteract);
     }
 
     const btnSprint = document.getElementById('btn-sprint');

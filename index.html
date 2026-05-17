@@ -18,23 +18,59 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>Survival Island: Low Poly Royale</title>
+    <title>Lost Island: Low Poly Survival Royale</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <!-- Tăng version để trình duyệt xóa Cache cũ -->
-    <link rel="stylesheet" href="style.css?v=19.1.5">
+    <link rel="stylesheet" href="style.css?v=20.5.6">
+    <link rel="stylesheet" href="hud.css?v=1.4.5">
 </head>
 
 <body>
+    <!-- SẢNH CHỜ (SPLASH SCREEN) -->
+    <div id="splash-screen">
+        <h1 class="splash-title">LOST ISLAND<br><span
+                style="font-size: 0.35em; letter-spacing: 5px; color:#ffcc00; font-weight:900; display:block; margin-top:5px;">SURVIVAL
+                ROYALE</span></h1>
+        <div class="splash-loading-container">
+            <div class="splash-text">ĐANG KHỞI TẠO THẾ GIỚI... <span id="splash-percent">0</span>%</div>
+            <div class="splash-bar-bg">
+                <div id="splash-bar-fill"></div>
+            </div>
+            <button id="splash-continue-btn" style="display: none;">BẤM VÀO ĐÂY ĐỂ VÀO SẢNH</button>
+        </div>
+    </div>
+
+    <!-- LORE CONTAINER -->
+    <div id="lore-container" class="hidden"></div>
+
+    <!-- QUEST TRACKER -->
+    <div id="quest-tracker-ui" class="hidden">
+        <div id="quest-tracker-header">NHIỆM VỤ TÂM LINH</div>
+        <div id="quest-list"></div>
+    </div>
+
+    <!-- CỐT TRUYỆN MỞ ĐẦU -->
+    <div id="story-screen" class="hidden">
+        <div id="story-text-container"></div>
+        <button id="btn-skip-story">SKIP ⏭</button>
+    </div>
+
+    <!-- CỐT TRUYỆN KẾT THÚC (POST CREDIT) -->
+    <div id="post-credit-screen" style="display: none; opacity: 0;">
+        <div id="post-credit-content" style="max-height: 80vh; overflow-y: auto; width: 80%;"></div>
+        <button id="btn-skip-ending">SKIP ⏭</button>
+    </div>
+
     <div id="victory-bg"></div>
     <!-- Cảnh báo xoay ngang điện thoại -->
     <div id="portrait-warning">
         <div style="font-size: 60px; margin-bottom: 20px; animation: rotatePhone 2s infinite;">📱</div>
         <h2 style="color:#ffcc00; margin:0;">VUI LÒNG XOAY NGANG ĐIỆN THOẠI</h2>
-        <p style="font-size:16px; color:#ccc;">Game bắn súng không hỗ trợ màn hình dọc!</p>
+        <p style="font-size:16px; color:#ccc;">Game không hỗ trợ màn hình dọc!</p>
     </div>
 
 
@@ -53,22 +89,22 @@
                 <div id="joystick-base"></div>
                 <div id="joystick-knob"></div>
             </div>
-            <button id="btn-sprint">CHẠY</button>
+            <button id="btn-sprint" class="hud-btn">CHẠY</button>
             <div id="touch-aim-zone"></div>
             <div id="mobile-weapons">
                 <button class="weapon-btn active" data-idx="0">LỰC</button>
                 <button class="weapon-btn" data-idx="1">SMG</button>
                 <button class="weapon-btn" data-idx="2">TỈA</button>
             </div>
-            <button id="btn-ulti" class="hidden">UNTI</button>
-            <div class="action-buttons">
-                <button id="btn-reload">NẠP</button>
-                <button id="btn-aim">NGẮM</button>
-                <button id="btn-jump">NHẢY</button>
-                <button id="btn-shoot">BẮN</button>
-            </div>
-            <button id="btn-settings"
-                style="position: absolute; top: 30px; right: 230px; background: rgba(0,0,0,0.5); border: 2px solid #fff; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; z-index: 1000; color: white; display: block; pointer-events: auto;">⚙️</button>
+            <button id="btn-settings" class="hud-btn">⚙️</button>
+
+            <!-- HUD Action Buttons (individual, absolute via hud.css) -->
+            <button id="btn-interact" class="hud-btn hidden">📜</button>
+            <button id="btn-ulti" class="hud-btn hidden">ULTIMATE</button>
+            <button id="btn-reload" class="hud-btn">NẠP</button>
+            <button id="btn-aim" class="hud-btn">NGẮM</button>
+            <button id="btn-jump" class="hud-btn">NHẢY</button>
+            <button id="btn-shoot" class="hud-btn">BẮN</button>
         </div>
 
         <div id="crosshair"></div>
@@ -76,10 +112,10 @@
             src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MCA1MCI+PHBhdGggZD0iTTAgMEw1MCA1ME01MCAwTDAgNTAiIHN0cm9rZT0icmVkIiBzdHJva2Utd2lkdGg9IjQiLz48L3N2Zz4="
             width="20">
 
-        <div id="health-bar-container" class="hud-panel">
+        <div id="health-bar-container">
             <div id="health-fill"></div>
         </div>
-        <div id="armor-bar-container" class="hud-panel">
+        <div id="armor-bar-container">
             <div id="armor-fill"></div>
         </div>
 
@@ -87,74 +123,41 @@
             👆 BẤM CHUỘT ĐỂ TIẾP TỤC 👆
         </div>
 
-        <div id="ammo-display" class="hud-panel">
+        <div id="ammo-display">
             <span id="ammo-current">30</span> / <span id="ammo-reserve">90</span>
             <div id="weapon-name">ASSAULT RIFLE</div>
         </div>
 
-        <div id="stats-display" class="hud-panel">
+        <div id="stats-display">
             <div><span id="alive-count" style="color:#ffcc00">50</span></div>
             <div><span id="kill-count">0</span></div>
-            <div id="difficulty-display" style="font-size: 10px; font-weight: 900; margin-top: 3px; letter-spacing: 1px;"></div>
+            <div id="lore-counter" style="color:#ffcc00; font-weight:900; margin-top:4px; letter-spacing:1px">📜 0 / 7
+            </div>
+            <div id="difficulty-display" style="font-weight: 900; margin-top: 3px; letter-spacing: 1px;"></div>
         </div>
 
-        <div id="loot-legend" class="hud-panel">
-            <div style="font-size: 10px; color:#aaa; margin-bottom:5px">HỘP TIẾP TẾ</div>
+        <div id="loot-legend">
+            <div style="color:#aaa; margin-bottom:5px">HỘP TIẾP TẾ</div>
             <div><span style="color:#e6cc00">■</span> Nhận Đạn</div>
             <div><span style="color:#00cc00">■</span> Hồi Máu</div>
             <div><span style="color:#0066ff">■</span> Thêm Giáp</div>
             <div><span style="color:#ff6600">■</span> Kỹ Năng</div>
         </div>
 
-        <div id="settings-modal" class="hidden" style="background: transparent; pointer-events: none;">
-            <div class="card bg-dark text-white border-secondary shadow-lg"
-                style="width: fit-content; min-width: 130px; pointer-events: auto; margin: 10px auto 0; border-radius: 8px; backdrop-filter: blur(8px); background: rgba(15,15,15,0.9) !important; border: 1px solid rgba(255,255,255,0.2) !important;">
-                <div class="card-body p-2">
-                    <h6 class="card-title text-center mb-1" style="font-size: 9px; color: #ffcc00; font-weight: 900;">⚙️
-                        HUD SETTINGS</h6>
-
-                    <div class="mb-1">
-                        <label class="form-label d-flex justify-content-between mb-0" style="font-size: 8px;">
-                            <span>SCALE:</span>
-                            <span id="hud-scale-val" class="text-warning">100%</span>
-                        </label>
-                        <input type="range" class="form-range" id="hud-scale-slider" min="0.5" max="3.0" step="0.1"
-                            value="1.0" style="height: 12px; width: 100px;">
-                    </div>
-
-                    <div class="mb-2">
-                        <label class="form-label d-flex justify-content-between mb-0" style="font-size: 8px;">
-                            <span>SENS:</span>
-                            <span id="sensitivity-val" class="text-info">2.0x</span>
-                        </label>
-                        <input type="range" class="form-range" id="sensitivity-slider" min="0.1" max="10.0" step="0.1"
-                            value="2.0" style="height: 12px; width: 100px;">
-                    </div>
-
-                    <div class="d-flex gap-1 justify-content-center">
-                        <button id="btn-reset-hud" class="btn btn-outline-danger btn-sm p-1"
-                            style="font-size: 7px; line-height: 1; flex: 1;">RESET</button>
-                        <button id="btn-cancel-hud" class="btn btn-outline-light btn-sm p-1"
-                            style="font-size: 7px; line-height: 1; flex: 1;">HUY</button>
-                        <button id="btn-save-hud" class="btn btn-success btn-sm p-1"
-                            style="font-size: 7px; line-height: 1; flex: 1;">LUU</button>
-                    </div>
-                </div>
-            </div>
-        </div>
 
 
 
-        <div id="interaction-msg" class="hud-panel">NHẤN [E] ĐỂ LOOT</div>
+
+        <div id="interaction-msg">NHẤN [E] ĐỂ LOOT</div>
 
         <div id="scope-overlay" class="scope-overlay">
             <div class="scope-lens"></div>
             <div class="scope-cross-h"></div>
             <div class="scope-cross-v"></div>
         </div>
-        <div id="pickup-msg" class="hud-panel">Picked up Item</div>
+        <div id="pickup-msg">Picked up Item</div>
 
-        <div id="kill-feed" class="hud-panel"></div>
+        <div id="kill-feed"></div>
 
         <!-- BOSS EVENT UI -->
         <button id="kill-last-bot-btn" class="menu-btn primary"
@@ -164,8 +167,8 @@
 
         <div id="boss-overlay" class="hidden"></div>
         <div id="boss-container" class="hidden">
-            <div id="boss-visual">💀</div>
-            <h1 id="boss-msg">HAKARI ARRIVED!</h1>
+            <div id="boss-visual">👁️</div>
+            <h1 id="boss-msg">CÁNH CỬA ĐÃ MỞ...</h1>
         </div>
 
         <!-- BOSS HEALTH BAR -->
@@ -176,12 +179,12 @@
             </div>
             <div
                 style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:2px; text-shadow:2px 2px 4px black; font-size:11px; letter-spacing:3px;">
-                HAKARI: THE DIVINE</div>
+                KẺ CANH CÁNH CỬA ĐỎ</div>
         </div>
 
-        <div id="streak-msg" class="hud-panel">DOUBLE KILL!</div>
+        <div id="streak-msg">DOUBLE KILL!</div>
 
-        <div id="minimap-container" class="hud-panel hud-element">
+        <div id="minimap-container">
             <canvas id="minimap"></canvas>
         </div>
     </div>
@@ -189,7 +192,9 @@
     <!-- Main Menu -->
     <div id="main-menu" class="menu-screen">
         <div class="menu-inner container-fluid px-3">
-            <h1 class="menu-title">Survival Royale</h1>
+            <h1 class="menu-title">LOST ISLAND<br><span
+                    style="font-size: 0.35em; letter-spacing: 5px; color:#ffcc00; font-weight:900; display:block; margin-top:5px;">SURVIVAL
+                    ROYALE</span></h1>
 
             <!-- Nhập tên (gộp vào cột trái phía dưới) -->
             <!-- 2 cột ngang cố định: trái 7 phản định + phải 5 nút -->
@@ -228,7 +233,7 @@
 
                 <!-- CỘT PHẢI: Nút -->
                 <div class="col-5 d-flex flex-column gap-2">
-                    <button class="menu-btn primary" onclick="startGame()"
+                    <button id="btn-start" class="menu-btn primary" onclick="startGame()"
                         style="font-size:12px; padding:9px 6px; white-space:nowrap;">▶ Bắt đầu</button>
                     <button id="btn-open-guide" class="menu-btn menu-btn-guide"
                         style="font-size:10px; padding:7px 6px;">📖 Hướng dẫn</button>
@@ -240,9 +245,14 @@
             <!-- Ẩn discord -->
             <button id="btn-join-discord" class="menu-btn" style="display:none;">💬 JOIN DISCORD</button>
 
-            <div class="menu-guide">
-                WASD: Di chuyển &nbsp;|&nbsp; SHIFT: Chạy &nbsp;|&nbsp; SPACE: Nhảy &nbsp;|&nbsp; E: UNTI<br>
-                R: Nạp đạn &nbsp;|&nbsp; 1/2/3: Đổi vũ khí
+            <div class="menu-guide"
+                style="font-size: 9px; line-height: 1.5; text-align: left; padding: 6px; background: rgba(0,0,0,0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                <b style="color: #00e676;">💻 MÁY TÍNH:</b> WASD (Di chuyển) | Chuột Trái (Bắn) | Chuột Phải (Ngắm) |
+                Chuột Giữa (Lướt) <br>
+                SHIFT (Chạy) | SPACE (Nhảy) | 1,2,3 (Đổi súng) | R (Nạp đạn) | Bấm E (Để nhặt hộp hoặc dùng kĩ năng
+                ULTIMATE)<br>
+                <b style="color: #ff9900;">📱 ĐIỆN THOẠI:</b> Vuốt nửa phải để ngắm | Dùng di chuyển | Bấm các
+                nút ảo để Bắn, Nhảy, Chạy, Nạp đạn và xài ULTIMATE
             </div>
             <div class="menu-update">Ver 0.4 Premium Edition</div>
         </div>
@@ -255,29 +265,36 @@
 
             <div class="guide-section">
                 <h3 style="color: #00ffcc;">🎮 HỆ THỐNG ĐIỀU KHIỂN</h3>
-                <p>• <b>PC:</b> WASD (Di chuyển), SHIFT (Chạy), SPACE (Nhảy), E (UNTI), CTRL (Ẩn/Hiện chuột), 1/2/3 (Đổi
-                    súng).</p>
-                <p>• <b>Mobile:</b> Joystick trái, Vuốt phải xoay Camera, Nút UNTI sáng lên khi đủ nộ.</p>
+                <p>• <b>PC:</b> WASD (Di chuyển), SHIFT (Chạy), SPACE (Nhảy), E (Nhặt / Dùng ULTIMATE), CTRL (Ẩn/Hiện
+                    chuột), 1/2/3 (Đổi súng).</p>
+                <p>• <b>Mobile:</b> Dùng Joystick trái để di chuyển, Vuốt nửa phải xoay Camera, Nút ULTIMATE sẽ hiển thị sáng lên khi bạn
+                    tích đủ sát thương.</p>
+                <p>• <b>Cài đặt HUD (⚙️):</b> Bấm vào biểu tượng ⚙️ trên màn hình để mở bảng tùy chỉnh. Bạn có thể thay đổi kích thước, độ nhạy và kéo thả vị trí các nút bấm sao cho vừa tay nhất!</p>
             </div>
 
             <div class="guide-section">
-                <h3 style="color: #ffcc00;">⚔️ CHIẾN THUẬT SINH TỒN</h3>
-                <p>• <b>Thùng Nổ (Explosive Barrel):</b> Các thùng đỏ gây sát thương diện rộng cực lớn. Hãy dẫn dụ bầy Bot lại gần rồi kích nổ để tiêu diệt chúng nhanh hơn!</p>
-                <p>• <b>Tiến hóa Bot:</b> Khi số Bot giảm, những con còn lại sẽ hóa khổng lồ (Lv3) với HP và Dame cực cao.</p>
-                <p>• <b>Kỹ năng Nộ (E):</b> Nhấn <b>[E]</b> để hóa đại bác bất tử. Phát bắn từ Unti sẽ khiến Boss bị choáng.</p>
+                <h3 style="color: #ffcc00;">⚔️ CHIẾN THUẬT & NHIỆM VỤ</h3>
+                <p>• <b>Kỹ năng Nộ (ULTIMATE):</b> Nhấn <b>[E]</b> hoặc nút ULTIMATE để hóa đại bác bất tử. Phát bắn từ
+                    Ultimate sẽ khiến Boss bị choáng.</p>
+                <p>• <b>Nhiệm vụ Tâm linh:</b> Thu thập các hộp phát sáng trên bản đồ và hoàn thành yêu cầu để giải mã
+                    cốt truyện (Lore) bị ẩn giấu.</p>
+                <p>• <b>Thùng Nổ:</b> Các thùng đỏ gây sát thương diện rộng cực lớn. Dụ quái lại gần và bắn nổ để clear
+                    map nhanh chóng!</p>
             </div>
 
             <div class="guide-section">
                 <h3 style="color: #bf00ff;">✨ HỆ THỐNG BÙA LỢI (POWER-UPS)</h3>
                 <p>• <b>⚡ Tăng Tốc (Cyan):</b> Nhặt bình bùa để chạy nhanh hơn trong 15 giây.</p>
                 <p>• <b>🔥 X2 Sát Thương (Cam):</b> Gấp đôi sát thương mọi loại súng trong 15 giây.</p>
-                <p>• <b>🟣 SIÊU CẤP (Combo Tím):</b> Nhặt 2 loại bùa khác nhau để vào trạng thái <b>SIÊU CẤP</b> (Vừa nhanh vừa mạnh) trong 20 giây. Nhặt thêm bùa sẽ reset thời gian về 20 giây!</p>
+                <p>• <b>🟣 SIÊU CẤP (Combo Tím):</b> Nhặt 2 loại bùa khác nhau để vào trạng thái <b>SIÊU CẤP</b> (Vừa
+                    nhanh vừa mạnh) trong 20 giây. Nhặt thêm bùa sẽ reset thời gian về 20 giây!</p>
             </div>
 
             <div class="guide-section">
-                <h3 style="color: #ff3333;">🔥 ĐỐI ĐẦU BOSS HAKARI</h3>
-                <p>• <b>Né Chiêu 5 (Dịch chuyển đập):</b> Khi thấy vòng đỏ xuất hiện, hãy nhấn <b>SHIFT</b> để chạy thoát thật nhanh.</p>
-                <p>• <b>Jump Pad (Bàn nhún):</b> Dùng bàn nhún xanh lá để bay lên cao, né tránh các đòn đánh mặt đất.</p>
+                <h3 style="color: #ff3333;">🔥 KẺ CANH CÁNH CỬA ĐỎ</h3>
+                <p>• <b>Cảnh báo đỏ:</b> Khi vùng đất bị ô uế, một vòng đỏ sẽ xuất hiện. Hãy nhấn <b>SHIFT</b> để chạy
+                    thoát thật nhanh.</p>
+                <p>• <b>Vực thẳm:</b> Kẻ canh gác sẽ liên tục vặn xoắn không gian để đè nát bạn.</p>
                 <p>• <b>Hòm Tiếp Tế:</b> Hòm Máu/Giáp sẽ hồi lại sau mỗi 20 giây, hãy tận dụng chúng để cầm cự.</p>
             </div>
 
@@ -347,6 +364,10 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="preload.js?v=19.1.5"></script>
+    <script src="story.js?v=19.1.5"></script>
+    <script src="lore.js?v=19.1.5"></script>
+    <script src="stats.js?v=19.1.5"></script>
     <script src="game.js?v=19.1.5"></script>
     <script src="discord.js?v=19.1.5"></script>
 
@@ -409,11 +430,101 @@
         })();
     </script>
 
-    <!-- HAKARI DANCE Assets -->
-    <img id="hakari-dance-img" src="hakariphonk.png" alt="hakari dance">
-    <audio id="hakari-dance-sound" src="hakariphonk.mp3" preload="auto"></audio>
+    <!-- Music Themes -->
+    <audio id="chill-theme-sound" data-src="music/chill-theme.mp3" loop preload="auto"></audio>
+    <audio id="combat-theme1-sound" data-src="music/combat-theme1.mp3" loop preload="auto"></audio>
+    <audio id="combat-theme2-sound" data-src="music/combat-theme2.mp3" loop preload="auto"></audio>
 
     <div id="click-anywhere"></div>
+    <!-- HUD SETTINGS MODAL -->
+    <!-- HUD SETTINGS MODAL -->
+    <div id="settings-modal" class="hidden">
+        <div id="settings-modal-content" class="container-fluid p-2">
+            <!-- HEADER BÌNH THƯỜNG -->
+            <div id="settings-header" class="d-flex justify-content-between align-items-center w-100 mb-2 px-1"
+                style="margin-top:2px;">
+                <span style="font-size:9px;color:#ffcc00;font-weight:900;letter-spacing:0.5px;">⚙️ HUD SETTINGS</span>
+                <button id="btn-minimize-hud-settings" class="btn btn-sm p-0 text-secondary fw-bold"
+                    style="font-size: 10px; border:none; background:transparent; line-height: 1; min-width: 15px;"
+                    title="Ẩn bảng">➖</button>
+            </div>
+
+            <!-- HEADER KHI THU NHỎ -->
+            <div id="settings-minimized-header" class="d-none justify-content-center align-items-center w-100"
+                style="cursor: pointer; padding: 2px 0;">
+                <div id="btn-restore-hud-settings"
+                    style="font-size: 8px; font-weight: bold; color: #ffcc00; letter-spacing: 2px; text-align: center; width: 100%;">
+                    ⚙️ --- HUD --- ⚙️</div>
+            </div>
+
+            <!-- NỘI DUNG CHÍNH (SẼ ẨN KHI MINIMIZE) -->
+            <div id="settings-body" class="w-100">
+                <!-- THANH TRƯỢT SỔ XUỐNG -->
+                <div class="mb-2 w-100">
+                    <button class="btn btn-sm w-100 mb-1 text-white" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#slidersCollapse" aria-expanded="true" aria-controls="slidersCollapse"
+                        style="font-size: 8px; padding: 3px 6px; font-weight: bold; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px;">
+                        ▼ ĐIỀU CHỈNH KÍCH THƯỚC & ĐỘ NHẠY
+                    </button>
+                    <div class="collapse show" id="slidersCollapse">
+                        <div class="card card-body p-1"
+                            style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">
+                            <!-- SCALE -->
+                            <div class="mb-1">
+                                <div class="d-flex justify-content-between mb-0" style="font-size:8px;">
+                                    <span>SCALE</span><span id="hud-scale-val" style="color:#ffcc00;">100%</span>
+                                </div>
+                                <input type="range" id="hud-scale-slider" class="form-range" min="0.2" max="4.0"
+                                    step="0.05" value="1.0" style="height: 10px;">
+                            </div>
+
+                            <!-- SENSITIVITY -->
+                            <div class="mb-0">
+                                <div class="d-flex justify-content-between mb-0" style="font-size:8px;">
+                                    <span>ĐỘ NHẠY</span><span id="sensitivity-val" style="color:#00ccff;">2.1</span>
+                                </div>
+                                <input type="range" id="sensitivity-slider" class="form-range" min="0.1" max="10.0"
+                                    step="0.1" value="2.1" style="height: 10px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex justify-content-center gap-1 w-100">
+                    <button id="btn-reset-hud" class="btn btn-sm btn-danger flex-fill fw-bold"
+                        style="font-size:8px; padding: 2px 4px;">RESET</button>
+                    <button id="btn-cancel-hud" class="btn btn-sm btn-secondary flex-fill fw-bold"
+                        style="font-size:8px; padding: 2px 4px;">HUỶ</button>
+                    <button id="btn-save-hud" class="btn btn-sm btn-success flex-fill fw-bold"
+                        style="font-size:8px; padding: 2px 4px;">LƯU ✓</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT ĐIỀU KHIỂN THU PHÓNG -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const modalContent = document.getElementById('settings-modal-content');
+            const btnMinimize = document.getElementById('btn-minimize-hud-settings');
+            const btnRestore = document.getElementById('btn-restore-hud-settings');
+
+            if (btnMinimize && modalContent) {
+                btnMinimize.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    modalContent.classList.add('minimized');
+                });
+            }
+
+            if (btnRestore && modalContent) {
+                btnRestore.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    modalContent.classList.remove('minimized');
+                });
+            }
+        });
+    </script>
 </body>
 
 </html>
