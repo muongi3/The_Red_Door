@@ -1377,7 +1377,7 @@ canvas {
 
 /* --- POST CREDIT SCENE --- */
 #post-credit-screen { position: fixed; inset: 0; background: #000; z-index: 9999999; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; padding: 20px; transition: opacity 2s ease-in-out; }
-.post-credit-text { color: #ff0000; font-family: 'Courier New', Courier, monospace; font-size: clamp(14px, 2vw, 22px); line-height: 2; text-shadow: 0 0 15px rgba(255,0,0,0.8); opacity: 0; transition: opacity 2s ease-in; max-width: 800px; }
+.post-credit-text { color: #ff0000; font-family: 'Courier New', Courier, monospace; font-size: clamp(14px, 2vw, 22px); line-height: 2; text-shadow: 0 0 15px rgba(255,0,0,0.8); opacity: 0; transition: opacity 2s ease-in; max-width: 800px; margin-bottom: 25px; }
 
 /* --- LORE SYSTEM --- */
 #lore-container { position: fixed; top: 10%; left: 50%; transform: translateX(-50%); color: rgba(255, 255, 255, 0.9); font-family: 'Courier New', Courier, monospace; font-size: 16px; text-align: center; background: rgba(0, 0, 0, 0.6); padding: 10px 20px; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 8px; pointer-events: none; z-index: 5000; opacity: 0; transition: opacity 2s ease-in-out; text-shadow: 0 0 10px rgba(255, 255, 255, 0.5); max-width: 80%; }

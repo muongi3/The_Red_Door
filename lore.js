@@ -129,7 +129,6 @@ window.QuestManager = {
         let startVal = 0;
         if (qData.type === 'kill') startVal = this.cumulativeKills;
         if (qData.type === 'barrel_kill') startVal = this.cumulativeBarrelKills;
-        if (qData.type === 'headshot') startVal = this.cumulativeHeadshots;
 
         const quest = {
             id: Date.now(),
@@ -252,11 +251,13 @@ window.QuestManager = {
             div.className = 'quest-item';
             let progressText = '';
             if (q.type === 'survive') {
-                progressText = `${Math.floor(q.current)}/${q.target}s`;
+                progressText = `${Math.floor(q.current)}s / ${q.target}s`;
+            } else if (q.type === 'purple_time') {
+                progressText = `${Math.floor(q.current)}s / ${q.target}s`;
             } else if (q.type === 'damage') {
-                progressText = `${Math.floor(q.current)}/${q.target}`;
+                progressText = `${Math.floor(q.current)} / ${q.target}`;
             } else {
-                progressText = `${q.current}/${q.target}`;
+                progressText = `${q.current} / ${q.target}`;
             }
             const pct = Math.min(q.current / q.target * 100, 100);
             div.innerHTML = `
