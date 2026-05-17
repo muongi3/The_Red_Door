@@ -1120,9 +1120,9 @@ function update(dt) {
         if (interMsg) {
             interMsg.style.display = 'block';
             if (nearFinalPaper) {
-                interMsg.innerText = '🔥 [E] NHẶT CHIẾC HỘP RỰC ĐỎ';
+                interMsg.innerHTML = '🔥 [E] NHẶT CHIẾC HỘP RỰC ĐỎ<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             } else {
-                interMsg.innerText = '📦 [E] NHẶT CHIẾC HỘP THÔNG TIN';
+                interMsg.innerHTML = '📦 [E] NHẶT CHIẾC HỘP THÔNG TIN<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             }
         }
         if (btnInteractEl) btnInteractEl.classList.remove('hidden');
@@ -3797,6 +3797,14 @@ window.addEventListener('DOMContentLoaded', () => {
         const onInteract = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
         btnInteract.addEventListener('touchstart', onInteract);
         btnInteract.addEventListener('mousedown', onInteract);
+    }
+    
+    // Bấm thẳng vào dòng chữ thông báo nhặt hộp trên màn hình cũng nhặt được
+    const interMsg = document.getElementById('interaction-msg');
+    if (interMsg) {
+        const onInteractMsg = e => { e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
+        interMsg.addEventListener('touchstart', onInteractMsg);
+        interMsg.addEventListener('mousedown', onInteractMsg);
     }
 
     const btnSprint = document.getElementById('btn-sprint');
