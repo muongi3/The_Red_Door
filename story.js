@@ -21,10 +21,12 @@ const STORY_LINES = [
     "Bạn tự nhủ: Phải chăng ta đã kẹt trong vòng lặp thời gian vô tận này từ trước?",
     "",
     "Nhiệm vụ của bạn:",
-    "Thu thập đủ các hộp thông tin bí ẩn tùy theo độ khó để giải mã sự thật.",
+    "Thu thập đủ các HỘP THÔNG TIN bí ẩn tùy theo độ khó để giải mã sự thật.",
+
     "Tiêu diệt sinh vật đột biến và tìm cách sống sót bằng mọi giá.",
     "",
-    "Hãy nhớ... chiếc hộp rực đỏ cuối cùng nằm trong tay Kẻ Gác Cổng."
+    "Hãy nhớ... chiếc hộp rực đỏ cuối cùng nằm trong tay Kẻ Gác Cổng.",
+    "Những HỘP THÔNG TIN sẽ xuất hiện nhìu hơn tùy vào từng chế độ hãy thử thách bản thân để giải mã thêm nhìu thông tin hơn NẾU NGƯƠI ĐỦ MẠNH ĐỂ LÀM ĐIỀU ĐÓ HAHAHA!!"
 ];
 
 window.startStory = function () {
@@ -61,11 +63,11 @@ window.startStory = function () {
     }
 
     btnSkip.onclick = () => { clearTimeout(typeTimeout); endStory(); };
-    
+
     // Tốc độ mặc định (Chậm để đọc trên mobile)
     let charSpeed = 45;
     let lineSpeed = 2200;
-    
+
     // Chạm vào màn hình để tua nhanh
     storyScreen.onclick = () => {
         charSpeed = 10;
