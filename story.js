@@ -61,6 +61,16 @@ window.startStory = function () {
     }
 
     btnSkip.onclick = () => { clearTimeout(typeTimeout); endStory(); };
+    
+    // Tốc độ mặc định (Chậm để đọc trên mobile)
+    let charSpeed = 45;
+    let lineSpeed = 2200;
+    
+    // Chạm vào màn hình để tua nhanh
+    storyScreen.onclick = () => {
+        charSpeed = 10;
+        lineSpeed = 400;
+    };
 
     function typeLine() {
         if (isSkipped) return;
@@ -81,10 +91,10 @@ window.startStory = function () {
             if (charIndex < lineText.length) {
                 p.textContent += lineText.charAt(charIndex);
                 charIndex++;
-                typeTimeout = setTimeout(typeChar, lineText === '' ? 0 : 22);
+                typeTimeout = setTimeout(typeChar, lineText === '' ? 0 : charSpeed);
             } else {
                 currentLine++;
-                typeTimeout = setTimeout(typeLine, lineText === '' ? 300 : 1100);
+                typeTimeout = setTimeout(typeLine, lineText === '' ? 300 : lineSpeed);
             }
         }
         typeChar();

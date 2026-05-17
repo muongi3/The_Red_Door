@@ -2308,6 +2308,10 @@ function endGame(win) {
                 };
             }
             
+            // Chạm màn hình để tua nhanh chữ
+            let endingLineSpeed = 3500;
+            pcScreen.onclick = () => { endingLineSpeed = 800; };
+            
             setTimeout(() => {
                 pcScreen.style.opacity = '1';
                 let lineIdx = 0;
@@ -2336,7 +2340,7 @@ function endGame(win) {
                     pcContent.scrollTop = pcContent.scrollHeight;
                     
                     lineIdx++;
-                    endingTimeout = setTimeout(showLine, 2200);
+                    endingTimeout = setTimeout(showLine, endingLineSpeed);
                 }
                 showLine();
             }, 500);
