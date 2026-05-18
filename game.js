@@ -1287,7 +1287,7 @@ function update(dt) {
                 // Kích hoạt Chiến thắng và kết thúc game
                 spawnHakariDance();
                 playBossSound();
-                showClickAnywhere(4000); // Đợi 4s rồi hiện Tiếp tục
+                showClickAnywhere(2000); // Đợi 2s rồi hiện Tiếp tục
             }
         }
     }
