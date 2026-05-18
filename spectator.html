@@ -2,46 +2,68 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Khán Giả - Lost Island Livestream</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Khán Giả - Lost Island 3D Royale</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { 
-            margin: 0; background: #050209; color: #fff; font-family: 'Outfit', sans-serif; 
-            display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden;
-            background: radial-gradient(circle at center, #1b0a2a 0%, #050209 100%);
+        :root {
+            --bg-dark: #050209;
+            --glow-red: #ff003c;
+            --glow-cyan: #00f2ff;
+            --glow-purple: #bb33ff;
         }
-        video { width: 100vw; height: 100vh; object-fit: contain; }
+
+        body { 
+            margin: 0; background: var(--bg-dark); color: #fff; font-family: 'Outfit', sans-serif; 
+            display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden;
+            background: radial-gradient(circle at center, #1b0a2a 0%, var(--bg-dark) 100%);
+        }
         
-        #overlay { 
+        video { 
+            width: 100vw; height: 100vh; object-fit: contain; 
+            box-shadow: 0 0 50px rgba(187, 51, 255, 0.2);
+        }
+        
+        #status-overlay { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: rgba(10, 4, 16, 0.85); padding: 20px 40px; border-radius: 12px; 
-            border: 2px solid #bb33ff; color: #00f2ff; font-weight: bold; font-size: 20px;
-            box-shadow: 0 0 30px rgba(187, 51, 255, 0.5); text-align: center; letter-spacing: 2px;
+            background: rgba(10, 4, 16, 0.9); padding: 30px 50px; border-radius: 16px; 
+            border: 2px solid var(--glow-purple); color: var(--glow-cyan); font-weight: bold; font-size: 24px;
+            box-shadow: 0 0 40px rgba(187, 51, 255, 0.6); text-align: center; letter-spacing: 3px;
             animation: pulseGlow 1.5s infinite alternate;
         }
         
         @keyframes pulseGlow {
-            from { box-shadow: 0 0 15px rgba(187, 51, 255, 0.3); }
-            to { box-shadow: 0 0 35px rgba(0, 242, 255, 0.6); }
+            from { box-shadow: 0 0 20px rgba(187, 51, 255, 0.4); border-color: var(--glow-purple); }
+            to { box-shadow: 0 0 50px rgba(0, 242, 255, 0.8); border-color: var(--glow-cyan); }
         }
 
         #ui-hud {
-            position: absolute; top: 15px; left: 15px; display: none;
-            background: rgba(0,0,0,0.5); padding: 10px; border-radius: 8px; border: 1px solid #bb33ff;
+            position: absolute; top: 20px; left: 20px; display: none;
+            background: rgba(5, 2, 9, 0.85); padding: 12px 20px; border-radius: 10px; 
+            border: 1px solid var(--glow-red); box-shadow: 0 0 20px rgba(255, 0, 60, 0.3);
+            backdrop-filter: blur(10px);
         }
+
         .live-badge {
-            color: red; font-weight: 900; animation: blink 1s infinite; margin-bottom: 5px; font-size: 14px;
+            color: var(--glow-red); font-weight: 900; letter-spacing: 2px; font-size: 16px;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 4px;
         }
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .dot {
+            width: 12px; height: 12px; background: var(--glow-red); border-radius: 50%;
+            animation: blink 1s infinite alternate; box-shadow: 0 0 10px var(--glow-red);
+        }
+
+        @keyframes blink { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 1; transform: scale(1.2); } }
     </style>
 </head>
 <body>
-    <div id="overlay">ĐANG DÒ TÌM TÍN HIỆU NGƯỜI CHƠI...</div>
+    <div id="status-overlay">ĐANG LẤY TÍN HIỆU 3D TỪ NGƯỜI CHƠI...</div>
     
     <div id="ui-hud">
-        <div class="live-badge">🔴 TRỰC TIẾP</div>
-        <div style="font-size: 12px; color: #ccc;">Chế độ khán giả (Spectator)</div>
+        <div class="live-badge"><span class="dot"></span> TRỰC TIẾP</div>
+        <div id="room-text" style="font-size: 13px; color: #aaa;">Mã phòng: ...</div>
     </div>
 
     <video id="vid" autoplay playsinline></video>
@@ -49,64 +71,43 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const roomId = urlParams.get('room');
-        
+        const overlay = document.getElementById('status-overlay');
+        const hud = document.getElementById('ui-hud');
+        const vid = document.getElementById('vid');
+
         if (!roomId) {
-            document.getElementById('overlay').innerText = 'LỖI: KHÔNG CÓ ID PHÒNG!\nHãy bấm vào đúng link trên Discord.';
-            document.getElementById('overlay').style.color = 'red';
-            document.getElementById('overlay').style.borderColor = 'red';
+            overlay.innerText = 'LỖI: KHÔNG CÓ ID PHÒNG!\nHãy bấm vào đúng link trên Discord.';
+            overlay.style.color = 'red'; overlay.style.borderColor = 'red'; overlay.style.animation = 'none';
         } else {
-            document.getElementById('overlay').innerText = 'ĐANG KẾT NỐI VỚI BẠN BÈ...';
-
-            const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            document.getElementById('room-text').innerText = "Mã phòng: " + roomId;
             
-            // Nhận luồng video từ người chơi
-            peerConnection.ontrack = (event) => {
-                document.getElementById('vid').srcObject = event.streams[0];
-                document.getElementById('overlay').style.display = 'none'; // Ẩn bảng chờ
-                document.getElementById('ui-hud').style.display = 'block'; // Hiện HUD live
-            };
+            // Khởi tạo kết nối PeerJS
+            const peer = new Peer({ debug: 0 });
 
-            // Lắng nghe tín hiệu trả về từ người chơi thông qua Ntfy (Kênh Serverless)
-            const sse = new EventSource(`https://ntfy.sh/lostisland_client_${roomId}/sse`);
-            sse.onmessage = async (e) => {
-                try {
-                    const data = JSON.parse(e.data);
-                    if(data.event === "message") {
-                        const msg = JSON.parse(data.message);
-                        if (msg.type === 'answer') {
-                            await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.answer));
-                            console.log("Đã nhận Answer, kết nối WebRTC thành công!");
-                        } else if (msg.type === 'candidate') {
-                            peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
-                        }
-                    }
-                } catch(err) { console.error("Lỗi parse data:", err); }
-            };
+            peer.on('open', () => {
+                overlay.innerText = 'ĐANG KẾT NỐI ĐƯỜNG TRUYỀN P2P...';
+                const hostPeerId = "lostisland_live_" + roomId;
 
-            // Gửi candidate giúp mạng xuyên thủng tường lửa NAT
-            peerConnection.onicecandidate = (e) => {
-                if (e.candidate) {
-                    fetch(`https://ntfy.sh/lostisland_host_${roomId}`, {
-                        method: 'POST', body: JSON.stringify({ type: 'candidate', candidate: e.candidate })
-                    });
-                }
-            };
+                // Gọi tới máy Host để xin luồng video 3D
+                const call = peer.call(hostPeerId, null);
 
-            // Chủ động tạo Offer gọi người chơi
-            async function connectHost() {
-                // Tạo một yêu cầu nhận video/audio
-                peerConnection.addTransceiver('video', { direction: 'recvonly' });
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                
-                // Bắn tín hiệu Offer lên kênh để máy người chơi nhận
-                fetch(`https://ntfy.sh/lostisland_host_${roomId}`, {
-                    method: 'POST', body: JSON.stringify({ type: 'offer', offer })
+                call.on('stream', (remoteStream) => {
+                    vid.srcObject = remoteStream;
+                    overlay.style.display = 'none'; // Ẩn bảng chờ
+                    hud.style.display = 'block'; // Hiện HUD live
                 });
-            }
-            
-            // Đợi hệ thống sẵn sàng 1 giây rồi bắt đầu kết nối
-            setTimeout(connectHost, 1000);
+
+                call.on('close', () => {
+                    alert("Buổi Livestream đã kết thúc hoặc Host ngắt kết nối.");
+                    location.reload();
+                });
+            });
+
+            peer.on('error', (err) => {
+                console.error("Lỗi Khán giả PeerJS:", err);
+                overlay.innerText = 'KHÔNG THỂ KẾT NỐI VỚI HOST!\nVui lòng kiểm tra lại link hoặc Host chưa mở trận.';
+                overlay.style.color = '#ff003c';
+            });
         }
     </script>
 </body>

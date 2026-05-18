@@ -844,45 +844,27 @@ window.SPECTATOR_ROOM_ID = Math.floor(1000 + Math.random() * 9000);
 
 function initSpectatorHost() {
     const canvas = document.getElementById('glcanvas');
-    if (!canvas) return;
+    if (!canvas || typeof Peer !== 'function') return;
     
-    // Bắt lấy luồng video từ Canvas 3D (30 khung hình / giây)
+    // Bắt lấy luồng video từ Canvas 3D WebGL (30 khung hình / giây)
     const stream = canvas.captureStream(30);
-    const peerConnection = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+    const peerId = "lostisland_live_" + window.SPECTATOR_ROOM_ID;
+    
+    window.spectatorPeer = new Peer(peerId, { debug: 0 });
+    
+    window.spectatorPeer.on('open', (id) => {
+        console.log("[Livestream] Đã mở cổng phát sóng PeerJS với ID:", id);
+    });
 
-    // Lắng nghe tín hiệu Offer từ Khán giả thông qua Ntfy.sh
-    const sse = new EventSource(`https://ntfy.sh/lostisland_host_${window.SPECTATOR_ROOM_ID}/sse`);
-    sse.onmessage = async (e) => {
-        try {
-            const data = JSON.parse(e.data);
-            if (data.event === "message") {
-                const msg = JSON.parse(data.message);
-                if (msg.type === 'offer') {
-                    console.log("Host: Nhận Offer từ Khán giả, đang xử lý Answer...");
-                    await peerConnection.setRemoteDescription(new RTCSessionDescription(msg.offer));
-                    const answer = await peerConnection.createAnswer();
-                    await peerConnection.setLocalDescription(answer);
-                    
-                    // Gửi lại Answer cho Khán giả
-                    fetch(`https://ntfy.sh/lostisland_client_${window.SPECTATOR_ROOM_ID}`, {
-                        method: 'POST', body: JSON.stringify({ type: 'answer', answer })
-                    });
-                } else if (msg.type === 'candidate') {
-                    peerConnection.addIceCandidate(new RTCIceCandidate(msg.candidate));
-                }
-            }
-        } catch(err) { }
-    };
+    // Tự động trả lời bất kỳ Khán giả nào gọi tới và gửi video stream
+    window.spectatorPeer.on('call', (call) => {
+        console.log("[Livestream] Có khán giả kết nối, đang truyền video WebGL 3D...");
+        call.answer(stream);
+    });
 
-    // Gửi tín hiệu mạng của Host cho Khán giả
-    peerConnection.onicecandidate = (e) => {
-        if (e.candidate) {
-            fetch(`https://ntfy.sh/lostisland_client_${window.SPECTATOR_ROOM_ID}`, {
-                method: 'POST', body: JSON.stringify({ type: 'candidate', candidate: e.candidate })
-            });
-        }
-    };
+    window.spectatorPeer.on('error', (err) => {
+        console.error("[Livestream] Lỗi phát sóng PeerJS:", err);
+    });
 }
 
 function startGame() {
