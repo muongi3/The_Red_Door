@@ -14,20 +14,20 @@
   --hud-gap:      clamp(5px,  1.2vh,   25px);
   --map-size:     clamp(110px, 21vh, 400px);
 
-  /* Màu nền nút */
-  --col-fire:    rgba(220, 40, 40, 0.72);
-  --col-jump:    rgba(220,180,  0, 0.72);
-  --col-aim:     rgba(  0,140,240, 0.72);
-  --col-reload:  rgba(160,160,160, 0.68);
-  --col-sprint:  rgba(255,255,255, 0.50);
-  --col-ulti:    rgba(  0,  0,  0, 0.85);
-  --col-interact:rgba(160,  0,  0, 0.85);
+  /* Màu nền nút - Cosmic Void Style */
+  --col-fire:    rgba(0, 243, 255, 0.4);
+  --col-jump:    rgba(153, 0, 255, 0.5);
+  --col-aim:     rgba(0, 243, 255, 0.4);
+  --col-reload:  rgba(5, 10, 20, 0.8);
+  --col-sprint:  rgba(5, 10, 20, 0.8);
+  --col-ulti:    rgba(255, 0, 51, 0.7);
+  --col-interact:rgba(0, 243, 255, 0.7);
 
   /* Hiệu năng */
-  --hud-blur:    8px;
-  --hud-radius:  50%;
-  --hud-border:  2.5px solid rgba(255,255,255,0.55);
-  --hud-shadow:  0 3px 12px rgba(0,0,0,0.45);
+  --hud-blur:    12px;
+  --hud-radius:  20%; /* Nút hơi vuông vát góc chuẩn sci-fi */
+  --hud-border:  1.5px solid rgba(0, 243, 255, 0.6);
+  --hud-shadow:  0 0 15px rgba(0, 243, 255, 0.3);
 }
 
 /* Landscape: xoay ngang - đồng bộ tỷ lệ vàng của PC và Mobile */
@@ -331,12 +331,12 @@
   width:  var(--ulti-size);
   height: var(--ulti-size);
   background: var(--col-ulti);
-  border: 2px solid #00f2ff;
-  color: #00f2ff;
+  border: 2px solid #00e5ff;
+  color: #00e5ff;
   font-size: clamp(8px, 1.6vw, 12px);
-  box-shadow: 0 0 16px rgba(0,242,255,0.5), inset 0 0 10px rgba(0,242,255,0.2);
+  box-shadow: 0 0 20px rgba(153, 0, 255, 0.6), inset 0 0 15px rgba(0, 229, 255, 0.4);
   animation: ultiPulse 2s infinite ease-in-out;
-  text-shadow: 0 0 8px #00f2ff;
+  text-shadow: 0 0 10px #00e5ff;
   overflow: hidden;
   /* Trên nút NHẢY */
   bottom: calc(10px + env(safe-area-inset-bottom) + var(--fire-size) + var(--btn-size) + var(--hud-gap) * 2);
@@ -345,9 +345,9 @@
 }
 #btn-ulti.hidden { display: none !important; }
 @keyframes ultiPulse {
-  0%,100% { box-shadow: 0 0 12px rgba(0,242,255,0.4); }
-  50%     { box-shadow: 0 0 28px rgba(0,242,255,0.9), 0 0 50px rgba(255,106,0,0.4);
-            border-color: #ff6a00; color: #ff6a00; text-shadow: 0 0 16px #ff6a00; }
+  0%,100% { box-shadow: 0 0 15px rgba(153, 0, 255, 0.5); border-color: #00e5ff; color: #00e5ff; }
+  50%     { box-shadow: 0 0 35px rgba(0, 229, 255, 1), 0 0 50px rgba(153, 0, 255, 0.8);
+            border-color: #9900ff; color: #fff; text-shadow: 0 0 20px #9900ff; }
 }
 #btn-ulti::after {
   content: '';
@@ -510,41 +510,45 @@
 #health-bar-container {
   position: absolute;
   bottom: calc(10px + env(safe-area-inset-bottom));
-  left:   calc(10px + env(safe-area-inset-left));
+  left:   calc(10px + env(safe-area-inset-left) + 5px);
   width:  clamp(120px, 22vw, 175px);
-  height: 10px;
+  height: 12px;
   z-index: 1200;
-  border-radius: 5px;
-  background: rgba(0,0,0,0.6);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.8);
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,0,51,0.5);
   padding: 0 !important;
+  transform: skewX(-15deg);
+  box-shadow: 0 0 10px rgba(255, 0, 51, 0.3);
 }
 #health-fill {
   height: 100%;
-  background: linear-gradient(90deg, #ff2353, #ff5e3a);
-  border-radius: 5px;
-  transition: width 0.3s;
+  background: linear-gradient(90deg, #990000, #ff0033);
+  box-shadow: inset 0 0 8px rgba(255,255,255,0.3);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 #armor-bar-container {
   position: absolute;
-  bottom: calc(10px + env(safe-area-inset-bottom) + 14px);
-  left:   calc(10px + env(safe-area-inset-left));
+  bottom: calc(10px + env(safe-area-inset-bottom) + 18px);
+  left:   calc(10px + env(safe-area-inset-left) + 10px);
   width:  clamp(90px, 17vw, 130px);
-  height: 7px;
+  height: 9px;
   z-index: 1200;
-  border-radius: 4px;
-  background: rgba(0,0,0,0.6);
+  border-radius: 3px;
+  background: rgba(0,0,0,0.8);
   overflow: hidden;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0,229,255,0.5);
   padding: 0 !important;
+  transform: skewX(-15deg);
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
 }
 #armor-fill {
   height: 100%;
-  background: linear-gradient(90deg, #0055ff, #00d4ff);
-  border-radius: 4px;
-  transition: width 0.3s;
+  background: linear-gradient(90deg, #0055ff, #00e5ff);
+  box-shadow: inset 0 0 8px rgba(255,255,255,0.3);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ================================================================
@@ -592,16 +596,18 @@
   position: absolute;
   top: calc(10px + env(safe-area-inset-top));
   left: calc(10px + env(safe-area-inset-left) + var(--map-size) + 12px);
-  background: rgba(0,0,0,0.65);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
-  padding: 5px 8px;
-  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(153, 0, 255, 0.15) 0%, rgba(0, 229, 255, 0.05) 100%);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  padding: 8px 12px;
+  border-radius: 12px;
   font-family: 'Outfit', sans-serif !important;
   font-size: clamp(7.5px, 1.4vw, 10px);
   z-index: 1300;
   pointer-events: none;
-  border: 1px solid rgba(255, 0, 0, 0.35);
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 5px 5px 20px rgba(0, 0, 0, 0.6);
   color: #fff;
   min-width: clamp(90px, 16vw, 130px);
   max-width: clamp(130px, 24vw, 200px);
@@ -752,12 +758,12 @@
    ================================================================ */
 @media (orientation: landscape) and (max-width: 1024px) {
   :root {
-    --fire-size:  clamp(42px, 11vh, 90px);
-    --btn-size:   clamp(32px, 8.5vh, 70px);
-    --mini-size:  clamp(24px, 6.5vh, 50px);
-    --ulti-size:  clamp(40px, 10vh, 80px);
-    --map-size:   clamp(90px, 21vh, 160px);
-    --hud-gap:    clamp(3px, 1.2vh, 12px);
+    --fire-size:  clamp(35px, 9vh, 75px);
+    --btn-size:   clamp(26px, 7vh, 55px);
+    --mini-size:  clamp(20px, 5.5vh, 40px);
+    --ulti-size:  clamp(32px, 8.5vh, 65px);
+    --map-size:   clamp(75px, 17vh, 130px);
+    --hud-gap:    clamp(2px, 1vh, 8px);
   }
 
   /* Toạ độ mặc định chuẩn Mobile gọn gàng chống vỡ */

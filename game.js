@@ -40,7 +40,8 @@ window.STATE = {
     enragedAnnounced: false,
     finalAnnounced: false,
     hasExited: false,
-    finalPaper: null
+    finalPaper: null,
+    hasRedKey: false
 };
 const STATE = window.STATE;
 
@@ -159,8 +160,8 @@ out vec4 outColor;
 
 void main() {
     if(uIsSky) {
-        vec3 skyTop = vec3(0.01, 0.0, 0.04);
-        vec3 skyBottom = vec3(0.06, 0.01, 0.12);
+        vec3 skyTop = vec3(0.1, 0.0, 0.2);
+        vec3 skyBottom = vec3(0.0, 0.5, 0.8);
         float h = normalize(vPos - uCamPos).y * 0.5 + 0.5;
         outColor = vec4(mix(skyBottom, skyTop, h), 1.0);
         return;
@@ -185,21 +186,22 @@ void main() {
     float spec = pow(max(dot(N, H), 0.0), uIsWater ? 128.0 : 32.0);
     float specMask = smoothstep(0.7, 0.8, spec) * (uIsWater ? 0.8 : 0.3);
     
-    // Tối ưu cho Mobile: Chỉ dùng Rim light trên PC
-    float rim = 0.0;
-    if(!bool(uIsWater)) { // Dùng uIsWater làm cờ giả để kiểm tra PC nếu cần, hoặc skip luôn
-        float rimVal = 1.0 - max(dot(V, N), 0.0);
-        rim = rimVal * rimVal * rimVal * rimVal * 0.3;
-    }
+    float rimVal = 1.0 - max(dot(V, N), 0.0);
+    float rim = rimVal * rimVal * rimVal * rimVal * 0.3;
+    float glowFactor = smoothstep(0.4, 1.0, rimVal);
+    vec3 fakeBloom = uEmitColor * glowFactor * 2.5;
     
-    vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor;
+    vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor + fakeBloom;
     
-    // Tăng mật độ sương mù một chút để che giấu chân trời mượt hơn
-    float fogFactor = 1.0 - exp(-vDist * 0.007);
-    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    float distFog = 1.0 - exp(-vDist * 0.007);
+    float heightFog = smoothstep(3.0, -1.0, vY);
+    float fogNoise = sin(vPos.x * 0.5 + uTime) * cos(vPos.z * 0.5 - uTime) * 0.5 + 0.5;
+    float totalFog = clamp(max(distFog, heightFog * 0.8 * fogNoise), 0.0, 1.0);
+    
+    vec3 cosmicFogColor = mix(vec3(0.1, 0.0, 0.2), vec3(0.0, 0.1, 0.2), clamp(vY / 10.0, 0.0, 1.0));
     
     float alpha = uIsWater ? 0.7 : 1.0;
-    outColor = vec4(mix(finalColor, uFogColor, fogFactor), alpha);
+    outColor = vec4(mix(finalColor, cosmicFogColor, totalFog), alpha);
 }`;
 
 function createShader(src, type) {
@@ -299,9 +301,9 @@ function genTreeMesh() {
 function genHouseMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const wallCol = [0.4, 0.4, 0.45]; // Tối tăm, mốc meo
-    const roofCol = [0.3, 0.1, 0.1]; // Mái ngói vỡ nát
-    const woodCol = [0.2, 0.15, 0.1]; // Gỗ mục
+    const wallCol = [0.1, 0.1, 0.15]; // Tối tăm, màu Obsidian
+    const roofCol = [0.1, 0.15, 0.2]; // Tôn gỉ màu xanh tím
+    const woodCol = [0.05, 0.05, 0.05]; // Gỗ đen cháy
 
     push(getCube(wallCol, 5, 4, 5, 0, 2, 0));
     push(getCube([0.1, 0.1, 0.1], 1.5, 2.5, 5.1, 1.5, 1.25, 0)); // Vết thủng lớn
@@ -320,9 +322,9 @@ function genHouseMesh() {
 function genCarMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const rustCol = [0.4, 0.2, 0.1];
-    const darkMetal = [0.2, 0.2, 0.2];
-    const glassCol = [0.1, 0.1, 0.15];
+    const rustCol = [0.2, 0.1, 0.15]; // Rỉ sét thẫm màu máu
+    const darkMetal = [0.05, 0.05, 0.05];
+    const glassCol = [0.0, 0.2, 0.4]; // Kính nứt phản quang Cyan
 
     push(getCube(rustCol, 2.0, 0.8, 4.5, 0, 0.6, 0));
     push(getCube(rustCol, 1.8, 0.7, 2.2, 0, 1.35, -0.2));
@@ -344,38 +346,38 @@ function genCharMesh(color, isHorror = false, isEnraged = false, isFinal = false
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
 
     if (isHorror) {
-        // --- BOT KINH DỊ (PALE CREEPER) ---
-        const pale = [0.75, 0.72, 0.82]; // Ghostly ash-purple skin
-        const blood = [0.45, 0.0, 0.3];   // Cursed crimson-violet veins
-        const brightBlood = [0.8, 0.0, 0.55]; // Ethereal glowing crimson-violet
+        // --- BOT KINH DỊ HƠI ĐỎ (PALE RED CREEPER) ---
+        const paleRed = [0.88, 0.45, 0.45]; // Da quái vật có tông hơi đỏ
+        const blood = [0.5, 0.0, 0.0];      // Máu đỏ sẫm
+        const brightBlood = [0.8, 0.0, 0.0]; // Máu đỏ tươi
 
         // Thân dài, gầy guộc
-        push(getCube(pale, 0.4, 1.2, 0.2, 0, 0.6, 0));
+        push(getCube(paleRed, 0.4, 1.2, 0.2, 0, 0.6, 0));
 
-        // Vết máu trên thân (MỚI - Lv1 đã có máu)
+        // Vết máu trên thân
         push(getCube(blood, 0.15, 0.4, 0.05, 0.05, 0.6, 0.11)); // Vết máu loang lổ trên ngực
         if (isEnraged || isFinal) {
             push(getCube(blood, 0.25, 0.6, 0.06, -0.05, 0.5, 0.11)); // Thêm vết máu lớn hơn cho Lv2, Lv3
         }
 
-        // Thêm xương sườn nhô ra (kinh dị hơn)
+        // Thêm xương sườn nhô ra
         for (let i = 0; i < 3; i++) {
-            const ribCol = isFinal ? blood : pale; // Lv3 xương sườn đẫm máu
+            const ribCol = isFinal ? blood : paleRed; // Lv3 xương sườn đẫm máu
             push(getCube(ribCol, 0.45, 0.05, 0.25, 0, 0.8 + i * 0.15, 0.1));
         }
 
         // Đầu biến dạng to hơn chút
-        push(getCube(pale, 0.4, 0.5, 0.4, 0, 1.35, 0));
+        push(getCube(paleRed, 0.4, 0.5, 0.4, 0, 1.35, 0));
 
-        // Vết máu trên đầu (MỚI)
+        // Vết máu trên đầu
         push(getCube(blood, 0.1, 0.2, 0.41, 0.15, 1.45, 0)); // Máu chảy từ đỉnh đầu xuống
         if (isFinal) {
             push(getCube(blood, 0.42, 0.1, 0.42, 0, 1.58, 0)); // Lv3 cả đầu đẫm máu
         }
 
         // Mắt đỏ rực to phát sáng
-        push(getCube([1, 0, 0], 0.15, 0.15, 0.05, -0.15, 1.45, 0.21));
-        push(getCube([1, 0, 0], 0.15, 0.15, 0.05, 0.15, 1.45, 0.21));
+        push(getCube([1.0, 0.0, 0.0], 0.15, 0.15, 0.05, -0.15, 1.45, 0.21));
+        push(getCube([1.0, 0.0, 0.0], 0.15, 0.15, 0.05, 0.15, 1.45, 0.21));
 
         // Miệng máu đáng sợ
         push(getCube([0, 0, 0], 0.25, 0.15, 0.05, 0, 1.25, 0.21));
@@ -383,11 +385,11 @@ function genCharMesh(color, isHorror = false, isEnraged = false, isFinal = false
 
         if (isEnraged || isFinal) {
             // CUỒNG BẠO: 2 tay giơ thẳng lên trước (Z hướng tới người chơi)
-            const armCol = isFinal ? [0.6, 0, 0] : pale;
+            const armCol = isFinal ? [0.7, 0.1, 0.1] : paleRed;
             push(getCube(armCol, 0.1, 0.1, 1.0, -0.3, 1.1, 0.4));
             push(getCube(armCol, 0.1, 0.1, 1.0, 0.3, 1.1, 0.4));
 
-            // Máu dính trên tay (MỚI)
+            // Máu dính trên tay
             push(getCube(blood, 0.12, 0.12, 0.6, -0.3, 1.1, 0.5));
             push(getCube(blood, 0.12, 0.12, 0.6, 0.3, 1.1, 0.5));
 
@@ -397,10 +399,10 @@ function genCharMesh(color, isHorror = false, isEnraged = false, isFinal = false
             push(getCube(brightBlood, 0.05, 0.05, 0.4, 0.3, 1.1, 1.0));
         } else {
             // THƯỜNG: Tay dài chạm đất
-            push(getCube(pale, 0.1, 1.0, 0.1, -0.3, 0.5, 0));
-            push(getCube(pale, 0.1, 1.0, 0.1, 0.3, 0.5, 0));
+            push(getCube(paleRed, 0.1, 1.0, 0.1, -0.3, 0.5, 0));
+            push(getCube(paleRed, 0.1, 1.0, 0.1, 0.3, 0.5, 0));
 
-            // Vết máu trên tay thường (MỚI)
+            // Vết máu trên tay thường
             push(getCube(blood, 0.11, 0.5, 0.11, -0.3, 0.3, 0));
             push(getCube(blood, 0.11, 0.5, 0.11, 0.3, 0.3, 0));
 
@@ -435,13 +437,16 @@ function genCrateMesh(color = [0.7, 0.4, 0.2]) {
 function genPistolMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const iron = [0.15, 0.15, 0.18], purpleGlow = [0.73, 0.2, 1.0], black = [0.05, 0.05, 0.05];
-    push(getCube(iron, 0.15, 0.25, 0.7, 0, 0, 0)); // Slide (Thân súng to hơn)
-    push(getCube(purpleGlow, 0.16, 0.05, 0.72, 0, 0.1, 0)); // Glowing Top Rail
-    push(getCube(black, 0.12, 0.4, 0.25, 0, -0.25, -0.2)); // Grip
-    push(getCube(purpleGlow, 0.13, 0.1, 0.1, 0, -0.4, -0.2)); // Glowing Base Plate
-    push(getCube(black, 0.1, 0.05, 0.22, 0, -0.1, 0.05)); // Trigger guard
-    push(getCube([0.0, 0.9, 0.8], 0.02, 0.06, 0.02, 0, 0.15, 0.3)); // Glowing cyan sight
+    const obsidian = [0.05, 0.05, 0.06];
+    const neonCyan = [0.0, 0.95, 1.0];
+    const plasmaCore = [0.8, 0.0, 1.0]; // Amethyst Plasma
+
+    push(getCube(obsidian, 0.14, 0.22, 0.75, 0, 0, 0)); // Sleek Slide
+    push(getCube(plasmaCore, 0.08, 0.08, 0.5, 0, 0, 0.1)); // Glowing Plasma Core exposed on slide
+    push(getCube(neonCyan, 0.15, 0.04, 0.78, 0, 0.11, 0)); // Glowing Top Laser Rail
+    push(getCube(obsidian, 0.11, 0.42, 0.22, 0, -0.25, -0.18)); // Grip
+    push(getCube(neonCyan, 0.12, 0.06, 0.24, 0, -0.46, -0.18)); // Battery Pack base
+    push(getCube([0, 0.95, 1.0], 0.03, 0.06, 0.03, 0, 0.15, 0.35)); // Holographic Sight
     return createMesh(V, N, C);
 }
 
@@ -449,13 +454,20 @@ function genPistolMesh() {
 function genSMGMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const carbon = [0.08, 0.06, 0.1], amethyst = [0.73, 0.2, 1.0], steel = [0.25, 0.25, 0.28];
-    push(getCube(carbon, 0.18, 0.3, 1.1, 0, 0, 0)); // Futuristic Body
-    push(getCube(amethyst, 0.19, 0.05, 0.8, 0, 0.12, 0)); // Amethyst Neon Strip L
-    push(getCube(steel, 0.12, 0.5, 0.18, 0, -0.3, 0.2)); // Vertical Mag
-    push(getCube(carbon, 0.14, 0.35, 0.2, 0, -0.28, -0.35)); // Tactical Grip
-    push(getCube(steel, 0.08, 0.08, 0.4, 0, 0.05, 0.7)); // Dual Barrel
-    push(getCube(carbon, 0.16, 0.3, 0.45, 0, -0.05, -0.7)); // Modern Stock
+    const carbon = [0.03, 0.03, 0.04];
+    const neonAmethyst = [0.6, 0.0, 1.0];
+    const steel = [0.15, 0.15, 0.16];
+    const neonCyan = [0.0, 0.95, 1.0];
+
+    push(getCube(carbon, 0.16, 0.28, 1.15, 0, 0, 0)); // Main Receiver
+    push(getCube(neonAmethyst, 0.18, 0.06, 0.9, 0, 0.14, 0.05)); // Energy Rail (Top)
+    push(getCube(neonCyan, 0.18, 0.06, 0.4, 0, -0.05, 0.3)); // Heat Sink Vent (Side Glow)
+    push(getCube(carbon, 0.1, 0.5, 0.15, 0, -0.32, 0.25)); // Slanted Mag
+    push(getCube(neonAmethyst, 0.11, 0.05, 0.16, 0, -0.58, 0.25)); // Mag base glow
+    push(getCube(carbon, 0.12, 0.38, 0.22, 0, -0.25, -0.38)); // Grip
+    push(getCube(steel, 0.06, 0.06, 0.6, 0, 0.04, 0.8)); // Dual Pulse Barrels
+    push(getCube(neonCyan, 0.07, 0.02, 0.5, 0, 0.04, 0.85)); // Barrel underglow
+    push(getCube(carbon, 0.14, 0.24, 0.5, 0, -0.05, -0.75)); // Ergonomic Minimalist Stock
     return createMesh(V, N, C);
 }
 
@@ -463,15 +475,21 @@ function genSMGMesh() {
 function genSniperMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const shadowCamo = [0.15, 0.1, 0.2], spectralCyan = [0, 0.9, 0.85], chrome = [0.4, 0.4, 0.45];
-    push(getCube(shadowCamo, 0.2, 0.25, 2.0, 0, 0, -0.2)); // Heavy Body
-    push(getCube(chrome, 0.15, 0.3, 0.6, 0, 0.3, 0.1)); // Advanced Scope
-    push(getCube(spectralCyan, 0.12, 0.12, 0.05, 0, 0.3, 0.4)); // Spectral Lens Glow
-    push(getCube(shadowCamo, 0.14, 0.45, 0.3, 0, -0.35, -0.8)); // Ergonomic Stock
-    push(getCube(chrome, 0.1, 0.1, 1.5, 0, 0.05, 1.5)); // Long Heavy Barrel
-    push(getCube(chrome, 0.2, 0.15, 0.25, 0, 0.05, 2.3)); // Muzzle Brake
-    push(getCube(chrome, 0.05, 0.6, 0.05, 0.15, -0.4, 1.0)); // Bipod L
-    push(getCube(chrome, 0.05, 0.6, 0.05, -0.15, -0.4, 1.0)); // Bipod R
+    const carbon = [0.03, 0.03, 0.04];
+    const neonCyan = [0.0, 0.95, 1.0];
+    const chrome = [0.3, 0.35, 0.4];
+    const purpleCore = [0.6, 0.0, 1.0];
+
+    push(getCube(carbon, 0.18, 0.24, 2.2, 0, 0, -0.3)); // Sleek Railgun Frame
+    push(getCube(purpleCore, 0.1, 0.1, 1.4, 0, 0, -0.2)); // Charged plasma rail running through body
+    push(getCube(chrome, 0.14, 0.28, 0.7, 0, 0.28, 0.1)); // Advanced Cyber Scope
+    push(getCube(neonCyan, 0.11, 0.11, 0.05, 0, 0.28, 0.46)); // Holo scope lens glow
+    push(getCube(carbon, 0.12, 0.42, 0.45, 0, -0.32, -1.0)); // Futurist Stock
+    push(getCube(chrome, 0.06, 0.06, 1.8, 0, 0.05, 1.6)); // Dual Magnetic Rails (Barrel L)
+    push(getCube(neonCyan, 0.08, 0.02, 1.8, 0, 0.05, 1.6)); // Magnetic field glow (Top barrel)
+    push(getCube(chrome, 0.18, 0.12, 0.3, 0, 0.05, 2.5)); // Magnetic Muzzle Accelerator
+    push(getCube(carbon, 0.04, 0.55, 0.04, 0.12, -0.4, 0.8)); // Monopod leg L
+    push(getCube(carbon, 0.04, 0.55, 0.04, -0.12, -0.4, 0.8)); // Monopod leg R
     return createMesh(V, N, C);
 }
 
@@ -725,7 +743,7 @@ function genGrassMesh() {
 
         // Tạo một lá cỏ dẹt (Triangle Strip giả lập)
         V.push(x - w * s, 0, z + w * c, x + w * s, 0, z - w * c, x + skew, h, z);
-        const col = [0.1 + Math.random() * 0.1, 0.5 + Math.random() * 0.3, 0.1];
+        const col = [0.05 + Math.random() * 0.1, 0.05, 0.2 + Math.random() * 0.2]; // Cỏ màu tím sẫm/Xanh ngọc
         for (let i = 0; i < 3; i++) { N.push(0, 1, 0); C.push(...col); }
     };
 
@@ -788,10 +806,104 @@ function initAssets() {
     ASSETS.bossProj = genBossProjectileMesh();
     ASSETS.indicator = genIndicatorMesh();
 
+    ASSETS.pillar = genPillarMesh();
+    ASSETS.redDoor = genRedDoorMesh();
+    ASSETS.cosmicSky = genCosmicSkyMesh();
+
     ASSETS.bloodMoon = genMoonMesh([0.85, 0.05, 0.45], 1, 24); // Giảm resolution xuống 24 để mượt trên Mobile
     ASSETS.dashInd = genDashIndicatorMesh();
+    ASSETS.redKey = genRedKeyMesh();
+    ASSETS.arrow = genArrowMesh();
 }
 
+function genArrowMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const redColor = [1.0, 0.05, 0.05];
+    const brightRed = [1.0, 0.3, 0.3];
+    // Thân mũi tên (Shaft)
+    push(getCube(redColor, 0.2, 0.05, 0.8, 0, 0.05, 0.2));
+    // Đầu mũi tên (Arrow head)
+    push(getCube(brightRed, 0.6, 0.05, 0.2, 0, 0.05, -0.3));
+    push(getCube(brightRed, 0.4, 0.05, 0.2, 0, 0.05, -0.5));
+    push(getCube(brightRed, 0.2, 0.05, 0.2, 0, 0.05, -0.7));
+    return createMesh(V, N, C);
+}
+
+function genRedKeyMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+
+    const redColor = [1.0, 0.05, 0.05];      // Màu đỏ dạ quang rực rỡ
+    const brightRed = [1.0, 0.3, 0.3];
+
+    // Trục chìa khóa (Shaft) - ngắn lại và thanh mảnh hơn
+    push(getCube(redColor, 0.02, 0.02, 0.25, 0, 0, -0.1));
+
+    // Tay cầm (Bow/Handle) - thu nhỏ lại tinh tế, gọn gàng
+    push(getCube(brightRed, 0.06, 0.015, 0.015, 0, 0, 0.04));
+    push(getCube(brightRed, 0.015, 0.015, 0.06, -0.03, 0, 0.01));
+    push(getCube(brightRed, 0.015, 0.015, 0.06, 0.03, 0, 0.01));
+    push(getCube(brightRed, 0.06, 0.015, 0.015, 0, 0, -0.02));
+
+    // Răng chìa khóa (Teeth/Bit) - nhỏ nhắn, rõ nét răng cưa
+    push(getCube(redColor, 0.015, 0.03, 0.02, 0, -0.02, -0.18));
+    push(getCube(redColor, 0.015, 0.02, 0.02, 0, -0.015, -0.21));
+
+    return createMesh(V, N, C);
+}
+
+
+function genPillarMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const obs = [0.05, 0.05, 0.05];
+    const cyan = [0.0, 0.9, 0.9];
+    push(getCube(obs, 1.5, 8.0, 1.5, 0, 4.0, 0));
+    push(getCube(cyan, 1.55, 0.2, 0.2, 0, 5.0, 0.7)); // Rune
+    push(getCube(cyan, 0.2, 1.0, 1.55, -0.7, 6.0, 0)); // Rune
+    return createMesh(V, N, C);
+}
+
+function genRedDoorMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const frame = [0.05, 0.02, 0.02];
+    const portal = [1.0, 0.0, 0.0]; // Máu rực
+    push(getCube(frame, 16.0, 40.0, 4.0, 0, 20.0, 0));
+    push(getCube(portal, 12.0, 36.0, 4.5, 0, 18.0, 0));
+    return createMesh(V, N, C);
+}
+
+function genCosmicSkyMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+
+    // Create Stars
+    for (let i = 0; i < 400; i++) {
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        if (Math.cos(phi) < 0) continue; // Only upper hemisphere
+        const r = 500.0 + Math.random() * 200.0;
+        const x = r * Math.sin(phi) * Math.cos(theta);
+        const y = r * Math.cos(phi);
+        const z = r * Math.sin(phi) * Math.sin(theta);
+        const s = 1.0 + Math.random() * 2.0;
+        const color = Math.random() > 0.5 ? [0.8, 0.9, 1.0] : [0.0, 0.8, 1.0];
+        push(getCube(color, s, s, s, x, y, z));
+    }
+
+    // Create Asteroids (Floating Rocks)
+    for (let i = 0; i < 60; i++) {
+        const x = (Math.random() - 0.5) * 600.0;
+        const y = 40.0 + Math.random() * 250.0;
+        const z = (Math.random() - 0.5) * 600.0;
+        const s = 2.0 + Math.random() * 10.0;
+        push(getCube([0.05, 0.05, 0.08], s, s * 0.8, s * 1.2, x, y, z));
+    }
+
+    return createMesh(V, N, C);
+}
 
 function genWaterMesh() {
     let V = [], N = [], C = [];
@@ -825,7 +937,7 @@ function genTerrain() {
             const x = offset + i * step, z = offset + j * step, x1 = x + step, z1 = z + step;
             const y00 = getHeight(x, z), y10 = getHeight(x1, z), y01 = getHeight(x, z1), y11 = getHeight(x1, z1);
             // Màu đất bùn, máu khô và đá tối
-            const c = y00 < -8 ? [0.15, 0.05, 0.05] : (y00 < 5 ? [0.12, 0.08, 0.08] : [0.08, 0.08, 0.08]);
+            const c = y00 < -8 ? [0.1, 0.05, 0.15] : (y00 < 5 ? [0.08, 0.05, 0.12] : [0.05, 0.05, 0.05]);
 
             V.push(x, y00, z, x, y01, z1, x1, y10, z, x1, y10, z, x, y01, z1, x1, y11, z1);
             for (let k = 0; k < 6; k++) { N.push(0, 1, 0); C.push(...c); }
@@ -840,40 +952,7 @@ document.addEventListener("contextmenu", e => e.preventDefault());
 
 const HAKARI_DANCE = { spawned: false, active: false };
 
-// --- HỆ THỐNG ĐÓNG GÓI DỮ LIỆU SPECTATOR (STATE PACKET) ---
-function getGameStatePacket() {
-    if (!window.STATE || !window.STATE.player || !window.STATE.player.pos) return {};
-    const p = window.STATE.player;
-    const camRot = window.STATE.camera.rot;
-    return {
-        ts: performance.now(),
-        player: {
-            pos: { x: p.pos.x, y: p.pos.y, z: p.pos.z },
-            rot: { x: camRot.x, y: camRot.y },
-            hp: p.hp,
-            maxHp: p.maxHp,
-            kills: p.kills,
-            weaponIdx: p.weaponIdx
-        },
-        bots: window.STATE.bots ? window.STATE.bots.map(b => ({
-            id: b.id,
-            pos: { x: b.pos.x, y: b.pos.y, z: b.pos.z },
-            yaw: b.yaw,
-            hp: b.hp,
-            maxHp: b.maxHp,
-            state: b.state
-        })) : [],
-        projectiles: window.STATE.projectiles ? window.STATE.projectiles.map(pr => ({ pos: { x: pr.pos.x, y: pr.pos.y, z: pr.pos.z } })) : [],
-        loot: window.STATE.loot ? window.STATE.loot.map(l => ({ pos: { x: l.pos.x, y: l.pos.y, z: l.pos.z }, type: l.type })) : [],
-        stats: { alive: window.STATE.bots ? (window.STATE.bots.length + 1) : 25 }
-    };
-}
-
 function startGame() {
-    // Kích hoạt luồng Broadcast P2P DataChannel cho khán giả
-    if (window.SpectatorNetwork) window.SpectatorNetwork.initHost();
-
-
     const chillSound = document.getElementById('chill-theme-sound');
     if (chillSound) chillSound.pause();
 
@@ -924,7 +1003,7 @@ function startGame() {
 
     STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
 
-    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null;
+    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null; STATE.hasRedKey = false;
     // Reset QuestManager
     if (window.QuestManager) {
         window.QuestManager.totalCollected = 0;
@@ -1000,12 +1079,15 @@ function startGame() {
         STATE.pads.push({ pos: V3.create(x, y, z) });
     }
 
+    // Hàm kiểm tra nằm trong "Con Đường Tuyệt Vọng" (The Void Path)
+    const isInPath = (x, z) => (x > -30 && x < 30 && z < 20 && z > -180);
+
     // Khởi tạo Vật cản (Cây, Nhà, Xe)
     for (let i = 0; i < (isMobile ? 25 : 60); i++) {
         const x = Math.sin(i * 132.1) * MAP_SIZE * 0.4;
         const z = Math.cos(i * 52.3) * MAP_SIZE * 0.4;
         const y = getHeight(x, z);
-        if (y > -8.5) STATE.obstacles.push({ type: 'tree', pos: { x, y: y - 0.5, z }, radius: 1.0, scale: 1.5 + Math.sin(i) * 0.5, rot: 0 });
+        if (y > -8.5 && !isInPath(x, z)) STATE.obstacles.push({ type: 'tree', pos: { x, y: y - 0.5, z }, radius: 1.0, scale: 1.5 + Math.sin(i) * 0.5, rot: 0 });
     }
     for (let i = 0; i < 12; i++) {
         let x, z, y;
@@ -1013,7 +1095,7 @@ function startGame() {
             x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             y = getHeight(x, z);
-        } while (y <= -8.5);
+        } while (y <= -8.5 || isInPath(x, z));
         STATE.obstacles.push({ type: 'house', pos: { x, y: y - 1.0, z }, radius: 4.5, rot: Math.random() * Math.PI, scale: 1 });
     }
     for (let i = 0; i < 20; i++) {
@@ -1022,9 +1104,25 @@ function startGame() {
             x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             y = getHeight(x, z);
-        } while (y <= -8.5);
+        } while (y <= -8.5 || isInPath(x, z));
         STATE.obstacles.push({ type: 'car', pos: { x, y: y - 0.5, z }, radius: 2.5, rot: Math.random() * Math.PI, scale: 1 });
     }
+
+    // Spawn Cột đá Obsidian thành 2 hàng dọc (The Void Path)
+    for (let i = 0; i < 12; i++) {
+        const zPos = -10 - (i * 10);
+        const xLeft = -15;
+        const xRight = 15;
+        const yL = getHeight(xLeft, zPos);
+        const yR = getHeight(xRight, zPos);
+        STATE.obstacles.push({ type: 'pillar', pos: { x: xLeft, y: yL - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
+        STATE.obstacles.push({ type: 'pillar', pos: { x: xRight, y: yR - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
+    }
+    // Đặt Cánh Cửa Đỏ Rực cố định ở góc xa bản đồ
+    const doorX = 0;
+    const doorZ = -150;
+    const doorY = getHeight(doorX, doorZ);
+    STATE.obstacles.push({ type: 'redDoor', pos: { x: doorX, y: doorY - 1.0, z: doorZ }, radius: 8.0, rot: 0, scale: 1 });
     // Đã xóa vòng lặp spawn STATE.powerups để chỉ giữ lại 4 loại hòm cơ bản (STATE.loot)
 
     document.getElementById('main-menu').classList.add('hidden'); document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('ui-layer').style.display = 'block';
@@ -1125,7 +1223,7 @@ function update(dt) {
         return true;
     });
 
-    // finalPaper: E-key pickup
+    // finalPaper: E-key pickup (Chìa khóa đỏ)
     let nearFinalPaper = false;
     if (STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp) {
         const dist = V3.dist(STATE.player.pos, STATE.finalPaper.pos);
@@ -1138,27 +1236,72 @@ function update(dt) {
                 playAudio('ammo');
 
                 if (window.QuestManager) {
-                    window.QuestManager.totalCollected = Math.min(window.QuestManager.totalCollected + 1, getLoreFragments().length);
-                    window.QuestManager.totalCompleted = Math.min(window.QuestManager.totalCompleted + 1, getLoreFragments().length);
+                    const maxFrags = getLoreFragments().length;
+                    window.QuestManager.totalCollected = maxFrags;
+                    window.QuestManager.totalCompleted = maxFrags;
+
+                    // Mở khóa vĩnh viễn bí mật cuối cùng của độ khó hiện tại trong thành tựu
+                    const diff = window.CURRENT_DIFFICULTY || 'normal';
+                    if (window.LoreSystem) {
+                        window.LoreSystem.unlockSecret(diff, maxFrags - 1);
+                    }
                     window.QuestManager.updateUI();
                 }
 
-                // Kích hoạt Chiến thắng và kết thúc game
-                spawnHakariDance();
-                playBossSound();
-                showClickAnywhere(2000); // Đợi 2s rồi hiện Tiếp tục
+                // Chuyển sang trạng thái giữ Chìa Khóa Đỏ
+                STATE.hasRedKey = true;
+                showGlobalAnnouncement("🔑 ĐÃ THU THẬP CHÌA KHÓA ĐỎ! Chạy theo vạch chỉ đường đỏ đến CÁNH CỬA ĐỎ để giải thoát!", 8000);
             }
         }
     }
 
-    // Show E-key hint for quest items / final paper
+    // Kiểm tra hoàn thành game khi mang Chìa Khóa Đỏ tới Cánh Cửa Đỏ (0, -150)
+    let nearRedDoor = false;
+    if (STATE.hasRedKey) {
+        const dx = STATE.player.pos.x - 0;
+        const dz = STATE.player.pos.z - (-150);
+        const distToDoor = Math.sqrt(dx * dx + dz * dz);
+        if (distToDoor < 6.0) {
+            nearRedDoor = true;
+            if (STATE.keys['KeyE']) {
+                STATE.keys['KeyE'] = false; // consume key
+
+                // Gửi báo cáo chiến thắng lên Discord NGAY LẬP TỨC khi bấm nút mở Cánh Cửa Đỏ để chuyển sang Ending
+                const duration = Math.floor((Date.now() - STATE.startTime) / 1000);
+                STATE.finalStats = {
+                    win: true,
+                    kills: STATE.player.kills,
+                    duration: duration,
+                    date: new Date().toLocaleString('vi-VN')
+                };
+                if (window.sendFinalResultToDiscord) {
+                    window.sendFinalResultToDiscord(false);
+                }
+
+                STATE.hasRedKey = false; // reset
+
+                // Premium animation: Siêu chấn động màn hình và bùng nổ không gian đỏ rực rỡ từ cánh cổng
+                STATE.shake = 30.0;
+                spawnParticles({ x: 0, y: 3.0, z: -150 }, 300, [1.0, 0.05, 0.05], 8.0, 'fire');
+
+                // Kích hoạt Chiến thắng và kết thúc game
+                spawnHakariDance();
+                playBossSound();
+                showClickAnywhere(4000); // Đợi 4s rồi hiện Tiếp tục
+            }
+        }
+    }
+
+    // Show E-key hint for quest items / final paper / red door
     const interMsg = document.getElementById('interaction-msg');
     const btnInteractEl = document.getElementById('btn-interact');
-    if (nearQuestItem || nearFinalPaper) {
+    if (nearQuestItem || nearFinalPaper || nearRedDoor) {
         if (interMsg) {
             interMsg.style.display = 'block';
-            if (nearFinalPaper) {
-                interMsg.innerHTML = '🔥 [E] NHẶT CHIẾC HỘP RỰC ĐỎ<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
+            if (nearRedDoor) {
+                interMsg.innerHTML = '🔑 [E] MỞ CÁNH CỬA ĐỎ<br><span style="font-size:10px">(Chạm vào đây để mở cửa)</span>';
+            } else if (nearFinalPaper) {
+                interMsg.innerHTML = '🔑 [E] NHẶT CHÌA KHÓA ĐỎ<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             } else {
                 interMsg.innerHTML = '📦 [E] NHẶT CHIẾC HỘP THÔNG TIN<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             }
@@ -1213,6 +1356,27 @@ function update(dt) {
             if ((obs.type === 'car' && p.pos.y > obs.pos.y + 1.2) ||
                 (obs.type === 'house' && p.pos.y > obs.pos.y + 3.0)) continue;
 
+            if (obs.type === 'redDoor') {
+                // AABB box hitbox: chiều rộng ngang = 16 (halfX = 8.0), chiều dày dọc = 4 (halfZ = 2.0)
+                // Kích thước của người chơi có bán kính khoảng 0.8
+                const halfX = 8.0 + 0.8;
+                const halfZ = 2.0 + 0.8;
+                const minX = obs.pos.x - halfX;
+                const maxX = obs.pos.x + halfX;
+                const minZ = obs.pos.z - halfZ;
+                const maxZ = obs.pos.z + halfZ;
+                if (p.pos.x > minX && p.pos.x < maxX && p.pos.z > minZ && p.pos.z < maxZ) {
+                    const pushX = p.pos.x > obs.pos.x ? (maxX - p.pos.x) : (minX - p.pos.x);
+                    const pushZ = p.pos.z > obs.pos.z ? (maxZ - p.pos.z) : (minZ - p.pos.z);
+                    if (Math.abs(pushX) < Math.abs(pushZ)) {
+                        p.pos.x += pushX;
+                    } else {
+                        p.pos.z += pushZ;
+                    }
+                }
+                continue;
+            }
+
             let dx = p.pos.x - obs.pos.x;
             let dz = p.pos.z - obs.pos.z;
             let distSq = dx * dx + dz * dz;
@@ -1245,7 +1409,7 @@ function update(dt) {
     if (!onPad && p.pos.y < floorH) { p.pos.y = floorH; p.vel.y = 0; p.grounded = true; } else if (!onPad) p.grounded = false;
     if (STATE.keys['Space'] && p.grounded) { p.vel.y = window.GAME_CONFIG.player.jumpPower; p.grounded = false; }
     const now = performance.now(), weapon = STATE.weapons[p.weaponIdx];
-    if (STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; }
+    if (!STATE.hasRedKey && STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; }
     if (p.weaponIdx !== p.lastWeaponIdx) {
         p.weaponSwitchTime = 0;
         p.lastWeaponIdx = p.weaponIdx;
@@ -1253,9 +1417,13 @@ function update(dt) {
     }
     if (p.weaponSwitchTime < 1.0) p.weaponSwitchTime += dt * 4.0; // Rút súng nhanh trong 0.25s
 
-    p.recoil *= 0.8; if (STATE.keys['Digit1']) p.weaponIdx = 0; if (STATE.keys['Digit2']) p.weaponIdx = 1; if (STATE.keys['Digit3']) p.weaponIdx = 2;
-    // Nạp đạn thủ công
-    if (STATE.keys['KeyR'] && weapon.ammo < weapon.maxAmmo && !p.isReloading) {
+    p.recoil *= 0.8;
+    if (!STATE.hasRedKey) {
+        if (STATE.keys['Digit1']) p.weaponIdx = 0;
+        if (STATE.keys['Digit2']) p.weaponIdx = 1;
+        if (STATE.keys['Digit3']) p.weaponIdx = 2;
+    }
+    if (!STATE.hasRedKey && STATE.keys['KeyR'] && weapon.ammo < weapon.maxAmmo && !p.isReloading) {
         let needed = weapon.maxAmmo - weapon.ammo;
         if (weapon.res > 0) {
             p.isReloading = true; p.reloadTimer = 2.0;
@@ -1546,7 +1714,15 @@ function update(dt) {
         }
     });
 
-    STATE.bots = STATE.bots.filter(b => b.hp > 0);
+    STATE.bots = STATE.bots.filter(b => {
+        if (b.hp <= 0) {
+            if (b.uiBar && b.uiBar.parentNode) {
+                b.uiBar.parentNode.removeChild(b.uiBar);
+            }
+            return false;
+        }
+        return true;
+    });
     // Tự động kích hoạt Boss CHỈ khi diệt sạch bot
     if (prevCount > 0 && STATE.bots.length === 0 && !STATE.bossTriggered) {
         triggerBossEvent();
@@ -1652,6 +1828,13 @@ function update(dt) {
         setTimeout(() => {
             STATE.loot.push({ pos: respawnPos, type: respawnType });
         }, 20000);
+
+        // Premium animation: Splash tàn lửa/hạt khói dạ quang màu tương ứng khi nhặt hòm
+        let particleColor = [1.0, 0.8, 0.0]; // Mặc định Vàng cho Đạn
+        if (closeLoot.type === 1) particleColor = [1.0, 0.2, 0.2]; // Hồng/Đỏ cho Máu
+        else if (closeLoot.type === 2) particleColor = [0.0, 0.8, 1.0]; // Xanh dương cho Giáp
+        else if (closeLoot.type === 3) particleColor = [0.8, 0.0, 1.0]; // Tím cho Powerup
+        spawnParticles(closeLoot.pos, 35, particleColor, 3.5, 'fire');
 
         STATE.loot = STATE.loot.filter(l => l !== closeLoot);
         playAudio('pickup');
@@ -2095,14 +2278,15 @@ function killBoss() {
 
     document.getElementById('boss-hp-container').style.display = 'none';
 
-    // Tạo chiếc hộp rực đỏ cuối cùng rơi tại vị trí của Boss
+    // Tạo chiếc Chìa Khóa Đỏ (isRedKey = true) rơi tại vị trí của Boss thay cho chiếc hộp
     STATE.finalPaper = {
         pos: V3.create(b.pos.x, b.pos.y + 0.2, b.pos.z),
         active: true,
-        pickedUp: false
+        pickedUp: false,
+        isRedKey: true
     };
 
-    showGlobalAnnouncement("KẺ CANH GIỮ ĐÃ BỊ TRIỆT TIÊU! HÃY NHẶT CHIẾC HỘP RỰC ĐỎ CỦA HẮN!", 6000);
+    showGlobalAnnouncement("🔑 KẺ CANH CÁNH CỬA ĐÃ BỊ HẠ! HÃY NHẶT CHÌA KHÓA ĐỎ!", 6000);
 
     // Hiệu ứng nổ lớn
     STATE.shake = 20.0;
@@ -2181,7 +2365,15 @@ function takeDamage(p, amt, silent = false) {
         p.armor -= armDmg;
         p.hp -= amt * 0.3;
         if (p.armor < 0) { p.hp += p.armor; p.armor = 0; }
-    } else p.hp -= amt;
+
+        // Premium animation: Điện màu xanh dương bảo vệ phát ra từ giáp
+        spawnParticles(p.pos, 15, [0.0, 0.8, 1.0], 2.0, 'fire');
+    } else {
+        p.hp -= amt;
+
+        // Premium animation: Máu đỏ phát ra khi mất máu trực tiếp
+        spawnParticles(p.pos, 15, [1.0, 0.1, 0.1], 2.0, 'fire');
+    }
 
     if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
 
@@ -2283,28 +2475,35 @@ function endGame(win) {
             }
 
             let lines = [];
-            const totalExtreme = 9; // Tổng số thông tin bí ẩn cao nhất
             const currentFragments = getLoreFragments();
             const currentMax = currentFragments.length;
             const collectedCount = window.QuestManager ? window.QuestManager.totalCollected : 0;
             const completedCount = window.QuestManager ? window.QuestManager.totalCompleted : 0;
             const pName = STATE.playerName || "bạn";
+            const diff = window.CURRENT_DIFFICULTY || 'normal';
+            const diffName = { easy: 'DỄ', normal: 'THƯỜNG', hard: 'KHÓ', extreme: 'SIÊU KHÓ' }[diff] || 'THƯỜNG';
 
-            lines.push(`--- BÁO CÁO GIẢI MÃ THÔNG TIN CỦA ${pName.toUpperCase()} ---`);
-            lines.push(`📦 Hộp đã nhặt: ${collectedCount}/${totalExtreme} | ✅ Nhiệm vụ hoàn thành: ${completedCount}/${totalExtreme}`);
+            lines.push(`--- BÁO CÁO GIẢI MÃ KHÔNG GIAN CỦA ${pName.toUpperCase()} ---`);
+            lines.push(`⚙️ Chế độ hiện tại: ${diffName}`);
+            lines.push(`🔑 Bí mật đã giải mã: ${completedCount}/${currentMax} (Đã nhặt hộp: ${collectedCount}/${currentMax})`);
+
+            const totalUnlockedAll = window.LoreSystem ? window.LoreSystem.getTotalUnlockedCount() : completedCount;
+            lines.push(`🏆 Tổng tiến trình vũ trụ: ${totalUnlockedAll} / 24 Bí mật đã giải mã (Mọi Chế Độ)`);
+
+            if (diff !== 'extreme') {
+                lines.push(`⚠️ [THÔNG BÁO HỆ THỐNG]: Hãy thử thách bản thân ở ĐỘ KHÓ CAO HƠN để mở khóa thêm nhiều bí mật không gian mới!`);
+            } else {
+                lines.push(`🌟 [HỆ THỐNG]: Bạn đã chinh phục chế độ khó nhất và đang tiếp cận dữ liệu không gian tối mật!`);
+            }
             lines.push("");
 
-            for (let i = 0; i < totalExtreme; i++) {
-                if (i < currentMax) {
-                    if (i < completedCount) {
-                        lines.push(`[PHẦN ${i + 1}]: ${currentFragments[i].text}`);
-                    } else if (i < collectedCount) {
-                        lines.push(`[PHẦN ${i + 1}]: 🔒 [NHIỆM VỤ CHƯA HOÀN THÀNH] — ??? (Cần hoàn thành thử thách để giải mã)`);
-                    } else {
-                        lines.push(`[PHẦN ${i + 1}]: 📦 [CHƯA NHẶT HỘP] — ??? (Tìm kiếm và nhặt hộp trên bản đồ)`);
-                    }
+            for (let i = 0; i < currentMax; i++) {
+                if (i < completedCount) {
+                    lines.push(`[BÍ MẬT PHẦN ${i + 1}]: ${currentFragments[i].text}`);
+                } else if (i < collectedCount) {
+                    lines.push(`[BÍ MẬT PHẦN ${i + 1}]: 🔒 [NHIỆM VỤ CHƯA HOÀN THÀNH] — ??? (Cần hoàn thành thử thách để giải mã)`);
                 } else {
-                    lines.push(`[PHẦN ${i + 1}]: ⚠ DỮ LIỆU BỊ MÃ HÓA CẤP CAO ⚠ (Yêu cầu chơi chế độ Khó hơn để mở khóa)`);
+                    lines.push(`[BÍ MẬT PHẦN ${i + 1}]: 📦 [CHƯA NHẶT HỘP] — ??? (Tìm kiếm và nhặt hộp thông tin trên bản đồ)`);
                 }
             }
 
@@ -2338,13 +2537,13 @@ function endGame(win) {
                 btnSkipEnding.style.opacity = '0';
                 btnSkipEnding.style.pointerEvents = 'none';
 
-                // Đợi 5 giây mới hiển thị nút Bỏ qua Ending để kích thích sự tò mò
+                // Đợi 10 giây mới hiển thị nút Bỏ qua Ending
                 setTimeout(() => {
                     if (!ended) {
                         btnSkipEnding.style.opacity = '1';
                         btnSkipEnding.style.pointerEvents = 'auto';
                     }
-                }, 5000);
+                }, 10000);
 
                 btnSkipEnding.onclick = () => {
                     if (ended) return;
@@ -2358,10 +2557,43 @@ function endGame(win) {
                 };
             }
 
+            // Tốc độ mặc định (Chậm để đọc trên mobile)
+            let endingSpeedMode = 1; // 1 = x1, 2 = x2, 3 = x3
+            let charSpeed = 45;
+            let lineSpeed = 2200;
+
+            const getEndingBaseSpeed = () => {
+                if (endingSpeedMode === 2) return { char: 20, line: 1000 };
+                if (endingSpeedMode === 3) return { char: 5, line: 300 };
+                return { char: 45, line: 2200 };
+            };
+
             // Đè màn hình để tua nhanh chữ, thả ra sẽ chạy chậm lại
-            let endingLineSpeed = 3500;
-            const speedUpEnding = () => { endingLineSpeed = 800; };
-            const slowDownEnding = () => { endingLineSpeed = 3500; };
+            const speedUpEnding = () => { charSpeed = 5; lineSpeed = 300; };
+            const slowDownEnding = () => {
+                const base = getEndingBaseSpeed();
+                charSpeed = base.char;
+                lineSpeed = base.line;
+            };
+
+            // Lập trình sự kiện cho nút Tua Tốc Độ Cốt Truyện kết thúc
+            const btnSpeedEnding = document.getElementById('btn-speed-ending');
+            if (btnSpeedEnding) {
+                btnSpeedEnding.innerText = '⚡ x1';
+                btnSpeedEnding.onclick = (e) => {
+                    e.stopPropagation(); // Ngăn sự kiện chạm/click lan ra màn hình gây trigger mousedown/touchstart
+                    endingSpeedMode = endingSpeedMode === 3 ? 1 : endingSpeedMode + 1;
+                    btnSpeedEnding.innerText = `⚡ x${endingSpeedMode}`;
+                    
+                    // Đồng bộ ngay lập tức tốc độ hiện tại
+                    const base = getEndingBaseSpeed();
+                    charSpeed = base.char;
+                    lineSpeed = base.line;
+                };
+                // Ngăn chặn mousedown/touchstart trên nút speed khỏi kích hoạt speedUpEnding/slowDownEnding
+                btnSpeedEnding.addEventListener('mousedown', (e) => e.stopPropagation());
+                btnSpeedEnding.addEventListener('touchstart', (e) => e.stopPropagation());
+            }
 
             pcScreen.addEventListener('mousedown', speedUpEnding);
             pcScreen.addEventListener('touchstart', speedUpEnding);
@@ -2374,7 +2606,7 @@ function endGame(win) {
                 pcScreen.style.opacity = '1';
                 let lineIdx = 0;
 
-                function showLine() {
+                function typeCurrentLine() {
                     if (ended) return;
                     if (lineIdx >= lines.length) {
                         // KHI HIỂN THỊ HẾT: Không tự thoát, mà đổi nhãn nút thành XEM KẾT QUẢ và bắt buộc bấm!
@@ -2385,22 +2617,30 @@ function endGame(win) {
                         }
                         return;
                     }
+
+                    const lineText = lines[lineIdx];
                     const p = document.createElement('div');
                     p.className = 'post-credit-text';
-                    p.innerText = lines[lineIdx];
-                    pcContent.appendChild(p);
-
-                    // Trigger reflow to animate opacity
-                    void p.offsetWidth;
                     p.style.opacity = '1';
-
-                    // Auto-scroll the credits to keep the latest text visible
+                    pcContent.appendChild(p);
                     pcContent.scrollTop = pcContent.scrollHeight;
 
-                    lineIdx++;
-                    endingTimeout = setTimeout(showLine, endingLineSpeed);
+                    let charIdx = 0;
+                    function typeChar() {
+                        if (ended) return;
+                        if (charIdx < lineText.length) {
+                            p.textContent += lineText.charAt(charIdx);
+                            charIdx++;
+                            pcContent.scrollTop = pcContent.scrollHeight;
+                            endingTimeout = setTimeout(typeChar, charSpeed);
+                        } else {
+                            lineIdx++;
+                            endingTimeout = setTimeout(typeCurrentLine, lineSpeed);
+                        }
+                    }
+                    typeChar();
                 }
-                showLine();
+                typeCurrentLine();
             }, 500);
             return;
         }
@@ -2414,7 +2654,7 @@ function showRealEndScreen(win, duration) {
     const pcScreen = document.getElementById('post-credit-screen');
     if (pcScreen) pcScreen.style.display = 'none';
     STATE.finalStats = { win, kills: STATE.player.kills, duration, date: new Date().toLocaleString('vi-VN') };
-    
+
     // Gửi thông báo Discord ngay lập tức khi trận đấu kết thúc (thắng hoặc thua) (không reload trang)
     if (window.sendFinalResultToDiscord) {
         window.sendFinalResultToDiscord(false);
@@ -2611,8 +2851,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Khôi phục trạng thái nút Unti
             const btnUlti = document.getElementById('btn-ulti');
-            if (btnUlti && STATE.player) {
-                if (STATE.player.damageDealt < window.GAME_CONFIG.ultimate.requiredDamage) {
+            if (btnUlti) {
+                if (!STATE.player || typeof STATE.player.damageDealt !== 'number' || STATE.player.damageDealt < (window.GAME_CONFIG?.ultimate?.requiredDamage || 500)) {
                     btnUlti.classList.add('hidden');
                 }
             }
@@ -2655,8 +2895,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Khôi phục trạng thái nút Unti
             const btnUltiSave = document.getElementById('btn-ulti');
-            if (btnUltiSave && STATE.player) {
-                if (STATE.player.damageDealt < window.GAME_CONFIG.ultimate.requiredDamage) {
+            if (btnUltiSave) {
+                if (!STATE.player || typeof STATE.player.damageDealt !== 'number' || STATE.player.damageDealt < (window.GAME_CONFIG?.ultimate?.requiredDamage || 500)) {
                     btnUltiSave.classList.add('hidden');
                 }
             }
@@ -2684,6 +2924,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (window.QuestManager.activeQuests.length === 0) {
                     const qt = document.getElementById('quest-tracker-ui');
                     if (qt) qt.classList.add('hidden');
+                }
+            }
+
+            // Khôi phục trạng thái nút Unti
+            const btnUltiReset = document.getElementById('btn-ulti');
+            if (btnUltiReset) {
+                if (!STATE.player || typeof STATE.player.damageDealt !== 'number' || STATE.player.damageDealt < (window.GAME_CONFIG?.ultimate?.requiredDamage || 500)) {
+                    btnUltiReset.classList.add('hidden');
                 }
             }
         });
@@ -2795,6 +3043,10 @@ function draw() {
     gl.cullFace(gl.BACK); gl.frontFace(gl.CCW); gl.useProgram(prog);
 
     // Xử lý Aim & Sprint Lerp (Mượt mà)
+    // Khóa ngắm bắn khi cầm Chìa Khóa Đỏ hoặc Súng lục (weaponIdx === 0)
+    if (STATE.hasRedKey || p.weaponIdx === 0) {
+        STATE.isAiming = false;
+    }
     STATE.aimLerp += ((STATE.isAiming ? 1 : 0) - STATE.aimLerp) * 0.2;
     STATE.sprintLerp = (STATE.sprintLerp || 0) + (((STATE.keys['ShiftLeft'] && !STATE.isAiming) ? 1 : 0) - (STATE.sprintLerp || 0)) * 0.05;
 
@@ -2838,6 +3090,10 @@ function draw() {
     gl.uniform1i(locs.isWater, false);
     gl.uniform1i(locs.instanced, false);
     drawMeshActual(ASSETS.sky, eye, 1, 0);
+
+    // Vẽ Bầu trời Sao & Thiên thạch
+    gl.uniform1i(locs.isSky, false);
+    drawMeshActual(ASSETS.cosmicSky, eye, 1, 0);
 
     // Trăng máu: khán giả bỏ hào quang BLEND tốn GPU, chỉ vẽ mặt trăng tĩnh
     if (STATE.boss && STATE.boss.active) {
@@ -2899,7 +3155,14 @@ function draw() {
             scale = 1.0;
         }
 
+        // Đảm bảo quái vật phát dạ quang đỏ nhẹ trong bóng tối để người chơi dễ nhìn thấy và định vị
+        let emitVal = isLv3 ? [0.35, 0.0, 0.0] : (isLv2 ? [0.25, 0.0, 0.0] : [0.1, 0.02, 0.02]);
+        gl.uniform3f(locs.emitColor, emitVal[0], emitVal[1], emitVal[2]);
+
         drawMeshActual(mesh, drawPos, scale, ang);
+
+        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
+
         if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
     });
     STATE.barrels.forEach(b => drawMeshActual(ASSETS.barrel, b.pos, 3, 0));
@@ -2923,22 +3186,67 @@ function draw() {
         }
     });
 
-    // Draw Final Red Box (Chiếc hộp rực đỏ)
+    // Draw Final Red Key (Chìa khóa đỏ rơi)
     if (STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp) {
         const bob = Math.sin(Date.now() / 250) * 0.4;
-        drawMeshActual(ASSETS.lootAmmo, { x: STATE.finalPaper.pos.x, y: STATE.finalPaper.pos.y + bob + 1.2, z: STATE.finalPaper.pos.z }, 2.8, Date.now() / 300);
+        
+        // 1. Vẽ chìa khóa đỏ rực rỡ
+        gl.uniform3f(locs.emitColor, 1.2, 0.1, 0.1);
+        drawMeshActual(ASSETS.redKey, { x: STATE.finalPaper.pos.x, y: STATE.finalPaper.pos.y + bob + 1.0, z: STATE.finalPaper.pos.z }, 12.0, Date.now() / 400);
+        gl.uniform3f(locs.emitColor, 0, 0, 0);
 
-        // Hạt đỏ bay lên với tốc độ và số lượng lớn thay vì cột cứng
-        if (Math.random() < 0.6) {
+        // 2. Vẽ MŨI TÊN KHỔNG LỒ CHỈ XUỐNG CHÌA KHÓA (Tự quay quanh trục Y và chúi đầu thẳng xuống đất)
+        let arrowMatrix = M4.translation(STATE.finalPaper.pos.x, STATE.finalPaper.pos.y + bob + 3.0, STATE.finalPaper.pos.z);
+        arrowMatrix = M4.multiply(arrowMatrix, M4.rotationY(Date.now() / 200));  // Xoay tròn xung quanh trục đứng Y
+        arrowMatrix = M4.multiply(arrowMatrix, M4.rotationX(-Math.PI / 2));     // Quay 90 độ X hướng đầu thẳng xuống đất
+        arrowMatrix = M4.multiply(arrowMatrix, M4.scaling(2.5, 2.5, 2.5));       // Kích thước khổng lồ 2.5x cực kỳ nổi bật
+
+        gl.uniform3f(locs.emitColor, 2.0, 0.05, 0.05); // Phát sáng đỏ rực rỡ siêu cấp
+        drawMeshRaw(ASSETS.arrow, arrowMatrix);
+        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
+
+        // 3. Tạo hiệu ứng hào quang đỏ (hạt khói đỏ bay lên nhẹ nhàng xung quanh chìa khóa)
+        if (Math.random() < 0.35) {
             const angle = Math.random() * Math.PI * 2;
             const r = Math.random() * 0.8;
             STATE.particles.push({
-                pos: V3.create(STATE.finalPaper.pos.x + Math.cos(angle) * r, STATE.finalPaper.pos.y + bob + 1.2, STATE.finalPaper.pos.z + Math.sin(angle) * r),
-                vel: V3.create((Math.random() - 0.5) * 0.6, 12.0 + Math.random() * 8.0, (Math.random() - 0.5) * 0.6),
-                life: 2.0 + Math.random() * 1.5,
-                color: [1.0, 0.05, 0.05], // Đỏ rực rỡ đặc trưng của Hộp Kẻ Gác Cổng
+                pos: V3.create(STATE.finalPaper.pos.x + Math.cos(angle) * r, STATE.finalPaper.pos.y + bob + 1.0, STATE.finalPaper.pos.z + Math.sin(angle) * r),
+                vel: V3.create((Math.random() - 0.5) * 0.4, 5.0 + Math.random() * 4.0, (Math.random() - 0.5) * 0.4),
+                life: 1.5 + Math.random() * 1.0,
+                color: [1.0, 0.2, 0.2], // Khói đỏ dạ quang
                 type: 'fire'
             });
+        }
+    }
+
+    // Vẽ nhiều mũi tên nhỏ gọn phát sáng từ thân người chơi hướng tới Cánh Cửa Đỏ (càng gần số lượng càng giảm)
+    if (STATE.hasRedKey) {
+        const pPos = STATE.player.pos;
+        const targetX = 0;
+        const targetZ = -150;
+        const dx = targetX - pPos.x;
+        const dz = targetZ - pPos.z;
+        const len = Math.sqrt(dx * dx + dz * dz);
+
+        if (len > 3.0) {
+            const dirX = dx / len;
+            const dirZ = dz / len;
+            const ang = Math.atan2(dx, dz) + Math.PI; // Góc xoay chuẩn xác hướng tới cửa
+
+            // Số lượng mũi tên tỷ lệ thuận với khoảng cách (tối đa 8 mũi tên, cách nhau 6 mét, giảm dần khi tiến lại gần)
+            const maxArrows = Math.min(8, Math.floor(len / 6.0));
+            for (let i = 1; i <= maxArrows; i++) {
+                const dist = i * 6.0;
+                if (dist < len - 3.0) { // Đảm bảo không vẽ đè sát sàn cửa
+                    const ax = pPos.x + dirX * dist;
+                    const az = pPos.z + dirZ * dist;
+                    const ay = getHeight(ax, az) + 0.15; // Nổi nhẹ trên mặt đất
+
+                    gl.uniform3f(locs.emitColor, 1.0, 0.05, 0.05); // Phát sáng đỏ rực rỡ
+                    drawMeshActual(ASSETS.arrow, { x: ax, y: ay, z: az }, 0.8, ang); // Nhỏ gọn (scale 0.8)
+                    gl.uniform3f(locs.emitColor, 0, 0, 0); // Trả lại ban đầu
+                }
+            }
         }
     }
 
@@ -2946,11 +3254,44 @@ function draw() {
     if (GRASS_PATCHES.length > 0) { gl.disable(gl.CULL_FACE); GRASS_PATCHES.forEach(g => drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0)); gl.enable(gl.CULL_FACE); }
     STATE.pads.forEach(p => drawMeshActual(ASSETS.pad, p.pos, 2, 0));
 
-    // Vẽ vật cản (Cây, Nhà, Xe)
+    // Vẽ vật cản (Cây, Nhà, Xe, Cột, Cửa)
     STATE.obstacles.forEach(obs => {
         if (obs.type === 'tree') drawMeshActual(ASSETS.tree, obs.pos, obs.scale, 0);
         else if (obs.type === 'house') drawMeshActual(ASSETS.house, obs.pos, obs.scale, obs.rot);
         else if (obs.type === 'car') drawMeshActual(ASSETS.car, obs.pos, obs.scale, obs.rot);
+        else if (obs.type === 'pillar') {
+            gl.uniform3f(locs.emitColor, 0, 0.5, 0.5); // Kích hoạt Bloom cho rune
+            drawMeshActual(ASSETS.pillar, obs.pos, obs.scale, obs.rot);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
+        }
+        else if (obs.type === 'redDoor') {
+            let pulse = 1.5;
+            if (STATE.hasRedKey) {
+                pulse = 1.8 + Math.sin(performance.now() / 120) * 0.6; // Nhấp nháy dồn dập, cực kỳ huyền ảo
+                
+                // Spawn các hạt không gian đỏ bay ra từ cánh cửa để mời gọi người chơi
+                if (Math.random() < 0.25) {
+                    const cosR = Math.cos(obs.rot);
+                    const sinR = Math.sin(obs.rot);
+                    // Dịch chuyển ngẫu nhiên trên bề mặt phẳng cánh cửa
+                    const localX = (Math.random() - 0.5) * 3.0;
+                    const localY = Math.random() * 5.0;
+                    const worldX = obs.pos.x + localX * cosR;
+                    const worldZ = obs.pos.z - localX * sinR;
+                    
+                    STATE.particles.push({
+                        pos: V3.create(worldX, obs.pos.y + localY, worldZ),
+                        vel: V3.create(sinR * (2.0 + Math.random() * 3.0), (Math.random() - 0.5) * 0.5, cosR * (2.0 + Math.random() * 3.0)), // Bay ra phía trước cánh cửa
+                        life: 1.0 + Math.random() * 0.8,
+                        color: [1.2, 0.1, 0.1], // Đỏ dạ quang
+                        type: 'fire'
+                    });
+                }
+            }
+            gl.uniform3f(locs.emitColor, pulse, 0.0, 0.0); // Cửa phát sáng đỏ máu
+            drawMeshActual(ASSETS.redDoor, obs.pos, obs.scale, obs.rot);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
+        }
     });
 
     STATE.loot.forEach(l => {
@@ -3096,6 +3437,7 @@ function draw() {
         gl.clear(gl.DEPTH_BUFFER_BIT);
         let weaponMesh = [ASSETS.pistol, ASSETS.smg, ASSETS.sniper][p.weaponIdx];
         if (p.isChargingUlti) weaponMesh = ASSETS.cannon;
+        if (STATE.hasRedKey) weaponMesh = ASSETS.redKey;
         const bob = Math.sin(performance.now() * 0.01) * 0.015 * (1 - STATE.aimLerp * 0.8); // Giảm rung khi ngắm
         const kick = p.recoil * 0.4;
         const vmProj = M4.perspective(fov, aspect, 0.01, 10);
@@ -3129,14 +3471,23 @@ function draw() {
             let targetWepY = -0.12;
             if (p.weaponIdx === 1) targetWepY = -0.15;
             if (p.weaponIdx === 2) targetWepY = -0.25;
+            if (STATE.hasRedKey) targetWepY = -0.15;
 
-            let wepX = 0.25 - STATE.aimLerp * 0.25;
-            let wepY = -0.3 + bob + STATE.aimLerp * (targetWepY + 0.3) - equipOffset;
-            let wepZ = -0.6 - kick - STATE.aimLerp * 0.2;
+            let wepX = STATE.hasRedKey ? 0.35 : (0.25 - STATE.aimLerp * 0.25);
+            let wepY = STATE.hasRedKey ? (-0.38 + bob - equipOffset) : (-0.3 + bob + STATE.aimLerp * (targetWepY + 0.3) - equipOffset);
+            let wepZ = STATE.hasRedKey ? -0.52 : (-0.6 - kick - STATE.aimLerp * 0.2);
             let mWep = M4.translation(wepX, wepY, wepZ);
-            mWep = M4.multiply(mWep, M4.rotationY(-0.15 * (1 - STATE.aimLerp)));
-            if (STATE.aimLerp < 0.9) mWep = M4.multiply(mWep, M4.rotationX(0.05 * (1 - STATE.aimLerp)));
-            mWep = M4.multiply(mWep, M4.scaling(1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1));
+
+            if (STATE.hasRedKey) {
+                // Cầm thẳng tiến về phía trước từ tay phải của người chơi, nằm chính xác trên phần tay trắng
+                mWep = M4.multiply(mWep, M4.rotationY(-0.15)); // Xoay nhẹ sang trái để lộ rõ răng cưa chìa khóa
+                mWep = M4.multiply(mWep, M4.rotationX(0.0));   // Cầm thẳng tắp về phía trước, không hướng lên trên
+                mWep = M4.multiply(mWep, M4.scaling(3.8, 3.8, 3.8)); // Phóng to đáng kể, gần bằng kích thước lúc rớt
+            } else {
+                mWep = M4.multiply(mWep, M4.rotationY(-0.15 * (1 - STATE.aimLerp)));
+                if (STATE.aimLerp < 0.9) mWep = M4.multiply(mWep, M4.rotationX(0.05 * (1 - STATE.aimLerp)));
+                mWep = M4.multiply(mWep, M4.scaling(1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1));
+            }
             drawMeshRaw(weaponMesh, mWep);
         }
 
@@ -3149,56 +3500,74 @@ function draw() {
 }
 
 function drawMinimap(p, bots) {
-    const ctx = document.getElementById('minimap').getContext('2d'), w = ctx.canvas.width, h = ctx.canvas.height;
+    const canvas = document.getElementById('minimap');
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
 
-    // [YÊU CẦU] Tăng độ sáng minimap mạnh hơn nữa
-    ctx.fillStyle = "rgba(100, 100, 100, 0.5)"; // Nền xám sáng trung tính
-    ctx.fillRect(0, 0, w, h);
-
-    // Tỉ lệ để bản đồ bao quát vừa đủ MAP_SIZE
     const scale = w / MAP_SIZE;
     const cx = w / 2, cy = h / 2;
+    const yaw = STATE.camera.rot.y;
 
-    // Vẽ viền trắng rõ nét
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.lineWidth = 3;
-    ctx.strokeRect(0, 0, w, h);
-
-    // Vị trí người chơi và hướng nhìn
-    const px = cx + p.pos.x * scale, py = cy + p.pos.z * scale, yaw = STATE.camera.rot.y;
-
-    // Vẽ mũi tên người chơi sáng rực
     ctx.save();
-    ctx.translate(px, py);
-    ctx.rotate(yaw);
-    ctx.fillStyle = "#00ffaa";
-    ctx.shadowBlur = 15;
-    ctx.shadowColor = "#00ffaa";
 
+    // Tạo clip viền tròn cho minimap (phong cách Cosmic Void)
     ctx.beginPath();
-    ctx.moveTo(0, -12); ctx.lineTo(-8, 10); ctx.lineTo(0, 5); ctx.lineTo(8, 10); ctx.closePath();
+    ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
+    ctx.clip();
+
+    ctx.fillStyle = "rgba(5, 10, 20, 0.8)"; // Tím đen obsidian
     ctx.fill();
-    ctx.restore();
+
+    // Dịch tâm về chính giữa, quay map ngược chiều góc nhìn, sau đó tịnh tiến về vị trí người chơi
+    ctx.translate(cx, cy);
+    ctx.rotate(-yaw);
+    ctx.translate(-p.pos.x * scale, -p.pos.z * scale);
+
+    // Vẽ viền map thực tế
+    ctx.strokeStyle = "rgba(0, 243, 255, 0.3)";
+    ctx.lineWidth = 2;
+    const mapRenderSize = MAP_SIZE * scale;
+    ctx.strokeRect(-mapRenderSize / 2, -mapRenderSize / 2, mapRenderSize, mapRenderSize);
 
     // Vẽ quân địch (Chấm đỏ sáng)
-    ctx.fillStyle = "#ff5555";
+    ctx.fillStyle = "#ff0033";
+    ctx.shadowBlur = 8;
+    ctx.shadowColor = "#ff0033";
     bots.forEach(b => {
         if (b.hp <= 0) return;
-        const bx = cx + b.pos.x * scale, by = cy + b.pos.z * scale;
         ctx.beginPath();
-        ctx.arc(bx, by, 3.5, 0, Math.PI * 2);
+        ctx.arc(b.pos.x * scale, b.pos.z * scale, 3.5, 0, Math.PI * 2);
         ctx.fill();
     });
 
     if (STATE.boss && STATE.boss.active) {
-        ctx.fillStyle = "#ff00ff";
-        ctx.shadowBlur = 10; ctx.shadowColor = "#ff00ff";
-        const bx = cx + STATE.boss.pos.x * scale, by = cy + STATE.boss.pos.z * scale;
+        ctx.fillStyle = "#9900ff";
+        ctx.shadowBlur = 15; ctx.shadowColor = "#9900ff";
         ctx.beginPath();
-        ctx.arc(bx, by, 6, 0, Math.PI * 2);
+        ctx.arc(STATE.boss.pos.x * scale, STATE.boss.pos.z * scale, 6, 0, Math.PI * 2);
         ctx.fill();
     }
+
+    ctx.restore();
+
+    // Vẽ mũi tên người chơi cố định ở giữa màn hình chỉ lên trên
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.fillStyle = "#00f3ff";
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = "#00f3ff";
+    ctx.beginPath();
+    ctx.moveTo(0, -12); ctx.lineTo(-8, 8); ctx.lineTo(0, 4); ctx.lineTo(8, 8); ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Viền minimap tĩnh
+    ctx.beginPath();
+    ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(0, 243, 255, 0.6)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 }
 
 
@@ -3248,12 +3617,60 @@ function updateHUD() {
 
     const btnUlti = document.getElementById('btn-ulti');
     if (btnUlti) {
-        if (p.damageDealt >= window.GAME_CONFIG.ultimate.requiredDamage) {
-            btnUlti.classList.remove('hidden');
-        } else {
+        if (!STATE.player.alive || typeof p.damageDealt !== 'number' || p.damageDealt < (window.GAME_CONFIG?.ultimate?.requiredDamage || 500)) {
             btnUlti.classList.add('hidden');
+        } else {
+            btnUlti.classList.remove('hidden');
         }
     }
+
+    // [CẬP NHẬT] Thanh Máu trên đầu Bot
+    STATE.bots.forEach((b) => {
+        if (b.hp <= 0) {
+            if (b.uiBar) b.uiBar.style.display = 'none';
+            return;
+        }
+
+        if (!b.uiBar) {
+            b.uiBar = document.createElement('div');
+            b.uiBar.style.position = 'absolute';
+            b.uiBar.style.width = '30px';
+            b.uiBar.style.height = '4px';
+            b.uiBar.style.background = 'rgba(0,0,0,0.6)';
+            b.uiBar.style.border = '1px solid #00f3ff';
+            b.uiBar.style.pointerEvents = 'none';
+            b.uiBar.style.transform = 'translate(-50%, -50%)';
+            b.uiBar.style.zIndex = '50';
+
+            b.uiFill = document.createElement('div');
+            b.uiFill.style.height = '100%';
+            b.uiFill.style.background = '#ff0033';
+            b.uiBar.appendChild(b.uiFill);
+
+            document.getElementById('ui-layer').appendChild(b.uiBar);
+        }
+
+        const dx = p.pos.x - b.pos.x;
+        const dz = p.pos.z - b.pos.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist > 80) {
+            b.uiBar.style.display = 'none';
+            return;
+        }
+
+        // Project position to screen (above the bot's head)
+        const screenPos = project3DToScreen(V3.create(b.pos.x, b.pos.y + 2.0, b.pos.z));
+        if (screenPos) {
+            b.uiBar.style.display = 'block';
+            b.uiBar.style.left = screenPos.x + 'px';
+            b.uiBar.style.top = screenPos.y + 'px';
+            const maxHp = (b.isEvolvingLv3) ? window.GAME_CONFIG.bot.hpLv3 : window.GAME_CONFIG.bot.hpLv1;
+            b.uiFill.style.width = Math.min(100, (b.hp / maxHp) * 100) + '%';
+            b.uiBar.style.opacity = Math.max(0, 1 - (dist / 80));
+        } else {
+            b.uiBar.style.display = 'none';
+        }
+    });
 
     // CẢNH BÁO CUỒNG BẠO — dùng đúng ngưỡng theo độ khó
     const _bc = STATE.bots.length;
@@ -3353,7 +3770,14 @@ window.addEventListener('keydown', e => {
             V3.dist(STATE.player.pos, q.pos) < 4.0);
         const nearFinal = STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp &&
             V3.dist(STATE.player.pos, STATE.finalPaper.pos) < 4.0;
-        if (nearQuest || nearFinal) { STATE.keys['KeyE'] = true; } else { activateUltimate(); }
+
+        // Kiểm tra xem có đang đứng gần Cánh Cửa Đỏ (0, -150) và giữ Chìa Khóa Đỏ không
+        const dx = STATE.player.pos.x - 0;
+        const dz = STATE.player.pos.z - (-150);
+        const distToDoor = Math.sqrt(dx * dx + dz * dz);
+        const nearDoor = STATE.hasRedKey && distToDoor < 6.0;
+
+        if (nearQuest || nearFinal || nearDoor) { STATE.keys['KeyE'] = true; } else { activateUltimate(); }
     }
     if (e.code && e.code.startsWith('Digit')) STATE.keys[e.code] = true;
 });
@@ -3541,13 +3965,6 @@ function spawnHakariDance() {
 }
 
 function loop(now) {
-    if (window.IS_SPECTATOR) {
-        if (window.SpectatorEngine) window.SpectatorEngine.syncLoop(now);
-        if (typeof draw === 'function') draw();
-        requestAnimationFrame(window.loop);
-        return;
-    }
-
     if (!STATE.lastTime) STATE.lastTime = now;
     const dt = Math.min((now - STATE.lastTime) / 1000, 0.1);
     STATE.lastTime = now;
@@ -3555,20 +3972,9 @@ function loop(now) {
     update(dt);
     draw();
     updateHUD();
-
-    // Broadcast dữ liệu liên tục cho khán giả (30 FPS)
-    if (window.SpectatorNetwork && window.SpectatorNetwork.isHost) {
-        if (!STATE.lastBroadcast) STATE.lastBroadcast = 0;
-        if (now - STATE.lastBroadcast > 33) {
-            STATE.lastBroadcast = now;
-            const packet = getGameStatePacket();
-            window.SpectatorNetwork.broadcastState(packet);
-        }
-    }
-
+    // Dùng window.loop để chạy qua wrapper đồng bộ khán giả mỗi frame
     requestAnimationFrame(window.loop);
 }
-window.loop = loop;
 
 function showClickAnywhere(delay = 1000) {
     setTimeout(() => {
@@ -3691,6 +4097,117 @@ window.addEventListener('DOMContentLoaded', () => {
     }
     if (btnCloseGuide && guideModal) {
         btnCloseGuide.onclick = () => guideModal.classList.add('hidden');
+    }
+
+    // --- XỬ LÝ THÀNH TỰU / BÍ MẬT KHÔNG GIAN ---
+    const btnAchievements = document.getElementById('btn-open-achievements');
+    const btnCloseAchievements = document.getElementById('close-achievements-btn');
+    const achievementsModal = document.getElementById('achievements-modal');
+    const achievementsSummary = document.getElementById('achievements-player-summary');
+    const achievementsList = document.getElementById('achievements-list-container');
+
+    if (btnAchievements && achievementsModal && achievementsSummary && achievementsList) {
+        btnAchievements.onclick = () => {
+            achievementsModal.classList.remove('hidden');
+
+            // Lấy tên người chơi hiện tại nhập ở input (hoặc mặc định 'BẠN')
+            const inputEl = document.getElementById('player-name-input');
+            const pName = (inputEl && inputEl.value.trim()) ? inputEl.value.trim() : "BẠN";
+
+            const unlocked = window.LoreSystem ? window.LoreSystem.getUnlocked() : { easy: [], normal: [], hard: [], extreme: [] };
+            const totalUnlocked = window.LoreSystem ? window.LoreSystem.getTotalUnlockedCount() : 0;
+
+            achievementsSummary.innerHTML = `
+                🌟 HỒ SƠ KHÔNG GIAN CỦA <span style="color:#bf00ff; text-shadow: 0 0 8px rgba(191,0,255,0.6);">${pName.toUpperCase()}</span><br>
+                🏆 ĐÃ GIẢI MÃ: <span style="color:#00ff88;">${totalUnlocked} / 24</span> BÍ MẬT VŨ TRỤ
+            `;
+
+            achievementsList.innerHTML = '';
+
+            const diffs = [
+                { id: 'easy', name: '🟢 CHẾ ĐỘ DỄ', count: 3, label: 'Dễ' },
+                { id: 'normal', name: '🟡 CHẾ ĐỘ THƯỜNG', count: 5, label: 'Thường' },
+                { id: 'hard', name: '🟠 CHẾ ĐỘ KHÓ', count: 7, label: 'Khó' },
+                { id: 'extreme', name: '🔴 CHẾ ĐỘ CỰC KHÓ', count: 9, label: 'Cực Khó' }
+            ];
+
+            const allLore = {
+                easy: [
+                    "\"Mọi thứ ngày càng tệ luồng khí tỏa ra từ Cánh Cửa Đỏ ngày càng lớn.\"",
+                    "\"Những kẻ mất trí nhớ thường lặp lại một câu duy nhất: 'Phải dừng lại, phải ngăn lại. PHẢI NGĂN LẠI BẰNG MỌI GIÁ!!'.\"",
+                    "\"Thứ đang canh gác trung tâm hòn đảo không phải cỗ máy, mà là một kẻ gác cổng vĩnh cửu.\""
+                ],
+                normal: [
+                    "\"Bản ghi cũ: Bức xạ ở đây làm biến đổi cấu trúc phân tử của sắt. Giáp trụ đang dần hòa làm một với xương thịt.\"",
+                    "\"Bản ghi cũ: Hộp tiếp tế chứa đầy Crimson nhưng không ai dám đụng vào nó.\"",
+                    "\"Bản ghi cũ: Sinh vật khổng lồ đó mang hình hài của Kẻ Gác Cổng, nhưng không ai biết liệu có phải nó hay là...\"",
+                    "\"Bản ghi cũ: Cánh Cửa Đỏ chưa bao giờ đóng lại. Nó chỉ tạm thời bị bão hòa năng lượng khi kẻ canh giữ sụp đổ.\"",
+                    "\"Bản ghi cũ: Những người đi trước đã tìm thấy lõi nguồn... nhưng không ai trở về. Lõi nguồn đó hình như có màu đỏ tía...\""
+                ],
+                hard: [
+                    "\"Mảnh ký ức phân mảnh: 'Dự án Red Gate' không phải tạo ra vũ khí, mà để mở khóa một chiều không gian cao hơn.\"",
+                    "\"Mảnh ký ức phân mảnh: Crimson là thứ chất lỏng có linh hồn. Nó chọn vật chủ, không phải ngược lại.\"",
+                    "\"Mảnh ký ức phân mảnh: Kẻ được chọn sẽ trải qua 3 giai đoạn tiến hóa. Giai đoạn cuối cùng là mất đi nhân tính hoàn toàn.\"",
+                    "\"Mảnh ký ức phân mảnh: Đừng tin vào sự tĩnh lặng của hòn đảo. Lớp sương mù kia thực chất là hàng vạn vi mạch giám sát.\"",
+                    "\"Mảnh ký ức phân mảnh: Thực thể cai quản Vòng Lặp có khả năng bóp méo không gian. Hắn ta điều khiển những cột trụ đẫm máu.\"",
+                    "\"Mảnh ký ức phân mảnh: Sự sống và cái chết ở đây không tuyến tính. Giết hắn ta có thể chỉ là bắt đầu một vòng lặp tồi tệ hơn.\"",
+                    "\"Mảnh ký ức phân mảnh: Sự giải thoát duy nhất nằm ở 'Nghịch lý Dữ liệu'. Bạn phải thu thập đủ mảnh vỡ trước khi thực thể đó bị hủy diệt.\""
+                ],
+                extreme: [
+                    "\"DỮ LIỆU CẤM: Vòng lặp hiện tại: 849,204. Tỷ lệ đồng hóa vật chủ: 99.8%. Trạng thái: Sắp thức tỉnh.\"",
+                    "\"DỮ LIỆU CẤM: Hòn đảo này không tồn tại trên Trái Đã. Nó là một vùng giả lập bị lãng quên lâu đời từ không gian khác.\"",
+                    "\"DỮ LIỆU CẤM: Bọn quái vật không cố giết bạn. Chúng thực chất đang cố bảo vệ sự an toàn của chính bạn.\"",
+                    "\"DỮ LIỆU CẤM: Phương trình hỗn mang: những chiếc hộp tăng sức mạnh đó mang chất khiến người sử dụng liên tục dần lãng quên đi mọi thứ.\"",
+                    "\"DỮ LIỆU CẤM: Khi bạn hấp thụ Crimson (Trạng thái Tím), bạn đang dần hợp nhất với tâm trí của Kẻ Gác Cổng.\"",
+                    "\"DỮ LIỆU CẤM: Giải mã thành công 'Nghịch lý Dữ liệu' sẽ gây ra một vụ nổ khái niệm, xóa bỏ sự tồn tại của hòn đảo này khỏi mọi dòng thời gian.\"",
+                    "\"DỮ LIỆU CẤM: Kẻ mà bạn gọi là 'Boss' thực chất chính là bạn ở quá khứ, người đã bị mất hoàn toàn ký ức và chỉ còn nhớ duy nhất mục tiêu ngăn chặn bạn ở hiện tại kích hoạt Cánh Cửa Đỏ.\"",
+                    "\"DỮ LIỆU CẤM: Nếu bạn đọc được dòng này, Cánh Cửa Đỏ đã bắt đầu đảo ngược quy trình. Hãy đối đầu với chính bản thân ở quá khứ hoặc nếu không đây sẽ là vòng lặp không hồi kết!!.\"",
+                    "\"DỮ LIỆU CẤM: Chiếc hộp cuối cùng chứa đựng ký ức nguyên thủy của bạn. Mở nó ra đồng nghĩa với việc cơ thể bị hợp nhất với Kẻ Gác Cổng và trở thành một với hòn đảo Vĩnh Cửu.\""
+                ]
+            };
+
+            diffs.forEach(d => {
+                const completedCount = unlocked[d.id] ? unlocked[d.id].length : 0;
+
+                const header = document.createElement('h4');
+                header.style.color = '#bf00ff';
+                header.style.fontSize = '12px';
+                header.style.marginTop = '15px';
+                header.style.borderBottom = '1px solid rgba(191,0,255,0.2)';
+                header.style.paddingBottom = '4px';
+                header.style.fontWeight = 'bold';
+                header.innerHTML = `${d.name} <span style="float: right; color: #ffcc00;">${completedCount} / ${d.count}</span>`;
+                achievementsList.appendChild(header);
+
+                for (let i = 0; i < d.count; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'achievement-row';
+
+                    const isUnlocked = unlocked[d.id] && unlocked[d.id].includes(i);
+                    if (isUnlocked) {
+                        row.innerHTML = `
+                            <div class="achievement-title-bar">
+                                <span style="color:#00ff88;">✓ BÍ MẬT PHẦN ${i + 1} (Đã Giải Mã)</span>
+                            </div>
+                            <div class="achievement-desc" style="color: #eee;">${allLore[d.id][i]}</div>
+                        `;
+                        row.style.borderColor = 'rgba(0, 255, 136, 0.2)';
+                        row.style.background = 'rgba(0, 255, 136, 0.03)';
+                    } else {
+                        row.innerHTML = `
+                            <div class="achievement-title-bar">
+                                <span style="color:#888;">🔒 BÍ MẬT PHẦN ${i + 1} (Bị Khóa)</span>
+                            </div>
+                            <div class="achievement-req" style="color: #ff9900;">⚠️ Yêu cầu: Chọn chế độ <b>${d.label.toUpperCase()}</b>, nhặt ít nhất ${i + 1} Hộp Thông Tin và hoàn thành nhiệm vụ tương ứng để giải mã!</div>
+                        `;
+                    }
+                    achievementsList.appendChild(row);
+                }
+            });
+        };
+    }
+    if (btnCloseAchievements && achievementsModal) {
+        btnCloseAchievements.onclick = () => achievementsModal.classList.add('hidden');
     }
 
     // --- XỬ LÝ DISCORD ---
@@ -3919,6 +4436,7 @@ window.addEventListener('DOMContentLoaded', () => {
     wBtns.forEach(btn => {
         const onWeaponSelect = e => {
             e.preventDefault();
+            if (STATE.hasRedKey) return; // Khóa đổi súng trên mobile
             const idx = parseInt(btn.getAttribute('data-idx'));
             STATE.player.weaponIdx = idx;
             wBtns.forEach(b => b.classList.remove('active'));

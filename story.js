@@ -1,33 +1,45 @@
 // story.js — Cốt truyện "LOST ISLAND"
 const STORY_LINES = [
-    "Một bí mật cấm kỵ đã bị chôn giấu suốt nhiều thế hệ của dòng họ xưa.",
+    "--- TIN ĐỒN VỀ KHE NỨT KHÔNG GIAN ---",
+    "Từ sâu trong bóng tối, một tin đồn đáng sợ bắt đầu lan truyền về một hiện tượng dị thường không gian.",
+    "Không một ai biết nguồn gốc hay cách thức lây nhiễm của dịch bệnh bí ẩn này...",
     "",
-    "Ở thế hệ của bạn, mọi thứ xung quanh bắt đầu sụp đổ khi từng người biến mất một cách kỳ lạ.",
-    "Người thân cận nhất bên bạn cũng dần xuất hiện những biểu hiện tương tự...",
+    "--- TRIỆU CHỨNG KỲ LẠ & TRĂNG ĐỎ ---",
+    "Những người mắc bệnh đột ngột bị nổi những vết phát quang hình Trăng Đỏ khắp toàn thân.",
+    "Ngày càng có thêm nhiều người bị nhiễm và biến mất một cách kỳ lạ, không để lại bất kỳ dấu vết nào.",
     "",
-    "Sau nhiều ngày quan sát những người bị nhiễm bệnh và mất tích, bạn bỗng tìm thấy một tờ giấy.",
-    "Đó là manh mối duy nhất dẫn đường đến một vùng hoang đảo bị lãng quên.",
-    "Bạn tin rằng, có thể nơi đó ẩn chứa sự thật nguồn gốc về căn bệnh này.",
+    "--- LỜI THÌ THẦM BÍ ẨN ---",
+    "Sau nhiều ngày liên tục quan sát, tôi nhận thấy những người bệnh luôn thì thầm điên dại một câu duy nhất:",
+    "\"Phải ngăn lại... Ngăn lại... PHẢI NGĂN LẠI BẰNG MỌI GIÁ!...\"",
+    "Rồi đột nhiên, họ biến mất hoàn toàn vào không trung, như thể chưa từng tồn tại trên thế giới này.",
     "",
-    "Nhưng khi vừa tiếp cận thứ nhìn như một CÁNH CỬA ĐỎ RỰC đó, tại sao nó lại có ở đây?...",
-    "tôi nghĩ mình không còn nhiều thời gian nữa và đã bước vào cánh cửa",
-    "Trời đất đột nhiên tối sầm lại. Bạn hoàn toàn mất đi ý thức.",
+    "--- TỜ GIẤY TỪ HƯ KHÔNG ---",
+    "Trong sự bế tắc, một tờ giấy kỳ lạ bỗng nhiên xuất hiện từ hư không trước mắt tôi.",
+    "Nó chỉ dẫn đến một vùng đất bí ẩn, một hòn đảo hoang hoàn toàn không có tên trên bất kỳ tấm bản đồ nào.",
+    "Quyết tâm tìm ra sự thật, tôi trang bị vũ khí đầy đủ và tự mình lên đường tiến vào vùng biển cấm.",
     "",
-    "Khi tỉnh lại... bạn bỗng thấy mình đang rơi tự do từ trên cao xuống.",
-    "Nhưng kỳ lạ thay, cú va chạm mạnh ấy lại không hề làm bạn bị thương tổn gì.",
+    "--- SƯƠNG MÙ DÀY ĐẶC & DỊ GIỚI ---",
+    "Khi vừa tiến gần đến hòn đảo hoang, một lớp sương mù dày đặc và lạnh lẽo đột ngột bao phủ toàn bộ xung quanh.",
+    "Mọi thiết bị định vị hoàn toàn mất tín hiệu, không gian và thời gian xung quanh tôi như bị bóp méo vỡ vụn.",
     "",
-    "Nhìn xung quanh, vùng căn cứ hoang vu này phủ đầy vết tích của những trận chiến khốc liệt từng diễn ra.",
-    "Máu me, súng đạn, xác chết và vô số thứ vũ khí khác nằm rải rác khắp mọi nơi.",
+    "--- VÒNG LẶP RƠI TỰ DO ---",
+    "Một lúc sau... tôi thấy mình đang rơi tự do từ bầu trời tím thẫm của một chiều không gian dị biệt.",
+    "Cú va chạm kinh hoàng xuống mặt đất Obsidian lạnh lẽo lại không hề gây ra cho tôi bất kỳ sát thương nào.",
+    "Phải chăng... linh hồn của tôi đã bị giam giữ trong Vòng Lặp Vĩnh Hằng này từ trước?",
     "",
-    "Bạn tự nhủ: Phải chăng ta đã kẹt trong vòng lặp thời gian vô tận này từ trước?",
+    "--- CHIẾN TRƯỜNG PHẾ TÍCH ---",
+    "Bao quanh tôi là phế tích hoang tàn của những người đi trước đã ngã xuống.",
+    "Máu đen của quái vật, súng đạn công nghệ cao và vũ khí nằm rải rác khắp nơi.",
+    "Những sinh vật biến cấu Cyber-Space đang ngửi thấy mùi máu tươi của kẻ ngoại lai...",
     "",
-    "Nhiệm vụ của bạn:",
-    "Thu thập đủ các HỘP THÔNG TIN bí ẩn tùy theo độ khó để giải mã sự thật.",
-
-    "Tiêu diệt sinh vật đột biến và tìm cách sống sót bằng mọi giá.",
+    "--- NHIỆM VỤ DÀNH CHO TÔI! ---",
+    "1. THU THẬP các HỘP THÔNG TIN để giải mã bí ẩn Không Gian.",
+    "2. TIÊU DIỆT sinh vật đột biến và sinh tồn bằng mọi giá.",
+    "3. SĂN LÙNG Kẻ Gác Cổng để đoạt lấy Chiếc Hộp Rực Đỏ cuối cùng.",
     "",
-    "Hãy nhớ... chiếc hộp rực đỏ cuối cùng nằm trong tay Kẻ Gác Cổng.",
-    "Những HỘP THÔNG TIN sẽ xuất hiện nhìu hơn tùy vào từng chế độ hãy thử thách bản thân để giải mã thêm nhìu thông tin hơn NẾU NGƯƠI ĐỦ MẠNH ĐỂ LÀM ĐIỀU ĐÓ HAHAHA!!"
+    "Những Hộp Thông Tin sẽ xuất hiện nhiều hơn tùy vào từng chế độ chơi.",
+    "Hãy thử thách bản thân để giải mã thêm nhiều bí ẩn...",
+    "NẾU NGƯƠI ĐỦ MẠNH ĐỂ BƯỚC RA KHỎI ĐÂY! HAHAHA!!"
 ];
 
 window.startStory = function () {
@@ -67,21 +79,51 @@ window.startStory = function () {
         }
     }
 
-    btnSkip.onclick = () => { 
+    btnSkip.onclick = () => {
         if (window.logToDiscord) {
             window.logToDiscord(`⏭️ **${window.STATE?.playerName || 'Người chơi vô danh'}** đã bấm SKIP bỏ qua cốt truyện.`);
         }
-        clearTimeout(typeTimeout); 
-        endStory(); 
+        clearTimeout(typeTimeout);
+        endStory();
     };
 
     // Tốc độ mặc định (Chậm để đọc trên mobile)
+    let speedMode = 1; // 1 = x1, 2 = x2, 3 = x3
     let charSpeed = 45;
     let lineSpeed = 2200;
 
+    const getBaseSpeed = () => {
+        if (speedMode === 2) return { char: 20, line: 1000 };
+        if (speedMode === 3) return { char: 5, line: 300 };
+        return { char: 45, line: 2200 };
+    };
+
     // Đè vào màn hình để tua nhanh
-    const speedUp = () => { charSpeed = 10; lineSpeed = 400; };
-    const slowDown = () => { charSpeed = 45; lineSpeed = 2200; };
+    const speedUp = () => { charSpeed = 5; lineSpeed = 300; };
+    const slowDown = () => {
+        const base = getBaseSpeed();
+        charSpeed = base.char;
+        lineSpeed = base.line;
+    };
+
+    // Lập trình sự kiện cho nút Tua Tốc Độ Cốt Truyện mở đầu
+    const btnSpeedStory = document.getElementById('btn-speed-story');
+    if (btnSpeedStory) {
+        btnSpeedStory.innerText = '⚡ x1';
+        btnSpeedStory.onclick = (e) => {
+            e.stopPropagation(); // Ngăn sự kiện chạm/click lan ra màn hình gây trigger mousedown/touchstart
+            speedMode = speedMode === 3 ? 1 : speedMode + 1;
+            btnSpeedStory.innerText = `⚡ x${speedMode}`;
+            
+            // Đồng bộ ngay lập tức tốc độ hiện tại
+            const base = getBaseSpeed();
+            charSpeed = base.char;
+            lineSpeed = base.line;
+        };
+        // Ngăn chặn mousedown/touchstart trên nút speed khỏi kích hoạt speedUp/slowDown
+        btnSpeedStory.addEventListener('mousedown', (e) => e.stopPropagation());
+        btnSpeedStory.addEventListener('touchstart', (e) => e.stopPropagation());
+    }
 
     storyScreen.addEventListener('mousedown', speedUp);
     storyScreen.addEventListener('touchstart', speedUp);
@@ -99,7 +141,7 @@ window.startStory = function () {
 
         const lineText = STORY_LINES[currentLine];
         const p = document.createElement('p');
-        p.className = 'story-paragraph';
+        p.className = 'story-paragraph typing'; // Chỉ định class typing để hiển thị con trỏ nhấp nháy xanh
         storyContainer.appendChild(p);
         storyContainer.scrollTo({ top: storyContainer.scrollHeight, behavior: 'smooth' });
 
@@ -111,6 +153,7 @@ window.startStory = function () {
                 charIndex++;
                 typeTimeout = setTimeout(typeChar, lineText === '' ? 0 : charSpeed);
             } else {
+                p.classList.remove('typing'); // Gõ xong dòng: Ẩn ngay con trỏ nhấp nháy xanh
                 currentLine++;
                 typeTimeout = setTimeout(typeLine, lineText === '' ? 300 : lineSpeed);
             }

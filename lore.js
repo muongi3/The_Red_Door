@@ -1,5 +1,50 @@
 // lore.js — Hệ thống Nhiệm vụ Tâm Linh & Mảnh Giấy
 
+window.LoreSystem = {
+    // Get unlocked secrets from localStorage
+    getUnlocked: function() {
+        const saved = localStorage.getItem('unlocked_space_secrets');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                // Ignore parsing error
+            }
+        }
+        return {
+            easy: [],
+            normal: [],
+            hard: [],
+            extreme: []
+        };
+    },
+
+    // Save unlocked secrets to localStorage
+    saveUnlocked: function(unlocked) {
+        localStorage.setItem('unlocked_space_secrets', JSON.stringify(unlocked));
+    },
+
+    // Unlock a secret by difficulty and index
+    unlockSecret: function(difficulty, index) {
+        const unlocked = this.getUnlocked();
+        if (!unlocked[difficulty]) unlocked[difficulty] = [];
+        if (!unlocked[difficulty].includes(index)) {
+            unlocked[difficulty].push(index);
+            this.saveUnlocked(unlocked);
+        }
+    },
+
+    // Calculate total unlocked secrets
+    getTotalUnlockedCount: function() {
+        const unlocked = this.getUnlocked();
+        let total = 0;
+        ['easy', 'normal', 'hard', 'extreme'].forEach(diff => {
+            if (unlocked[diff]) total += unlocked[diff].length;
+        });
+        return total;
+    }
+};
+
 // Kho Lore theo độ khó: Càng khó thì thông tin bí ẩn càng tăng chi tiết và hấp dẫn!
 const LORE_BY_DIFFICULTY = {
     easy: [
@@ -160,6 +205,10 @@ window.QuestManager = {
             }
         });
         this.checkCompletion();
+        // Cập nhật khoảng cách thời gian thực khi đang giữ Chìa Khóa Đỏ
+        if (window.STATE && window.STATE.hasRedKey) {
+            changed = true;
+        }
         if (changed) this.updateUI();
     },
 
@@ -218,6 +267,12 @@ window.QuestManager = {
         // Hiện Lore Fragment
         const frag = getLoreFragments()[this.totalCompleted - 1];
         if (frag) {
+            // Lưu giữ bí mật vào localStorage của hệ thống thành tựu vĩnh viễn
+            const diff = window.CURRENT_DIFFICULTY || 'normal';
+            if (window.LoreSystem) {
+                window.LoreSystem.unlockSecret(diff, this.totalCompleted - 1);
+            }
+
             const container = document.getElementById('lore-container');
             if (container) {
                 container.innerText = frag.text;
@@ -250,6 +305,32 @@ window.QuestManager = {
         const list = document.getElementById('quest-list');
         if (!list) return;
         list.innerHTML = '';
+
+        if (window.STATE && window.STATE.hasRedKey) {
+            document.getElementById('quest-tracker-ui').classList.remove('hidden');
+            const header = document.getElementById('quest-tracker-header');
+            if (header) header.innerText = "NHIỆM VỤ CUỐI CÙNG";
+            
+            // Tính khoảng cách tới redDoor (0, -150)
+            const pPos = window.STATE.player.pos;
+            const dx = 0 - pPos.x;
+            const dz = -150 - pPos.z;
+            const distToDoor = Math.round(Math.sqrt(dx * dx + dz * dz));
+            
+            const div = document.createElement('div');
+            div.className = 'quest-item';
+            div.innerHTML = `
+                <div class="quest-desc" style="color: #ff0055; font-weight:900; animation: pulse 0.8s infinite;">🔑 CHÌA KHÓA ĐỎ ĐÃ THU THẬP!</div>
+                <div style="font-size:10px; margin-top:4px; color:#ddd; line-height: 1.3;">Chạy theo <b>VẠCH CHỈ ĐƯỜNG ĐỎ GLOW</b> để đến Cánh Cửa ở trung tâm hòn đảo!</div>
+                <div style="font-size:11px; color:#ffcc00; font-weight:bold; margin-top:4px; letter-spacing: 0.5px;">📍 Khoảng cách: ${distToDoor}m</div>
+            `;
+            list.appendChild(div);
+            return;
+        }
+
+        const header = document.getElementById('quest-tracker-header');
+        if (header) header.innerText = "NHIỆM VỤ TÂM LINH";
+
         this.activeQuests.forEach(q => {
             const div = document.createElement('div');
             div.className = 'quest-item';

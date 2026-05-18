@@ -56,12 +56,14 @@
     <!-- CỐT TRUYỆN MỞ ĐẦU -->
     <div id="story-screen" class="hidden">
         <div id="story-text-container"></div>
+        <button id="btn-speed-story" class="story-speed-btn">⚡ x1</button>
         <button id="btn-skip-story">SKIP ⏭</button>
     </div>
 
     <!-- CỐT TRUYỆN KẾT THÚC (POST CREDIT) -->
     <div id="post-credit-screen" style="display: none; opacity: 0;">
         <div id="post-credit-content" style="max-height: 80vh; overflow-y: auto; width: 80%;"></div>
+        <button id="btn-speed-ending" class="story-speed-btn">⚡ x1</button>
         <button id="btn-skip-ending">SKIP ⏭</button>
     </div>
 
@@ -173,12 +175,10 @@
 
         <!-- BOSS HEALTH BAR -->
         <div id="boss-hp-container"
-            style="display:none; position:fixed; top:15px; left:50%; transform:translateX(-50%); width:40%; height:18px; background:rgba(0,0,0,0.8); border:1px solid #ff0000; z-index:100; box-shadow: 0 0 20px rgba(255,0,0,0.3);">
-            <div id="boss-hp-fill"
-                style="width:100%; height:100%; background:linear-gradient(90deg, #990000, #ff0000); transition:width 0.2s;">
-            </div>
+            style="display:none; position:fixed; top:15px; left:50%; transform:translateX(-50%); width:40%; height:20px; z-index:100;">
+            <div id="boss-hp-fill" style="width:100%; height:100%; transition:width 0.2s;"></div>
             <div
-                style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:2px; text-shadow:2px 2px 4px black; font-size:11px; letter-spacing:3px;">
+                style="position:absolute; width:100%; text-align:center; color:white; font-weight:900; top:2px; text-shadow:0 0 5px #ff0033; font-size:13px; letter-spacing:3px; z-index: 5;">
                 KẺ CANH CÁNH CỬA ĐỎ</div>
         </div>
 
@@ -191,6 +191,7 @@
 
     <!-- Main Menu -->
     <div id="main-menu" class="menu-screen">
+        <div class="cosmic-particles"></div>
         <div class="menu-inner container-fluid px-3">
             <h1 class="menu-title">LOST ISLAND<br><span
                     style="font-size: 0.35em; letter-spacing: 5px; color:#ffcc00; font-weight:900; display:block; margin-top:5px;">SURVIVAL
@@ -239,6 +240,8 @@
                         style="font-size:10px; padding:7px 6px;">📖 Hướng dẫn</button>
                     <button id="btn-open-feedback" class="menu-btn menu-btn-feedback"
                         style="font-size:10px; padding:7px 6px;">💬 Góp ý</button>
+                    <button id="btn-open-achievements" class="menu-btn"
+                        style="font-size:10px; padding:7px 6px; background: rgba(191, 0, 255, 0.25); border-color: #bf00ff; color: #fff;">🏆 Bí mật</button>
                 </div>
             </div>
 
@@ -329,6 +332,20 @@
         </div>
     </div>
 
+    <!-- ACHIEVEMENTS/LORE DATABASE MODAL -->
+    <div id="achievements-modal" class="hidden">
+        <div class="achievements-content">
+            <h2 style="color: #bf00ff; margin-bottom: 20px; font-weight:900; letter-spacing: 2px; text-shadow: 0 0 15px rgba(191,0,255,0.4);">🏆 BẢN GHI KHÔNG GIAN</h2>
+            <div id="achievements-player-summary" style="font-size:13px; color:#ffcc00; font-weight:700; margin-bottom:15px; text-align:center;"></div>
+            
+            <div id="achievements-list-container" style="max-height: 50vh; overflow-y: auto; text-align: left; padding-right: 5px;">
+                <!-- Dữ liệu thành tựu load động từ localStorage -->
+            </div>
+            
+            <button id="close-achievements-btn" class="menu-btn" style="margin-top: 20px; width: auto; padding: 8px 40px; background: rgba(191,0,255,0.2); border-color:#bf00ff;">ĐÓNG</button>
+        </div>
+    </div>
+
 
     <!-- Pause Menu -->
     <div id="pause-menu" class="menu-screen hidden" style="background: rgba(0,0,0,0.7);">
@@ -381,8 +398,6 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <script src="network.js?v=19.2.0"></script>
     <script src="preload.js?v=19.1.5"></script>
     <script src="story.js?v=19.1.5"></script>
     <script src="lore.js?v=19.1.5"></script>
