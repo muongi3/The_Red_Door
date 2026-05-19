@@ -990,6 +990,75 @@ function startGame() {
     }
     STATE.playerName = name;
     localStorage.setItem('savedPlayerName', name); // Lưu tên vào trình duyệt
+
+    // LUÔN HIỂN THỊ BẢNG HƯỚNG DẪN KHI BẮT ĐẦU CHƠI!
+    const instScreen = document.getElementById('first-time-instruction-screen');
+    if (instScreen) {
+        instScreen.classList.remove('d-none');
+        const confirmBtn = document.getElementById('btn-confirm-instruction');
+        if (confirmBtn) {
+            const hasSeen = localStorage.getItem('hasSeenInstructions_v2');
+
+            if (!hasSeen) {
+                // Người mới: phải đợi 10 giây
+                confirmBtn.disabled = true;
+                confirmBtn.classList.remove('btn-info', 'text-dark');
+                confirmBtn.classList.add('btn-secondary', 'text-white');
+                confirmBtn.style.boxShadow = 'none';
+
+                let secondsLeft = 10;
+                confirmBtn.innerText = `BẮT ĐẦU CHƠI (${secondsLeft}s)`;
+
+                if (window.instructionCountdownInterval) {
+                    clearInterval(window.instructionCountdownInterval);
+                }
+
+                window.instructionCountdownInterval = setInterval(() => {
+                    secondsLeft--;
+                    if (secondsLeft > 0) {
+                        confirmBtn.innerText = `BẮT ĐẦU CHƠI (${secondsLeft}s)`;
+                    } else {
+                        clearInterval(window.instructionCountdownInterval);
+                        window.instructionCountdownInterval = null;
+                        confirmBtn.disabled = false;
+                        confirmBtn.classList.remove('btn-secondary', 'text-white');
+                        confirmBtn.classList.add('btn-info', 'text-dark');
+                        confirmBtn.style.boxShadow = '0 0 15px rgba(0, 243, 255, 0.5)';
+                        confirmBtn.innerText = "BẮT ĐẦU CHƠI";
+                    }
+                }, 1000);
+
+                confirmBtn.onclick = () => {
+                    if (confirmBtn.disabled) return;
+                    if (window.instructionCountdownInterval) {
+                        clearInterval(window.instructionCountdownInterval);
+                        window.instructionCountdownInterval = null;
+                    }
+                    instScreen.classList.add('d-none');
+                    localStorage.setItem('hasSeenInstructions_v2', 'true');
+                    continueStartGame();
+                };
+            } else {
+                // Người cũ: đóng được liền
+                confirmBtn.disabled = false;
+                confirmBtn.classList.remove('btn-secondary', 'text-white');
+                confirmBtn.classList.add('btn-info', 'text-dark');
+                confirmBtn.style.boxShadow = '0 0 15px rgba(0, 243, 255, 0.5)';
+                confirmBtn.innerText = "BẮT ĐẦU CHƠI";
+
+                confirmBtn.onclick = () => {
+                    instScreen.classList.add('d-none');
+                    continueStartGame();
+                };
+            }
+        }
+        return; // Chờ người chơi tương tác với bảng
+    }
+
+    continueStartGame();
+}
+
+function continueStartGame() {
     STATE.screen = 'game';
     // Áp dụng lại độ khó (đảm bảo stats đúng khi bắt đầu trận)
     window.applyDifficulty(window.CURRENT_DIFFICULTY);
@@ -4239,10 +4308,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
                 const header = document.createElement('h4');
                 header.style.color = '#bf00ff';
-                header.style.fontSize = '12px';
-                header.style.marginTop = '15px';
+                header.style.fontSize = '9px';
+                header.style.marginTop = '8px';
                 header.style.borderBottom = '1px solid rgba(191,0,255,0.2)';
-                header.style.paddingBottom = '4px';
+                header.style.paddingBottom = '2px';
                 header.style.fontWeight = 'bold';
                 header.innerHTML = `${d.name} <span style="float: right; color: #ffcc00;">${completedCount} / ${d.count}</span>`;
                 achievementsList.appendChild(header);
