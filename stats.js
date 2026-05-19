@@ -16,9 +16,9 @@ window.GAME_CONFIG = {
     // 🤖 THÔNG SỐ QUÁI VẬT (BOT AI STATS)
     // ==========================================================================================
     bot: {
-        hpLv1: 180,          // Máu quái thường
-        hpLv2: 240,          // Máu quái hóa đỏ
-        hpLv3: 300,          // Máu 3 con cuối (Trở thành mini-boss thực thụ)
+        hpLv1: 200,          // Máu quái thường
+        hpLv2: 420,          // Máu quái hóa đỏ (Để vừa khít một hit chết ở Hard và ít máu ở Extreme)
+        hpLv3: 480,          // Máu 3 con cuối (Để nổ thùng ở Hard vẫn còn lại ít máu)
 
         speedLv1: 5.0,       // Tốc độ quái Lv1 (chậm lại cho người chơi kịp phản xạ)
         speedLv2: 8.0,        // Tốc độ quái Lv2
@@ -226,6 +226,15 @@ window.applyDifficulty = function (key) {
     b.bot.enragedDamageLv3 = Math.round(orig.bot.enragedDamageLv3 * d.botDmgMult);
     b.bot.enrageLv2Pct = d.enrageLv2Pct;
     b.bot.lv3Count = d.lv3Count;
+
+    // --- CẬP NHẬT THÔNG SỐ THÙNG NỔ ---
+    if (key === 'hard') {
+        b.misc.barrelExplosionDamage = 600;
+    } else if (key === 'extreme') {
+        b.misc.barrelExplosionDamage = 800;
+    } else {
+        b.misc.barrelExplosionDamage = orig.misc.barrelExplosionDamage; // easy / normal = 400
+    }
 
     // --- CẬP NHẬT THÔNG SỐ BOSS ---
     b.boss.hp = Math.round(orig.boss.hp * d.bossHpMult);

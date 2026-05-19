@@ -1346,11 +1346,13 @@ function update(dt) {
 
     // Kiểm tra hoàn thành game khi mang Chìa Khóa Đỏ tới Cánh Cửa Đỏ (0, -150)
     let nearRedDoor = false;
-    if (STATE.hasRedKey) {
-        const dx = STATE.player.pos.x - 0;
-        const dz = STATE.player.pos.z - (-150);
-        const distToDoor = Math.sqrt(dx * dx + dz * dz);
-        if (distToDoor < 6.0) {
+    let nearRedDoorWithoutKey = false;
+    const dxDoor = STATE.player.pos.x - 0;
+    const dzDoor = STATE.player.pos.z - (-150);
+    const distToDoor = Math.sqrt(dxDoor * dxDoor + dzDoor * dzDoor);
+    
+    if (distToDoor < 6.0) {
+        if (STATE.hasRedKey) {
             nearRedDoor = true;
             if (STATE.keys['KeyE']) {
                 STATE.keys['KeyE'] = false; // consume key
@@ -1378,24 +1380,34 @@ function update(dt) {
                 playBossSound();
                 showClickAnywhere(2000); // Đợi 2s rồi hiện Tiếp tục
             }
+        } else {
+            nearRedDoorWithoutKey = true;
         }
     }
 
     // Show E-key hint for quest items / final paper / red door
     const interMsg = document.getElementById('interaction-msg');
     const btnInteractEl = document.getElementById('btn-interact');
-    if (nearQuestItem || nearFinalPaper || nearRedDoor) {
+    if (nearQuestItem || nearFinalPaper || nearRedDoor || nearRedDoorWithoutKey) {
         if (interMsg) {
             interMsg.style.display = 'block';
             if (nearRedDoor) {
                 interMsg.innerHTML = '🔑 [E] MỞ CÁNH CỬA ĐỎ<br><span style="font-size:10px">(Chạm vào đây để mở cửa)</span>';
+            } else if (nearRedDoorWithoutKey) {
+                interMsg.innerHTML = '🔒 CỔNG ĐANG KHÓA!<br><span style="font-size:10px; color:#ff3333;">Bạn cần thu thập Chìa Khóa Đỏ để thoát khỏi đảo</span>';
             } else if (nearFinalPaper) {
                 interMsg.innerHTML = '🔑 [E] NHẶT CHÌA KHÓA ĐỎ<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             } else {
                 interMsg.innerHTML = '📦 [E] NHẶT CHIẾC HỘP THÔNG TIN<br><span style="font-size:10px">(Chạm vào đây để nhặt)</span>';
             }
         }
-        if (btnInteractEl) btnInteractEl.classList.remove('hidden');
+        if (btnInteractEl) {
+            if (nearRedDoorWithoutKey) {
+                btnInteractEl.classList.add('hidden'); // Mobile: Ẩn nút nhấn E ảo trên mobile nếu chưa có chìa khóa
+            } else {
+                btnInteractEl.classList.remove('hidden');
+            }
+        }
     } else {
         if (btnInteractEl) btnInteractEl.classList.add('hidden');
     }
@@ -1831,7 +1843,7 @@ function update(dt) {
     }
     let closeLoot = null; STATE.loot.forEach(l => { if (V3.dist(p.pos, l.pos) < 2) closeLoot = l; });
     const msg = document.getElementById('interaction-msg');
-    if (!nearQuestItem) {
+    if (!nearQuestItem && !nearFinalPaper && !nearRedDoor && !nearRedDoorWithoutKey) {
         msg.style.display = 'none';
     }
 
