@@ -3146,53 +3146,7 @@ function draw() {
         gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
         gl.disable(gl.BLEND);
     }
-    STATE.bots.forEach(b => {
-        const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z, ang = Math.atan2(dx, dz);
 
-        const botCount = STATE.bots.length;
-        const initialCount = STATE.config.botCount || 25;
-        const isLv2 = botCount <= initialCount * (window.GAME_CONFIG.bot.enrageLv2Pct || 0.40);
-        const isLv3 = botCount <= (window.GAME_CONFIG.bot.lv3Count || 5);
-
-        let mesh = ASSETS.bot;
-        let scale = 1.0;
-        let drawPos = { ...b.pos };
-
-        if (b.isEvolvingLv3) {
-            const pulse = (Math.sin(performance.now() * 0.05) > 0) ? 2.0 : 0.0;
-            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5);
-            drawPos.x += (Math.random() - 0.5) * 0.4;
-            drawPos.z += (Math.random() - 0.5) * 0.4;
-            scale = 1.0 + (2.0 - Math.max(0, b.evolveTimer)) * 0.5;
-            mesh = ASSETS.botEnraged;
-        } else if (isLv3) {
-            // [GIAI ĐOẠN 3] To gấp đôi và máu me
-            mesh = ASSETS.botFinal;
-            scale = 2.0;
-        } else if (isLv2) {
-            // [GIAI ĐOẠN 2] Hóa kinh dị
-            mesh = ASSETS.botEnraged;
-            scale = 1.0;
-        }
-
-        // 1. Vẽ Outline Viền Trắng xuyên vật thể (X-Ray/Wallhack) trước để phân biệt rõ rệt kể cả khi bị che khuất
-        gl.disable(gl.DEPTH_TEST);
-        gl.cullFace(gl.FRONT);
-        gl.uniform3f(locs.emitColor, 5.0, 5.0, 5.0); // Sáng trắng dạ quang cực đại (xuyên thấu vật thể/sương mù)
-        drawMeshActual(mesh, drawPos, scale * 1.08, ang);
-        gl.cullFace(gl.BACK);
-        gl.enable(gl.DEPTH_TEST);
-
-        // 2. Đảm bảo quái vật phát dạ quang đỏ nhẹ trong bóng tối để người chơi dễ nhìn thấy và định vị (Tăng nhẹ độ sáng phát quang)
-        let emitVal = isLv3 ? [0.45, 0.02, 0.02] : (isLv2 ? [0.3, 0.02, 0.02] : [0.15, 0.02, 0.02]);
-        gl.uniform3f(locs.emitColor, emitVal[0], emitVal[1], emitVal[2]);
-
-        drawMeshActual(mesh, drawPos, scale, ang);
-
-        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
-
-        if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
-    });
     STATE.barrels.forEach(b => drawMeshActual(ASSETS.barrel, b.pos, 3, 0));
 
     // Draw Quest Items — dạng hình thoi nổi
@@ -3366,10 +3320,12 @@ function draw() {
         gl.enable(gl.DEPTH_TEST);
         gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
 
-        // 2. Vẽ Boss Body bình thường
+        // 2. Vẽ Boss Body bình thường (Tăng nhẹ độ sáng phát quang tự nhiên)
+        gl.uniform3f(locs.emitColor, 0.45, 0.1, 0.1);
         gl.uniformMatrix4fv(locs.model, false, mBody);
         gl.bindVertexArray(ASSETS.bossBody.vao);
         gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossBody.count);
+        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
 
         // Hiệu ứng tụ năng lượng ở ngực (Chiêu 2)
         if (b.state === 'shoot_prepare' || b.state === 'shooting') {
@@ -3435,11 +3391,15 @@ function draw() {
             gl.enable(gl.DEPTH_TEST);
             gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
 
-            // 2. Vẽ Boss Arm bình thường
-            if (armColor) gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
+            // 2. Vẽ Boss Arm bình thường (Tăng nhẹ độ sáng phát quang tự nhiên)
+            if (armColor) {
+                gl.uniform3f(locs.emitColor, armColor[0], armColor[1], armColor[2]);
+            } else {
+                gl.uniform3f(locs.emitColor, 0.45, 0.1, 0.1);
+            }
             gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
-            if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
+            gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
         };
         drawArm(-1); drawArm(1);
 
@@ -3481,6 +3441,55 @@ function draw() {
         // RESET TRẠNG THÁI RENDER
         gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
     }
+
+    // -------------------------------------------------------------
+    // VẼ BOTS (Vẽ sau cùng để hỗ trợ viền trắng xuyên qua TẤT CẢ vật thể như Cây, Nhà, Đá...)
+    // -------------------------------------------------------------
+    STATE.bots.forEach(b => {
+        const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z, ang = Math.atan2(dx, dz);
+
+        const botCount = STATE.bots.length;
+        const initialCount = STATE.config.botCount || 25;
+        const isLv2 = botCount <= initialCount * (window.GAME_CONFIG.bot.enrageLv2Pct || 0.40);
+        const isLv3 = botCount <= (window.GAME_CONFIG.bot.lv3Count || 5);
+
+        let mesh = ASSETS.bot;
+        let scale = 1.0;
+        let drawPos = { ...b.pos };
+
+        if (b.isEvolvingLv3) {
+            const pulse = (Math.sin(performance.now() * 0.05) > 0) ? 2.0 : 0.0;
+            gl.uniform3f(locs.fogColor, pulse, pulse * 0.5, pulse * 0.5);
+            drawPos.x += (Math.random() - 0.5) * 0.4;
+            drawPos.z += (Math.random() - 0.5) * 0.4;
+            scale = 1.0 + (2.0 - Math.max(0, b.evolveTimer)) * 0.5;
+            mesh = ASSETS.botEnraged;
+        } else if (isLv3) {
+            mesh = ASSETS.botFinal;
+            scale = 2.0;
+        } else if (isLv2) {
+            mesh = ASSETS.botEnraged;
+            scale = 1.0;
+        }
+
+        // 1. Vẽ Outline Viền Trắng xuyên vật thể (X-Ray/Wallhack) trước
+        gl.disable(gl.DEPTH_TEST);
+        gl.cullFace(gl.FRONT);
+        gl.uniform3f(locs.emitColor, 5.0, 5.0, 5.0); // Sáng trắng dạ quang cực đại (xuyên thấu mọi vật cản)
+        drawMeshActual(mesh, drawPos, scale * 1.08, ang);
+        gl.cullFace(gl.BACK);
+        gl.enable(gl.DEPTH_TEST);
+
+        // 2. Vẽ Bot bình thường (Tăng độ sáng dạ quang phát quang tự nhiên để ko bị tối khi không bị che)
+        let emitVal = isLv3 ? [0.85, 0.2, 0.2] : (isLv2 ? [0.6, 0.15, 0.15] : [0.4, 0.1, 0.1]);
+        gl.uniform3f(locs.emitColor, emitVal[0], emitVal[1], emitVal[2]);
+
+        drawMeshActual(mesh, drawPos, scale, ang);
+
+        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
+
+        if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
+    });
 
 
 
