@@ -1557,3 +1557,36 @@ canvas {
     color: #ff9900;
     line-height: 1.4;
 }
+
+/* --- TUTORIAL SYSTEM CUSTOM STYLES --- */
+@keyframes horrorPulse {
+    0%, 100% { text-shadow: 0 0 15px rgba(255,0,85,0.6); transform: scale(1.0); }
+    50% { text-shadow: 0 0 25px rgba(255,0,85,1); transform: scale(1.03); }
+}
+
+.tutorial-highlight {
+    animation: tutorialGlowPulse 1.2s infinite ease-in-out !important;
+    border: 3px solid #00f3ff !important;
+    box-shadow: 0 0 25px #00f3ff, inset 0 0 15px #00f3ff !important;
+}
+
+@keyframes tutorialGlowPulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(0, 243, 255, 0.4), inset 0 0 5px rgba(0, 243, 255, 0.2); }
+    50% { box-shadow: 0 0 30px rgba(0, 243, 255, 1), inset 0 0 15px rgba(0, 243, 255, 0.6); }
+}
+
+/* PC Keyboard keycap helper stylings */
+.keyboard-key {
+    background: #1e293b;
+    border: 1px solid #64748b;
+    border-radius: 4px;
+    box-shadow: 0 2px 0 #475569;
+    color: #f8fafc;
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 6px;
+    margin: 0 2px;
+    text-shadow: 0 1px 0 #000;
+}
