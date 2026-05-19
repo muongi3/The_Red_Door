@@ -179,6 +179,12 @@ void main() {
         N = normalize(N + vec3(wave, 0.0, wave));
     }
 
+    vec3 emissive = uEmitColor;
+    if (vColor.r > 0.95 && vColor.g < 0.05 && vColor.b < 0.05) {
+        // Các chi tiết đỏ thuần khiết (như mắt của Bot) sẽ tự động phát sáng rực rỡ
+        emissive += vec3(2.5, 0.0, 0.0);
+    }
+
     float diff = dot(N, L);
     float light = smoothstep(-0.2, 0.5, diff) * 0.6 + 0.4;
     
@@ -187,11 +193,16 @@ void main() {
     float specMask = smoothstep(0.7, 0.8, spec) * (uIsWater ? 0.8 : 0.3);
     
     float rimVal = 1.0 - max(dot(V, N), 0.0);
-    float rim = rimVal * rimVal * rimVal * rimVal * 0.3;
-    float glowFactor = smoothstep(0.4, 1.0, rimVal);
-    vec3 fakeBloom = uEmitColor * glowFactor * 2.5;
+    vec3 rimColor = vec3(0.3); // Viền sáng trắng mặc định cho địa hình/vật cản
+    if (length(emissive) > 0.0) {
+        rimColor = normalize(emissive) * 0.8; // Viền sáng mang màu dạ quang của vật thể phát sáng (outline dạ quang cho Bot)
+    }
+    vec3 finalRim = rimColor * pow(rimVal, 4.0);
     
-    vec3 finalColor = baseColor * light + vec3(specMask) + vec3(rim) + uEmitColor + fakeBloom;
+    float glowFactor = smoothstep(0.4, 1.0, rimVal);
+    vec3 fakeBloom = emissive * glowFactor * 2.5;
+    
+    vec3 finalColor = baseColor * light + vec3(specMask) + finalRim + emissive + fakeBloom;
     
     float distFog = 1.0 - exp(-vDist * 0.007);
     float heightFog = smoothstep(3.0, -1.0, vY);
@@ -936,8 +947,8 @@ function genTerrain() {
         for (let j = 0; j < MAP_RES; j++) {
             const x = offset + i * step, z = offset + j * step, x1 = x + step, z1 = z + step;
             const y00 = getHeight(x, z), y10 = getHeight(x1, z), y01 = getHeight(x, z1), y11 = getHeight(x1, z1);
-            // Màu đất bùn, máu khô và đá tối
-            const c = y00 < -8 ? [0.1, 0.05, 0.15] : (y00 < 5 ? [0.08, 0.05, 0.12] : [0.05, 0.05, 0.05]);
+            // Màu đá tối, đá phiến xanh mát (Slate Blue/Grey) tạo độ tương phản màu sắc rõ rệt với Bot đỏ ấm áp
+            const c = y00 < -8 ? [0.06, 0.08, 0.12] : (y00 < 5 ? [0.08, 0.11, 0.15] : [0.12, 0.15, 0.18]);
 
             V.push(x, y00, z, x, y01, z1, x1, y10, z, x1, y10, z, x, y01, z1, x1, y11, z1);
             for (let k = 0; k < 6; k++) { N.push(0, 1, 0); C.push(...c); }
@@ -3159,8 +3170,8 @@ function draw() {
             scale = 1.0;
         }
 
-        // Đảm bảo quái vật phát dạ quang đỏ nhẹ trong bóng tối để người chơi dễ nhìn thấy và định vị
-        let emitVal = isLv3 ? [0.35, 0.0, 0.0] : (isLv2 ? [0.25, 0.0, 0.0] : [0.1, 0.02, 0.02]);
+        // Đảm bảo quái vật phát dạ quang đỏ nhẹ trong bóng tối để người chơi dễ nhìn thấy và định vị (Tăng nhẹ độ sáng phát quang)
+        let emitVal = isLv3 ? [0.45, 0.02, 0.02] : (isLv2 ? [0.3, 0.02, 0.02] : [0.15, 0.02, 0.02]);
         gl.uniform3f(locs.emitColor, emitVal[0], emitVal[1], emitVal[2]);
 
         drawMeshActual(mesh, drawPos, scale, ang);
