@@ -3176,6 +3176,12 @@ function draw() {
 
         drawMeshActual(mesh, drawPos, scale, ang);
 
+        // Vẽ Outline Viền Trắng nổi bật theo thân hình Bot để phân biệt rõ rệt với mặt đất tối
+        gl.cullFace(gl.FRONT);
+        gl.uniform3f(locs.emitColor, 2.5, 2.5, 2.5); // Sáng trắng dạ quang rực rỡ
+        drawMeshActual(mesh, drawPos, scale * 1.05, ang);
+        gl.cullFace(gl.BACK);
+
         gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
 
         if (b.isEvolvingLv3) gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
@@ -3344,6 +3350,15 @@ function draw() {
         gl.bindVertexArray(ASSETS.bossBody.vao);
         gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossBody.count);
 
+        // Vẽ Outline Viền Trắng nổi bật theo thân hình Boss
+        gl.cullFace(gl.FRONT);
+        gl.uniform3f(locs.emitColor, 2.5, 2.5, 2.5); // Sáng trắng dạ quang rực rỡ
+        let mBodyOutline = M4.multiply(mBody, M4.scaling(1.03, 1.03, 1.03)); // Phóng to nhẹ khung thân
+        gl.uniformMatrix4fv(locs.model, false, mBodyOutline);
+        gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossBody.count);
+        gl.cullFace(gl.BACK);
+        gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
+
         // Hiệu ứng tụ năng lượng ở ngực (Chiêu 2)
         if (b.state === 'shoot_prepare' || b.state === 'shooting') {
             const pulse = 0.8 + Math.sin(performance.now() * 0.02) * 0.2;
@@ -3400,6 +3415,15 @@ function draw() {
             gl.uniformMatrix4fv(locs.model, false, mArm);
             gl.bindVertexArray(ASSETS.bossArm.vao); gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
             if (armColor) gl.uniform3f(locs.emitColor, 0, 0, 0);
+
+            // Vẽ Outline Viền Trắng nổi bật theo cánh tay Boss
+            gl.cullFace(gl.FRONT);
+            gl.uniform3f(locs.emitColor, 2.5, 2.5, 2.5); // Sáng trắng dạ quang rực rỡ
+            let mArmOutline = M4.multiply(mArm, M4.scaling(1.05, 1.05, 1.05)); // Phóng to nhẹ khung cánh tay
+            gl.uniformMatrix4fv(locs.model, false, mArmOutline);
+            gl.drawArrays(gl.TRIANGLES, 0, ASSETS.bossArm.count);
+            gl.cullFace(gl.BACK);
+            gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emit
         };
         drawArm(-1); drawArm(1);
 
