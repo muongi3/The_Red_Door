@@ -939,7 +939,6 @@ function genSkyMesh() {
 
 const MAP_SIZE = 400, MAP_RES = isMobile ? 48 : 64; // Giảm độ phân giải địa hình trên mobile
 function getHeight(x, z) {
-    if (window.STATE && window.STATE.isTutorial) return 0;
     const nx = x * 0.02, nz = z * 0.02;
     let y = Math.sin(nx) * Math.cos(nz) * 8 + Math.sin(nx * 3 + nz) * 2;
     const d = Math.sqrt(x * x + z * z) / (MAP_SIZE / 2);
@@ -953,6 +952,7 @@ function genTerrain() {
         for (let j = 0; j < MAP_RES; j++) {
             const x = offset + i * step, z = offset + j * step, x1 = x + step, z1 = z + step;
             const y00 = getHeight(x, z), y10 = getHeight(x1, z), y01 = getHeight(x, z1), y11 = getHeight(x1, z1);
+            // Màu đá tối, đá phiến xanh mát (Slate Blue/Grey) tạo độ tương phản màu sắc rõ rệt với Bot đỏ ấm áp
             const c = y00 < -8 ? [0.06, 0.08, 0.12] : (y00 < 5 ? [0.08, 0.11, 0.15] : [0.12, 0.15, 0.18]);
 
             V.push(x, y00, z, x, y01, z1, x1, y10, z, x1, y10, z, x, y01, z1, x1, y11, z1);
@@ -962,548 +962,74 @@ function genTerrain() {
     return createMesh(V, N, C);
 }
 
-function initTutorialState() {
-    STATE.isTutorial = true;
-    STATE.tutorialStep = 0;
-    STATE.tutorialData = {
-        distanceMoved: 0,
-        lastPos: V3.clone(STATE.player.pos || V3.create(0, 0.5, 0)),
-        angleRotated: 0,
-        lastYaw: STATE.camera.rot.y,
-        shotsFired: 0,
-        sprintTime: 0,
-        settingsOpened: false,
-        settingsClosed: false,
-        dummySpawned: false,
-        dummyKilled: false,
-        barrelDummyKilled: false,
-        barrelSpawned: false,
-        speedBoxPicked: false,
-        damageBoxPicked: false,
-        bothBoxesSpawned: false,
-        bothBoxesPicked: false
-    };
-    
-    // Đảm bảo vô hại và bất tử trong suốt hướng dẫn
-    STATE.player.hp = 1000;
-    STATE.player.maxHp = 1000;
-    STATE.player.armor = 0;
-    
-    // Cho súng đầu tiên
-    STATE.player.weaponIdx = 0;
-    STATE.weapons[0].ammo = STATE.weapons[0].maxAmmo;
-    STATE.weapons[0].res = 999;
-}
 
-function updateTutorial(dt) {
-    const alertEl = document.getElementById('tutorial-alert');
-    const textEl = document.getElementById('tutorial-text');
-    const subtextEl = document.getElementById('tutorial-subtext');
-    const btnSkip = document.getElementById('btn-skip-tutorial');
-    const btnExit = document.getElementById('btn-exit-tutorial');
-    
-    if (alertEl) alertEl.style.display = 'block';
-    
-    // Hiển thị nút bỏ qua/thoát tùy theo chế độ (lần đầu hay xem lại)
-    const isFirstTime = localStorage.getItem('tutorialCompleted') !== 'true';
-    if (btnSkip) btnSkip.style.display = isFirstTime ? 'none' : 'block';
-    if (btnExit) btnExit.style.display = isFirstTime ? 'none' : 'block';
-    
-    // Tránh bị quái tấn công mất máu
-    STATE.player.hp = 1000;
-    
-    switch (STATE.tutorialStep) {
-        case 0: // Di chuyển
-            if (isMobile) {
-                textEl.innerHTML = "🎯 BƯỚC 1: DI CHUYỂN";
-                subtextEl.innerHTML = "Hãy kéo thả <b>Joystick ảo</b> bên trái để di chuyển.";
-                // Highlight joystick zone
-                const jsZone = document.getElementById('joystick-zone');
-                if (jsZone && !jsZone.classList.contains('tutorial-highlight')) {
-                    jsZone.classList.add('tutorial-highlight');
-                }
-            } else {
-                textEl.innerHTML = "🎯 BƯỚC 1: DI CHUYỂN";
-                subtextEl.innerHTML = "Hãy nhấn các phím <span class='keyboard-key'>W</span> <span class='keyboard-key'>A</span> <span class='keyboard-key'>S</span> <span class='keyboard-key'>D</span> để di chuyển.";
-            }
-            
-            // Tính toán quãng đường di chuyển
-            if (STATE.player.pos) {
-                const distMoved = V3.dist(STATE.player.pos, STATE.tutorialData.lastPos || STATE.player.pos);
-                STATE.tutorialData.distanceMoved = (STATE.tutorialData.distanceMoved || 0) + distMoved;
-                STATE.tutorialData.lastPos = V3.clone(STATE.player.pos);
-                if (STATE.tutorialData.distanceMoved >= 15) {
-                    // Xóa highlight joystick
-                    const jsZone = document.getElementById('joystick-zone');
-                    if (jsZone) jsZone.classList.remove('tutorial-highlight');
-                    
-                    // Sang bước tiếp theo
-                    STATE.tutorialStep = 1;
-                    playAudio('pickup');
-                }
-            }
-            break;
-            
-        case 1: // Góc nhìn
-            if (isMobile) {
-                textEl.innerHTML = "🎯 BƯỚC 2: XOAY GÓC NHÌN";
-                subtextEl.innerHTML = "Vuốt ngón tay ở <b>phần màn hình bên phải</b> để xoay camera.";
-            } else {
-                textEl.innerHTML = "🎯 BƯỚC 2: XOAY GÓC NHÌN";
-                subtextEl.innerHTML = "Hãy di chuyển chuột để xoay góc nhìn camera.";
-            }
-            
-            // Tính toán góc quay
-            const diffYaw = Math.abs(STATE.camera.rot.y - (STATE.tutorialData.lastYaw || STATE.camera.rot.y));
-            STATE.tutorialData.angleRotated = (STATE.tutorialData.angleRotated || 0) + diffYaw;
-            STATE.tutorialData.lastYaw = STATE.camera.rot.y;
-            if (STATE.tutorialData.angleRotated >= 2.0) {
-                STATE.tutorialStep = 2;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 2: // Bắn súng
-            if (isMobile) {
-                textEl.innerHTML = "🎯 BƯỚC 3: TẤN CÔNG (BẮN)";
-                subtextEl.innerHTML = "Hãy bấm nút <b>BẮN (Shoot)</b> 3 lần để khai hỏa.";
-                const btnShoot = document.getElementById('btn-shoot');
-                if (btnShoot && !btnShoot.classList.contains('tutorial-highlight')) {
-                    btnShoot.classList.add('tutorial-highlight');
-                }
-            } else {
-                textEl.innerHTML = "🎯 BƯỚC 3: TẤN CÔNG (BẮN)";
-                subtextEl.innerHTML = "Nhấp <b>Chuột trái</b> 3 lần để bắn vũ khí.";
-            }
-            
-            // Track shots fired
-            if (STATE.tutorialData.shotsFired >= 3) {
-                const btnShoot = document.getElementById('btn-shoot');
-                if (btnShoot) btnShoot.classList.remove('tutorial-highlight');
-                STATE.tutorialStep = 3;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 3: // Chạy nhanh
-            if (isMobile) {
-                textEl.innerHTML = "🎯 BƯỚC 4: CHẠY NHANH";
-                subtextEl.innerHTML = "Nhấn và giữ nút <b>CHẠY (Sprint)</b> trong 2 giây.";
-                const btnSprint = document.getElementById('btn-sprint');
-                if (btnSprint && !btnSprint.classList.contains('tutorial-highlight')) {
-                    btnSprint.classList.add('tutorial-highlight');
-                }
-            } else {
-                textEl.innerHTML = "🎯 BƯỚC 4: CHẠY NHANH";
-                subtextEl.innerHTML = "Nhấn giữ phím <span class='keyboard-key'>Shift</span> để chạy nhanh trong 2 giây.";
-            }
-            
-            // Tính toán thời gian chạy nhanh
-            const isSprinting = STATE.keys['ShiftLeft'] || STATE.keys['ShiftRight'] || STATE.keys['KeyShift'] || (isMobile && STATE.keys['ShiftMobile']);
-            const isMoving = V3.len(STATE.player.currentMove || V3.create(0, 0, 0)) > 0.1;
-            if (isSprinting && isMoving) {
-                STATE.tutorialData.sprintTime = (STATE.tutorialData.sprintTime || 0) + dt;
-            }
-            if (STATE.tutorialData.sprintTime >= 2.0) {
-                const btnSprint = document.getElementById('btn-sprint');
-                if (btnSprint) btnSprint.classList.remove('tutorial-highlight');
-                STATE.tutorialStep = 4;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 4: // Mở cài đặt HUD
-            textEl.innerHTML = "⚙️ BƯỚC 5: CÀI ĐẶT HUD & THIẾT BỊ";
-            subtextEl.innerHTML = "Nhấp vào nút <b>Cài đặt [⚙️]</b> ở góc màn hình.";
-            const btnSettings = document.getElementById('btn-settings');
-            if (btnSettings && !btnSettings.classList.contains('tutorial-highlight')) {
-                btnSettings.classList.add('tutorial-highlight');
-            }
-            
-            // Check if settings opened
-            const settingsModal = document.getElementById('settings-modal');
-            if (settingsModal && !settingsModal.classList.contains('hidden')) {
-                if (btnSettings) btnSettings.classList.remove('tutorial-highlight');
-                STATE.tutorialStep = 5;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 5: // Tùy chỉnh nút
-            textEl.innerHTML = "⚙️ BƯỚC 6: TÙY CHỈNH HUD";
-            subtextEl.innerHTML = "Bảng HUD Settings đã mở. Bạn có thể di chuyển, thay đổi kích thước các nút ảo trên Mobile hoặc thay đổi độ nhạy camera. Bấm <b>LƯU, HỦY hoặc RESET</b> để tiếp tục.";
-            
-            // Highlighting settings controls
-            const btnSaveHud = document.getElementById('btn-save-hud');
-            const btnCancelHud = document.getElementById('btn-cancel-hud');
-            const btnResetHud = document.getElementById('btn-reset-hud');
-            if (btnSaveHud && !btnSaveHud.classList.contains('tutorial-highlight')) {
-                btnSaveHud.classList.add('tutorial-highlight');
-                btnCancelHud.classList.add('tutorial-highlight');
-                btnResetHud.classList.add('tutorial-highlight');
-            }
-            
-            // Advance condition when settings is closed via clicks
-            if (STATE.tutorialData.settingsActionClicked) {
-                if (btnSaveHud) {
-                    btnSaveHud.classList.remove('tutorial-highlight');
-                    btnCancelHud.classList.remove('tutorial-highlight');
-                    btnResetHud.classList.remove('tutorial-highlight');
-                }
-                STATE.tutorialStep = 6;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 6: // Ultimate
-            if (!STATE.tutorialData.dummySpawned) {
-                STATE.tutorialData.dummySpawned = true;
-                // Charge player's Ultimate to 100%
-                STATE.player.damageDealt = window.GAME_CONFIG.ultimate.requiredDamage + 10;
-                
-                // Spawn a Dummy Bot
-                STATE.bots = [{
-                    pos: V3.create(0, 0, -15),
-                    hp: 100,
-                    maxHp: 100,
-                    isDummy: true,
-                    fireCD: 9999,
-                    grounded: true,
-                    velY: 0
-                }];
-                // Show Ultimate button
-                const btnUlti = document.getElementById('btn-ulti');
-                if (btnUlti) btnUlti.classList.remove('hidden');
-            }
-            
-            if (isMobile) {
-                textEl.innerHTML = "🔥 BƯỚC 7: KÍCH HOẠT ULTIMATE";
-                subtextEl.innerHTML = "Bấm nút <b>ULTIMATE (Đại bác)</b> để hóa khổng lồ bất tử, sau đó bắn nát con Bot bù nhìn trước mặt!";
-                const btnUlti = document.getElementById('btn-ulti');
-                if (btnUlti && !btnUlti.classList.contains('tutorial-highlight')) {
-                    btnUlti.classList.add('tutorial-highlight');
-                }
-            } else {
-                textEl.innerHTML = "🔥 BƯỚC 7: KÍCH HOẠT ULTIMATE";
-                subtextEl.innerHTML = "Nhấn phím <span class='keyboard-key'>E</span> để hóa khổng lồ bất tử, sau đó bắn nát con Bot bù nhìn trước mặt!";
-            }
-            
-            // Check if dummy is killed
-            if (STATE.bots.length === 0) {
-                const btnUlti = document.getElementById('btn-ulti');
-                if (btnUlti) btnUlti.classList.remove('tutorial-highlight');
-                STATE.tutorialStep = 7;
-                playAudio('pickup');
-            }
-            break;
-            
-        case 7: // Thùng nhiên liệu phát nổ
-            if (!STATE.tutorialData.barrelSpawned) {
-                STATE.tutorialData.barrelSpawned = true;
-                // Spawn barrel at x=8, z=-12
-                STATE.barrels = [{
-                    pos: V3.create(8, 0, -12),
-                    hp: 20
-                }];
-                // Spawn dummy bot next to it
-                STATE.bots = [{
-                    pos: V3.create(9.5, 0, -12),
-                    hp: 50,
-                    maxHp: 50,
-                    isDummy: true,
-                    fireCD: 9999,
-                    grounded: true,
-                    velY: 0
-                }];
-            }
-            
-            textEl.innerHTML = "💥 BƯỚC 8: THÙNG NỔ & TƯƠNG TÁC";
-            subtextEl.innerHTML = "Nhìn sang bên phải. Hãy bắn vào <b>thùng nhiên liệu đỏ</b> để tạo vụ nổ tiêu diệt Bot bù nhìn cạnh đó!";
-            
-            // Verify both barrel and bot are destroyed
-            if (STATE.bots.length === 0) {
-                STATE.tutorialStep = 8;
-                STATE.barrels = [];
-                playAudio('pickup');
-            }
-            break;
-            
-        case 8: // Hộp kỹ năng & Trạng thái Tím
-            if (!STATE.tutorialData.speedBoxSpawned) {
-                STATE.tutorialData.speedBoxSpawned = true;
-                STATE.tutorialData.phase = 'speed';
-                STATE.loot = [{
-                    pos: V3.create(-5, 0.5, -5),
-                    type: 3, // Powerup crate
-                    isTutorialSpeed: true
-                }];
-            }
-            
-            if (STATE.tutorialData.phase === 'speed') {
-                textEl.innerHTML = "⚡ BƯỚC 9.1: HỘP TĂNG TỐC ĐỘ";
-                subtextEl.innerHTML = "Hãy nhặt <b>chiếc rương Obsidian phát sáng màu Lam</b> bên trái để nhận bùa TĂNG TỐC.";
-                
-                // Check if speed box is picked up and player has powerup active
-                if (STATE.loot.length === 0 && STATE.player.powerup && STATE.player.powerup.type === 0) {
-                    STATE.tutorialData.phase = 'damage';
-                    // Spawn damage box at x=5, z=-5
-                    STATE.loot = [{
-                        pos: V3.create(5, 0.5, -5),
-                        type: 3,
-                        isTutorialDamage: true
-                    }];
-                    playAudio('pickup');
-                }
-            } else if (STATE.tutorialData.phase === 'damage') {
-                textEl.innerHTML = "🔥 BƯỚC 9.2: HỘP X2 SÁT THƯƠNG";
-                subtextEl.innerHTML = "Hãy nhặt <b>chiếc rương Obsidian phát sáng màu Cam</b> bên phải để nhận bùa X2 SÁT THƯƠNG.";
-                
-                if (STATE.loot.length === 0 && STATE.player.powerup && STATE.player.powerup.type === 1) {
-                    STATE.tutorialData.phase = 'combo';
-                    // Spawn both boxes
-                    STATE.loot = [
-                        { pos: V3.create(-5, 0.5, -10), type: 3, isTutorialSpeed: true },
-                        { pos: V3.create(5, 0.5, -10), type: 3, isTutorialDamage: true }
-                    ];
-                    playAudio('pickup');
-                }
-            } else if (STATE.tutorialData.phase === 'combo') {
-                textEl.innerHTML = "🔮 BƯỚC 9.3: TRẠNG THÁI TÍM SIÊU CẤP";
-                subtextEl.innerHTML = "Nhặt <b>CẢ HAI loại hộp</b> cùng lúc để kích hoạt trạng thái hỗn hợp đặc biệt.";
-                
-                // Check if both boxes picked and powerup type is 3 (dual)
-                if (STATE.loot.length === 0) {
-                    if (STATE.player.powerup && STATE.player.powerup.type === 3) {
-                        STATE.tutorialStep = 9;
-                        playAudio('pickup');
-                    } else {
-                        // Thất bại: một cái đã hết hạn trước khi ăn cái thứ hai. Reset và tạo lại cả hai hộp!
-                        STATE.loot = [
-                            { pos: V3.create(-5, 0.5, -10), type: 3, isTutorialSpeed: true },
-                            { pos: V3.create(5, 0.5, -10), type: 3, isTutorialDamage: true }
-                        ];
-                        STATE.player.powerup = null;
-                        const puOverlay = document.getElementById('powerup-overlay');
-                        if (puOverlay) {
-                            puOverlay.classList.remove('active');
-                            puOverlay.style.boxShadow = 'none';
-                        }
-                    }
-                }
-            }
-            break;
-            
-        case 9: // Hoàn thành hướng dẫn
-            textEl.innerHTML = "🎉 CHÚC MỪNG BẠN ĐÃ HOÀN THÀNH HƯỚNG DẪN!";
-            subtextEl.innerHTML = "Hãy nhấn nút <b>🚀 VÀO TRẬN CHIẾN NGAY</b> bên dưới để gia nhập chiến trường chính.";
-            
-            if (!STATE.tutorialData.completeBtnCreated) {
-                STATE.tutorialData.completeBtnCreated = true;
-                const completeBtn = document.createElement('button');
-                completeBtn.className = "btn btn-success font-weight-bold px-4 py-2 mt-2";
-                completeBtn.id = "btn-complete-tutorial";
-                completeBtn.innerText = "🚀 VÀO TRẬN CHIẾN NGAY";
-                completeBtn.style.fontSize = "12px";
-                completeBtn.onclick = () => {
-                    completeBtn.remove();
-                    finishTutorial();
-                };
-                const container = alertEl.querySelector('.d-flex');
-                if (container) container.appendChild(completeBtn);
-            }
-            break;
+document.addEventListener("contextmenu", e => e.preventDefault());
+
+
+const HAKARI_DANCE = { spawned: false, active: false };
+
+function startGame() {
+    if (!gl) {
+        alert("Thiết bị hoặc trình duyệt của bác không hỗ trợ WebGL2. Vui lòng chuyển sang trình duyệt/thiết bị khác!");
+        return;
     }
-}
+    const chillSound = document.getElementById('chill-theme-sound');
+    if (chillSound) chillSound.pause();
 
-function finishTutorial() {
-    const alertEl = document.getElementById('tutorial-alert');
-    if (alertEl) alertEl.style.display = 'none';
-    
-    // Clear complete button if it exists
-    const completeBtn = document.getElementById('btn-complete-tutorial');
-    if (completeBtn) completeBtn.remove();
-    
-    localStorage.setItem('tutorialCompleted', 'true');
-    
-    // Reset inputs/settings
-    const jsZone = document.getElementById('joystick-zone');
-    if (jsZone) jsZone.classList.remove('tutorial-highlight');
-    const btnShoot = document.getElementById('btn-shoot');
-    if (btnShoot) btnShoot.classList.remove('tutorial-highlight');
-    const btnSprint = document.getElementById('btn-sprint');
-    if (btnSprint) btnSprint.classList.remove('tutorial-highlight');
-    const btnSettings = document.getElementById('btn-settings');
-    if (btnSettings) btnSettings.classList.remove('tutorial-highlight');
-    
-    // Show horror loading screen
-    const screen = document.getElementById('tutorial-loading-screen');
-    if (screen) {
-        screen.classList.remove('hidden');
-        screen.style.opacity = '1';
+    const combatSound1 = document.getElementById('combat-theme1-sound');
+    if (combatSound1) {
+        combatSound1.currentTime = 0;
+        combatSound1.play().catch(e => console.log("Audio play failed:", e));
     }
-    
-    const tips = [
-        "Bắn vào đầu quái vật đột biến để gây gấp rưỡi sát thương!",
-        "Hãy chú ý nhặt các hộp kỹ năng màu Cam và Lam cùng lúc để kích hoạt TRẠNG THÁI TÍM!",
-        "Thùng nhiên liệu đỏ có thể tạo vụ nổ cực mạnh, giúp tiêu diệt bầy quái nhanh chóng.",
-        "Kích hoạt ULTIMATE bằng phím E (hoặc nút ảo) giúp bạn bất tử và có vũ khí đại bác hủy diệt.",
-        "Sử dụng các bệ nhảy Jump Pad để né tránh và di chuyển lên các nóc nhà/xe an toàn."
-    ];
-    const tipText = document.getElementById('horror-tip-text');
-    if (tipText) tipText.innerText = tips[Math.floor(Math.random() * tips.length)];
-    
-    let progress = 0;
-    const bar = document.getElementById('horror-loading-bar-fill');
-    if (bar) bar.style.width = '0%';
-    
-    const interval = setInterval(() => {
-        progress += 5;
-        if (bar) bar.style.width = progress + '%';
-        if (progress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-                if (screen) {
-                    screen.classList.add('hidden');
-                    screen.style.opacity = '0';
-                }
-                startMainGame();
-            }, 300);
-        }
-    }, 150);
-}
-
-function startTutorial() {
+    const nameInput = document.getElementById('player-name-input');
+    const name = nameInput.value.trim();
+    if (!name) {
+        alert("VUI LÒNG NHẬP TÊN TRƯỚC KHI BẮT ĐẦU!");
+        nameInput.focus();
+        return;
+    }
+    STATE.playerName = name;
+    localStorage.setItem('savedPlayerName', name); // Lưu tên vào trình duyệt
     STATE.screen = 'game';
-    window.applyDifficulty('normal');
-    
-    initTutorialState();
-    
-    STATE.startTime = Date.now();
-    STATE.gameEnded = false;
-    
-    STATE.player.pos = V3.create(0, 0.5, 0);
-    STATE.player.vel = V3.create(0, 0, 0);
-    STATE.player.alive = true;
-    STATE.player.kills = 0;
-    STATE.player.streak = 0;
-    STATE.player.damageFlash = 0;
-    
-    STATE.bots = [];
-    STATE.loot = [];
-    STATE.barrels = [];
-    STATE.pads = [];
-    STATE.projectiles = [];
-    STATE.particles = [];
-    STATE.shake = 0;
-    STATE.obstacles = [];
-    STATE.questItems = [];
-    STATE.finalPaper = null;
-    STATE.hasRedKey = false;
-    
-    deleteMesh(ASSETS.ground);
-    ASSETS.ground = genTerrain();
-    
-    STATE.tutorialData.settingsActionClicked = false;
-    
-    document.getElementById('main-menu').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.add('hidden');
-    document.getElementById('ui-layer').style.display = 'block';
-    
-    // Setup tutorial UI buttons
-    const btnSkip = document.getElementById('btn-skip-tutorial');
-    if (btnSkip) {
-        btnSkip.onclick = () => {
-            finishTutorial();
-        };
-    }
-    const btnExit = document.getElementById('btn-exit-tutorial');
-    if (btnExit) {
-        btnExit.onclick = () => {
-            const alertEl = document.getElementById('tutorial-alert');
-            if (alertEl) alertEl.style.display = 'none';
-            document.exitPointerLock();
-            STATE.screen = 'menu';
-            document.getElementById('main-menu').classList.remove('hidden');
-            document.getElementById('ui-layer').style.display = 'none';
-        };
-    }
-    
-    // Hide boss HP, kill boss button
-    const bossHpContainer = document.getElementById('boss-hp-container');
-    if (bossHpContainer) bossHpContainer.style.display = 'none';
-    const btnKillBoss = document.getElementById('kill-last-bot-btn');
-    if (btnKillBoss) btnKillBoss.style.display = 'none';
-    
-    if (isMobile) {
-        const docElm = document.documentElement;
-        if (docElm.requestFullscreen) docElm.requestFullscreen().catch(e => console.log(e));
-        if (screen.orientation && screen.orientation.lock) {
-            screen.orientation.lock('landscape').catch(e => console.log(e));
-        }
-    }
-    
-    gl.canvas.requestPointerLock();
-    requestAnimationFrame(window.loop);
-}
-
-function startMainGame() {
-    STATE.screen = 'game';
-    STATE.isTutorial = false;
-    
-    const alertEl = document.getElementById('tutorial-alert');
-    if (alertEl) alertEl.style.display = 'none';
-    
+    // Áp dụng lại độ khó (đảm bảo stats đúng khi bắt đầu trận)
     window.applyDifficulty(window.CURRENT_DIFFICULTY);
-    
+
     STATE.player.hp = window.GAME_CONFIG.player.maxHp;
     STATE.player.maxHp = window.GAME_CONFIG.player.maxHp;
     STATE.player.armor = 0;
     STATE.player.maxArmor = window.GAME_CONFIG.player.maxArmor;
-    
+
+    // Đồng bộ dame vũ khí vào STATE.weapons
     STATE.weapons[0].damage = window.GAME_CONFIG.weapons.pistol.damage;
     STATE.weapons[1].damage = window.GAME_CONFIG.weapons.smg.damage;
     STATE.weapons[2].damage = window.GAME_CONFIG.weapons.sniper.damage;
-    
+
+    // Reset boss với HP đúng theo độ khó
     STATE.boss.hp = window.GAME_CONFIG.boss.hp;
     STATE.boss.maxHp = window.GAME_CONFIG.boss.hp;
-    STATE.boss.active = false;
-    STATE.boss.dead = false;
+    STATE.boss.active = false; STATE.boss.dead = false;
     STATE.bossTriggered = false;
-    
-    STATE.startTime = Date.now();
-    STATE.gameEnded = false;
-    
+
+    STATE.startTime = Date.now(); STATE.gameEnded = false;
+
+    // CẬP NHẬT CHẾ ĐỘ TRÊN HUD
     const dPreset = window.DIFFICULTY_PRESETS[window.CURRENT_DIFFICULTY];
     const diffDisplay = document.getElementById('difficulty-display');
     if (diffDisplay) {
         diffDisplay.innerText = dPreset.label;
         diffDisplay.style.color = dPreset.color;
     }
-    
-    STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0);
-    STATE.player.vel = V3.create(0, -1, 0);
-    STATE.player.alive = true;
-    STATE.player.kills = 0;
-    STATE.player.streak = 0;
-    STATE.player.damageFlash = 0;
-    
-    STATE.bots = [];
-    STATE.loot = [];
-    STATE.barrels = [];
-    STATE.pads = [];
-    STATE.projectiles = [];
-    STATE.particles = [];
-    STATE.shake = 0;
-    STATE.obstacles = [];
-    STATE.questItems = [];
-    STATE.finalPaper = null;
-    STATE.hasRedKey = false;
-    
+
+
+    STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
+
+    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null; STATE.hasRedKey = false;
+    // Reset QuestManager
     if (window.QuestManager) {
         window.QuestManager.totalCollected = 0;
         window.QuestManager.totalCompleted = 0;
         window.QuestManager.activeQuests = [];
-        window.QuestManager.completedTypes = [];
+        window.QuestManager.completedTypes = []; // Cực kỳ quan trọng để bắt đầu game mới không bị kẹt quest cũ!
         window.QuestManager.damageTracker = 0;
         window.QuestManager.cumulativeKills = 0;
         window.QuestManager.cumulativeBarrelKills = 0;
@@ -1514,13 +1040,11 @@ function startMainGame() {
     }
     STATE.enragedAnnounced = false;
     STATE.finalAnnounced = false;
-    
-    deleteMesh(ASSETS.ground);
-    ASSETS.ground = genTerrain();
-    
+    // Reset game state
+
     const minimap = document.getElementById('minimap');
     if (minimap) { minimap.width = 200; minimap.height = 200; }
-    
+
     for (let i = 0; i < STATE.config.botCount; i++) {
         let x, z, y;
         do {
@@ -1529,7 +1053,8 @@ function startMainGame() {
             x = Math.cos(angle) * dist;
             z = Math.sin(angle) * dist;
             y = getHeight(x, z);
-        } while (y <= -8.5);
+        } while (y <= -8.5); // Đảm bảo bot không spawn dưới nước
+
         STATE.bots.push({ pos: V3.create(x, y + 1, z), hp: window.GAME_CONFIG.bot.hpLv1, target: null, state: 'roam', nextMove: 0, fireCD: 0, id: i });
     }
     for (let i = 0; i < 300; i++) {
@@ -1539,9 +1064,11 @@ function startMainGame() {
             z = (Math.random() - 0.5) * MAP_SIZE * 0.9;
             y = getHeight(x, z);
         } while (y <= -8.5);
+        // 0: Đạn, 1: Máu, 2: Giáp, 3: Random Powerup
         STATE.loot.push({ pos: V3.create(x, y + 0.5, z), type: i % 4 });
     }
-    for (let i = 0; i < 40; i++) {
+
+    for (let i = 0; i < 40; i++) {  // x2 thùng nổ
         let x, z, y;
         do {
             x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
@@ -1552,6 +1079,7 @@ function startMainGame() {
     }
     const activePreset = dPreset || window.DIFFICULTY_PRESETS['normal'];
     const qCount = activePreset.questCount || 5;
+    // Mỗi chế độ đều thiếu 1 hộp trên bản đồ (N - 1), chỉ khi kill Boss mới rớt hộp cuối!
     for (let i = 0; i < qCount - 1; i++) {
         let x, z, y;
         do {
@@ -1570,8 +1098,11 @@ function startMainGame() {
         } while (y <= -8.5);
         STATE.pads.push({ pos: V3.create(x, y, z) });
     }
-    
+
+    // Hàm kiểm tra nằm trong "Con Đường Tuyệt Vọng" (The Void Path)
     const isInPath = (x, z) => (x > -30 && x < 30 && z < 20 && z > -180);
+
+    // Khởi tạo Vật cản (Cây, Nhà, Xe)
     for (let i = 0; i < (isMobile ? 25 : 60); i++) {
         const x = Math.sin(i * 132.1) * MAP_SIZE * 0.4;
         const z = Math.cos(i * 52.3) * MAP_SIZE * 0.4;
@@ -1596,6 +1127,8 @@ function startMainGame() {
         } while (y <= -8.5 || isInPath(x, z));
         STATE.obstacles.push({ type: 'car', pos: { x, y: y - 0.5, z }, radius: 2.5, rot: Math.random() * Math.PI, scale: 1 });
     }
+
+    // Spawn Cột đá Obsidian thành 2 hàng dọc (The Void Path)
     for (let i = 0; i < 12; i++) {
         const zPos = -10 - (i * 10);
         const xLeft = -15;
@@ -1605,64 +1138,28 @@ function startMainGame() {
         STATE.obstacles.push({ type: 'pillar', pos: { x: xLeft, y: yL - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
         STATE.obstacles.push({ type: 'pillar', pos: { x: xRight, y: yR - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
     }
-    const doorX = 0, doorZ = -150;
+    // Đặt Cánh Cửa Đỏ Rực cố định ở góc xa bản đồ
+    const doorX = 0;
+    const doorZ = -150;
     const doorY = getHeight(doorX, doorZ);
     STATE.obstacles.push({ type: 'redDoor', pos: { x: doorX, y: doorY - 1.0, z: doorZ }, radius: 8.0, rot: 0, scale: 1 });
-    
-    document.getElementById('main-menu').classList.add('hidden');
-    document.getElementById('game-over-screen').classList.add('hidden');
-    document.getElementById('ui-layer').style.display = 'block';
-    
-    // Show boss HP, kill boss button
-    const bossHpContainer = document.getElementById('boss-hp-container');
-    if (bossHpContainer) bossHpContainer.style.display = 'none';
-    const btnKillBoss = document.getElementById('kill-last-bot-btn');
-    if (btnKillBoss) {
-        btnKillBoss.style.display = 'block';
-        btnKillBoss.style.pointerEvents = 'auto';
-    }
-    
+    // Đã xóa vòng lặp spawn STATE.powerups để chỉ giữ lại 4 loại hòm cơ bản (STATE.loot)
+
+    document.getElementById('main-menu').classList.add('hidden'); document.getElementById('game-over-screen').classList.add('hidden'); document.getElementById('ui-layer').style.display = 'block';
+
+    // Tự động xoay ngang và full màn hình trên Mobile
     if (isMobile) {
         const docElm = document.documentElement;
         if (docElm.requestFullscreen) docElm.requestFullscreen().catch(e => console.log(e));
+        else if (docElm.webkitRequestFullscreen) docElm.webkitRequestFullscreen().catch(e => console.log(e));
         if (screen.orientation && screen.orientation.lock) {
             screen.orientation.lock('landscape').catch(e => console.log(e));
         }
     }
-    
-    gl.canvas.requestPointerLock();
-    requestAnimationFrame(window.loop);
-}
 
-function startGame(forceTutorial = false) {
-    if (!gl) {
-        alert("Thiết bị hoặc trình duyệt của bác không hỗ trợ WebGL2. Vui lòng chuyển sang trình duyệt/thiết bị khác!");
-        return;
-    }
-    const chillSound = document.getElementById('chill-theme-sound');
-    if (chillSound) chillSound.pause();
+    if (typeof sendLiveNotification === 'function') sendLiveNotification();
+    gl.canvas.requestPointerLock(); requestAnimationFrame(window.loop);
 
-    const combatSound1 = document.getElementById('combat-theme1-sound');
-    if (combatSound1) {
-        combatSound1.currentTime = 0;
-        combatSound1.play().catch(e => console.log("Audio play failed:", e));
-    }
-    const nameInput = document.getElementById('player-name-input');
-    const name = nameInput.value.trim();
-    if (!name) {
-        alert("VUI LÒNG NHẬP TÊN TRƯỚC KHI BẮT ĐẦU!");
-        nameInput.focus();
-        return;
-    }
-    STATE.playerName = name;
-    localStorage.setItem('savedPlayerName', name);
-
-    const isFirstTime = localStorage.getItem('tutorialCompleted') !== 'true';
-    if (isFirstTime || forceTutorial) {
-        startTutorial();
-    } else {
-        startMainGame();
-    }
 }
 
 // --- HỆ THỐNG SỐ DAME (DAMAGE INDICATORS) ---
@@ -1708,10 +1205,6 @@ function project3DToScreen(pos) {
 
 function update(dt) {
     if (STATE.screen === 'pause' || STATE.inputLocked) return;
-
-    if (STATE.isTutorial) {
-        updateTutorial(dt);
-    }
 
     if (!STATE.gameEnded && STATE.screen === 'game' && Math.random() < 0.0005) {
         // Random lore ambient sounds/texts if needed
@@ -1936,15 +1429,7 @@ function update(dt) {
     if (!onPad && p.pos.y < floorH) { p.pos.y = floorH; p.vel.y = 0; p.grounded = true; } else if (!onPad) p.grounded = false;
     if (STATE.keys['Space'] && p.grounded) { p.vel.y = window.GAME_CONFIG.player.jumpPower; p.grounded = false; }
     const now = performance.now(), weapon = STATE.weapons[p.weaponIdx];
-    if (!STATE.hasRedKey && STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) {
-        fireWeapon(p, STATE.camera.rot, weapon, true);
-        weapon.ammo--;
-        STATE.lastShot = now;
-        p.recoil = 0.1;
-        if (STATE.isTutorial && STATE.tutorialStep === 2) {
-            STATE.tutorialData.shotsFired = (STATE.tutorialData.shotsFired || 0) + 1;
-        }
-    }
+    if (!STATE.hasRedKey && STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; }
     if (p.weaponIdx !== p.lastWeaponIdx) {
         p.weaponSwitchTime = 0;
         p.lastWeaponIdx = p.weaponIdx;
@@ -2107,13 +1592,7 @@ function update(dt) {
     });
     STATE.projectiles = STATE.projectiles.filter(p => !p.dead);
     STATE.bots.forEach((bot, i) => {
-        if (bot.hp <= 0) return;
-        if (bot.isDummy) {
-            bot.pos.y = getHeight(bot.pos.x, bot.pos.z);
-            bot.fireCD = 9999;
-            return;
-        }
-        bot.fireCD -= dt; const dist = V3.dist(bot.pos, p.pos);
+        if (bot.hp <= 0) return; bot.fireCD -= dt; const dist = V3.dist(bot.pos, p.pos);
 
         // --- VA CHẠM GIỮA CÁC BOT (Tránh dính chùm) ---
         for (let j = i + 1; j < STATE.bots.length; j++) {
@@ -2323,11 +1802,7 @@ function update(dt) {
         }
         else if (closeLoot.type === 2) { p.armor = Math.min(p.maxArmor, p.armor + 150); pickedName = "NHẬN GIÁP"; }
         else if (closeLoot.type === 3) {
-            let puType = Math.random() < 0.5 ? 0 : 1;
-            if (STATE.isTutorial) {
-                if (closeLoot.isTutorialSpeed) puType = 0;
-                else if (closeLoot.isTutorialDamage) puType = 1;
-            }
+            const puType = Math.random() < 0.5 ? 0 : 1;
             const hasActive = p.powerup && p.powerup.time > 0;
             if (window.QuestManager) window.QuestManager.onEvent('pickup_powerup', 1);
 
@@ -2368,13 +1843,11 @@ function update(dt) {
             if (pMsg) pMsg.classList.remove('show');
         }, 1500);
 
-        // Hồi lại hòm sau 20s (Chỉ khi không phải hướng dẫn)
-        if (!STATE.isTutorial) {
-            const respawnPos = { ...closeLoot.pos }, respawnType = closeLoot.type;
-            setTimeout(() => {
-                STATE.loot.push({ pos: respawnPos, type: respawnType });
-            }, 20000);
-        }
+        // Hồi lại hòm sau 20s
+        const respawnPos = { ...closeLoot.pos }, respawnType = closeLoot.type;
+        setTimeout(() => {
+            STATE.loot.push({ pos: respawnPos, type: respawnType });
+        }, 20000);
 
         // Premium animation: Splash tàn lửa/hạt khói dạ quang màu tương ứng khi nhặt hòm
         let particleColor = [1.0, 0.8, 0.0]; // Mặc định Vàng cho Đạn
@@ -3365,9 +2838,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCancelHud = document.getElementById('btn-cancel-hud');
     if (btnCancelHud) {
         btnCancelHud.addEventListener('click', () => {
-            if (window.STATE && window.STATE.isTutorial && window.STATE.tutorialStep === 5) {
-                window.STATE.tutorialData.settingsActionClicked = true;
-            }
             window.isEditingHUD = false;
             if (STATE.screen === 'pause') STATE.screen = 'game'; // Tiếp tục
             modalSettings.classList.add('hidden');
@@ -3411,9 +2881,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnSaveHud) {
         btnSaveHud.addEventListener('click', () => {
-            if (window.STATE && window.STATE.isTutorial && window.STATE.tutorialStep === 5) {
-                window.STATE.tutorialData.settingsActionClicked = true;
-            }
             window.isEditingHUD = false;
             if (STATE.screen === 'pause') STATE.screen = 'game'; // Tiếp tục
             modalSettings.classList.add('hidden');
@@ -3458,9 +2925,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnResetHud) {
         btnResetHud.addEventListener('click', () => {
-            if (window.STATE && window.STATE.isTutorial && window.STATE.tutorialStep === 5) {
-                window.STATE.tutorialData.settingsActionClicked = true;
-            }
             mobileBtns.forEach(id => {
                 const btn = document.getElementById(id);
                 if (btn) {
@@ -3555,14 +3019,6 @@ document.addEventListener('DOMContentLoaded', () => {
         draggedBtn.style.transform = 'none'; // Bỏ các transform scale để dùng kích thước thật trong CSS
     });
     document.addEventListener('mouseup', () => { draggedBtn = null; });
-
-    // REPLAY TUTORIAL
-    const btnReplay = document.getElementById('btn-replay-tutorial');
-    if (btnReplay) {
-        btnReplay.addEventListener('click', () => {
-            startGame(true);
-        });
-    }
 });
 
 
