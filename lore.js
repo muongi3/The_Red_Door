@@ -85,6 +85,7 @@ function getLoreFragments() {
     const diff = window.CURRENT_DIFFICULTY || 'normal';
     return LORE_BY_DIFFICULTY[diff] || LORE_BY_DIFFICULTY['normal'];
 }
+window.getLoreFragments = getLoreFragments;
 
 // Kho nhiệm vụ động với đúng 8 loại nhiệm vụ hoàn toàn độc lập, khác biệt, cân bằng theo độ khó!
 function getQuestPool() {
@@ -288,6 +289,35 @@ window.QuestManager = {
         this.updateUI();
         if (this.activeQuests.length === 0)
             document.getElementById('quest-tracker-ui').classList.add('hidden');
+    },
+
+    onRedKeyPickup: function () {
+        const maxFrags = getLoreFragments().length;
+        this.totalCollected = Math.min(this.totalCollected + 1, maxFrags);
+        this.totalCompleted = Math.min(this.totalCompleted + 1, maxFrags);
+
+        // Hiển thị Lore Fragment của mảnh cuối cùng vừa nhận
+        const frag = getLoreFragments()[this.totalCompleted - 1];
+        if (frag) {
+            const diff = window.CURRENT_DIFFICULTY || 'normal';
+            if (window.LoreSystem) {
+                window.LoreSystem.unlockSecret(diff, this.totalCompleted - 1);
+            }
+
+            const container = document.getElementById('lore-container');
+            if (container) {
+                container.innerText = frag.text;
+                container.classList.remove('hidden');
+                container.style.opacity = '0';
+                setTimeout(() => { container.style.opacity = '1'; }, 100);
+                setTimeout(() => {
+                    container.style.opacity = '0';
+                    setTimeout(() => container.classList.add('hidden'), 2000);
+                }, 6000);
+            }
+        }
+
+        this.updateUI();
     },
 
     /* --- Cập nhật UI Quest Tracker --- */

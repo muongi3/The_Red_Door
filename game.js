@@ -1325,16 +1325,7 @@ function update(dt) {
                 playAudio('ammo');
 
                 if (window.QuestManager) {
-                    const maxFrags = getLoreFragments().length;
-                    window.QuestManager.totalCollected = maxFrags;
-                    window.QuestManager.totalCompleted = maxFrags;
-
-                    // Mở khóa vĩnh viễn bí mật cuối cùng của độ khó hiện tại trong thành tựu
-                    const diff = window.CURRENT_DIFFICULTY || 'normal';
-                    if (window.LoreSystem) {
-                        window.LoreSystem.unlockSecret(diff, maxFrags - 1);
-                    }
-                    window.QuestManager.updateUI();
+                    window.QuestManager.onRedKeyPickup();
                 }
 
                 // Chuyển sang trạng thái giữ Chìa Khóa Đỏ
@@ -1357,17 +1348,8 @@ function update(dt) {
             if (STATE.keys['KeyE']) {
                 STATE.keys['KeyE'] = false; // consume key
 
-                // Gửi báo cáo chiến thắng lên Discord NGAY LẬP TỨC khi bấm nút mở Cánh Cửa Đỏ để chuyển sang Ending
-                const duration = Math.floor((Date.now() - STATE.startTime) / 1000);
-                STATE.finalStats = {
-                    win: true,
-                    kills: STATE.player.kills,
-                    duration: duration,
-                    date: new Date().toLocaleString('vi-VN')
-                };
-                if (window.sendFinalResultToDiscord) {
-                    window.sendFinalResultToDiscord(false);
-                }
+                // KHÔNG gửi Discord tại đây để tránh double-send với showRealEndScreen
+                // Discord sẽ được gửi 1 lần duy nhất từ showRealEndScreen() sau khi cốt truyện kết thúc
 
                 STATE.hasRedKey = false; // reset
 
@@ -1808,13 +1790,6 @@ function update(dt) {
             bot.grounded = false;
         }
     });
-    let barrelKills = 0;
-    STATE.bots.forEach(bot => {
-        if (bot.hp <= 0 && bot.killedByBarrel) {
-            barrelKills++;
-        }
-    });
-
     STATE.bots = STATE.bots.filter(b => {
         if (b.hp <= 0) {
             if (b.uiBar && b.uiBar.parentNode) {
@@ -2366,6 +2341,8 @@ function killBoss() {
     b.dead = true;
     b.active = false;
     STATE.player.kills += 1;
+    // Thông báo cho QuestManager để kill quest được tính khi hạ Boss
+    if (window.QuestManager) window.QuestManager.onEvent('kill', 1);
     showGlobalAnnouncement("HAKARI ĐÃ BỊ TRIỆT TIÊU!", 5000);
 
     // DỌN DẸP MESH KHI BOSS CHẾT

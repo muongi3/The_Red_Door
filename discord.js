@@ -10,10 +10,13 @@ const WEBHOOK_URL = "https://discord.com/api/webhooks/1499169990350471359/SQrGcS
 function sendLiveNotification() {
     const STATE = window.STATE;
     const time = new Date().toLocaleTimeString('vi-VN');
-    const bots = STATE.config ? (STATE.config.botCount || 25) : 25;
-    const diffLabel = window.DIFFICULTY_PRESETS[window.CURRENT_DIFFICULTY].label;
+    const bots = (STATE && STATE.config) ? (STATE.config.botCount || 25) : 25;
+    const diffLabel = (window.DIFFICULTY_PRESETS && window.CURRENT_DIFFICULTY && window.DIFFICULTY_PRESETS[window.CURRENT_DIFFICULTY]) 
+        ? window.DIFFICULTY_PRESETS[window.CURRENT_DIFFICULTY].label 
+        : "Thường";
+    const playerName = (STATE && STATE.playerName) ? STATE.playerName : "Người chơi";
     const message = [
-        `🎮 **${STATE.playerName}** vừa bắt đầu trận!`,
+        `🎮 **${playerName}** vừa bắt đầu trận!`,
         `━━━━━━━━━━━━━━━`,
         `⏰ Giờ: \`${time}\``,
         `🤖 Số bot: \`${bots}\``,
@@ -112,7 +115,7 @@ document.addEventListener('visibilitychange', () => {
     const STATE = window.STATE;
     if (document.visibilityState === 'hidden') {
         // Thông báo ngay khi người chơi vừa ẩn game xuống nền
-        if (!STATE.hasExited && STATE.screen === 'game') {
+        if (STATE && !STATE.hasExited && STATE.screen === 'game') {
              // Chỉ thông báo "Ẩn game" nếu đang trong trận
              sendExitToDiscord('Ẩn game xuống nền (có thể đã thoát)');
         }
