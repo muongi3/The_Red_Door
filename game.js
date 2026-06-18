@@ -22,13 +22,14 @@ window.STATE = {
     screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
     mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [], questItems: [],
 
-    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0 },
+    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0, standUpTimer: 0, blinkTimer: 0, blinkDuration: 0.15, blinkInterval: 4.5 },
     weapons: [
         { name: "Pistol", ...window.GAME_CONFIG.weapons.pistol, ammo: window.GAME_CONFIG.weapons.pistol.maxAmmo, type: 0 },
         { name: "SMG", ...window.GAME_CONFIG.weapons.smg, ammo: window.GAME_CONFIG.weapons.smg.maxAmmo, type: 1 },
         { name: "Sniper", ...window.GAME_CONFIG.weapons.sniper, ammo: window.GAME_CONFIG.weapons.sniper.maxAmmo, type: 2 }
     ],
-    lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 },
+    lastShot: 0, shake: 0, config: { botCount: 20, zoneSpeed: 5 }, muzzleFlashTime: 0, hitPause: 0,
+    weaponAnim: { swayX: 0, swayY: 0, recoilZ: 0, bobPhase: 0, equipSlide: 0 },
     inputLocked: false,
     bossTriggered: false,
     isAiming: false,
@@ -91,6 +92,56 @@ const M4 = {
 };
 
 let gl;
+
+function applyGraphicsSettings() {
+    const res = localStorage.getItem('graphicsResolution') || (isMobile ? 'medium' : 'high');
+    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+
+    // Update select elements in UI if they exist
+    const resSelect = document.getElementById('graphics-resolution-select');
+    const vfxSelect = document.getElementById('graphics-vfx-select');
+    if (resSelect) resSelect.value = res;
+    if (vfxSelect) vfxSelect.value = vfx;
+
+    const resValEl = document.getElementById('graphics-resolution-val');
+    const vfxValEl = document.getElementById('graphics-vfx-val');
+
+    let resScale = 1.0;
+    if (res === 'ultralow') {
+        resScale = 0.25;
+        if (resValEl) resValEl.innerText = "Siêu Mượt (360p - 0.25x)";
+    } else if (res === 'low') {
+        resScale = 0.45;
+        if (resValEl) resValEl.innerText = "Mượt (480p - 0.45x)";
+    } else if (res === 'medium') {
+        resScale = 0.70;
+        if (resValEl) resValEl.innerText = "Trung bình (720p - 0.7x)";
+    } else {
+        resScale = 1.0;
+        if (resValEl) resValEl.innerText = "Cao (1080p - 1.0x)";
+    }
+
+    if (vfxValEl) {
+        if (vfx === 'low') vfxValEl.innerText = "Tối thiểu";
+        else if (vfx === 'medium') vfxValEl.innerText = "Bình thường";
+        else vfxValEl.innerText = "Tối đa";
+    }
+
+    // Apply canvas resolution scaling
+    if (gl && gl.canvas) {
+        gl.canvas.width = window.innerWidth * resScale;
+        gl.canvas.height = window.innerHeight * resScale;
+        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        // Sắt nét khi upscale: dùng pixelated để pixel cứng (không bị mờ nhòe)
+        gl.canvas.style.imageRendering = (resScale < 1.0) ? 'pixelated' : 'auto';
+    }
+
+    // Re-initialize grass patches if VFX settings changed
+    if (typeof initGrassPatches === 'function') {
+        initGrassPatches();
+    }
+}
+
 window.addEventListener('load', () => {
     gl = document.getElementById('glcanvas').getContext('webgl2', { antialias: !isMobile, powerPreference: "high-performance" });
     if (!gl) {
@@ -99,10 +150,10 @@ window.addEventListener('load', () => {
         return;
     }
     console.log("✅ WebGL2 OK");
-    // Tối ưu hóa mạnh cho mobile: Giảm độ phân giải render xuống 60% để mượt hơn
-    const resScale = isMobile ? 0.6 : 1.0;
-    gl.canvas.width = window.innerWidth * resScale;
-    gl.canvas.height = window.innerHeight * resScale;
+
+    // Tự động load và áp dụng cài đặt đồ họa
+    applyGraphicsSettings();
+
     console.log("🎨 Khởi tạo Graphics...");
     initGraphics();
     console.log("📦 Khởi tạo Assets...");
@@ -155,15 +206,19 @@ uniform vec3 uEmitColor;
 uniform float uTime;
 uniform bool uIsWater;
 uniform bool uIsSky;
+uniform vec3 uPointLightPos;
+uniform vec3 uPointLightColor;
+uniform float uMuzzleFlash;
 
 out vec4 outColor;
 
 void main() {
     if(uIsSky) {
-        vec3 skyTop = vec3(0.1, 0.0, 0.2);
-        vec3 skyBottom = vec3(0.0, 0.5, 0.8);
+        // Horror sky: deep purple/blood red gradient
+        vec3 skyTop = vec3(0.03, 0.0, 0.08);
+        vec3 skyHorizon = vec3(0.14, 0.02, 0.04);
         float h = normalize(vPos - uCamPos).y * 0.5 + 0.5;
-        outColor = vec4(mix(skyBottom, skyTop, h), 1.0);
+        outColor = vec4(mix(skyHorizon, skyTop, h), 1.0);
         return;
     }
 
@@ -175,49 +230,88 @@ void main() {
     
     if(uIsWater) {
         float wave = sin(vPos.x * 0.5 + uTime) * cos(vPos.z * 0.5 + uTime) * 0.1;
-        baseColor = vec3(0.08, 0.01, 0.2);
+        baseColor = vec3(0.04, 0.01, 0.14); // Darker horror water
         N = normalize(N + vec3(wave, 0.0, wave));
     }
 
     vec3 emissive = uEmitColor;
-    if (vColor.r > 0.95 && vColor.g < 0.05 && vColor.b < 0.05) {
-        // Các chi tiết đỏ thuần khiết (như mắt của Bot) sẽ tự động phát sáng rực rỡ siêu cấp
-        emissive += vec3(4.0, 0.0, 0.0);
+    
+    // Kiểm tra xem có phải đang vẽ Red Door hay không (sử dụng tín hiệu ma thuật uEmitColor.b để lọc)
+    bool isRedDoor = false;
+    bool hasKey = false;
+    if (uEmitColor.r == 0.0 && uEmitColor.g == 0.0 && (abs(uEmitColor.b - 0.123) < 0.001 || abs(uEmitColor.b - 0.456) < 0.001)) {
+        isRedDoor = true;
+        hasKey = (abs(uEmitColor.b - 0.456) < 0.001);
+        emissive = vec3(0.0); // Xóa bỏ uEmitColor trên khung cửa, cánh gỗ và bản lề sắt để không bị sáng rực nguyên khối đỏ
     }
 
+    if (isRedDoor) {
+        // Chỉ làm phát sáng phần năng lượng đỏ của Cổng và khe nứt trung tâm!
+        if (vColor.r > 0.4 && vColor.g < 0.08 && vColor.b < 0.08) {
+            float pulseSpeed = hasKey ? 8.0 : 2.5;
+            float baseGlow = hasKey ? 4.5 : 2.5;
+            float pulse = 1.0 + sin(uTime * pulseSpeed) * 0.4;
+            emissive = vec3(vColor.r * baseGlow * pulse, 0.0, 0.0);
+        }
+    } else {
+        // Auto-emissive cho mắt quái vật đỏ thuần khiết (chỉ chạy khi không phải Red Door)
+        if (vColor.r > 0.95 && vColor.g < 0.05 && vColor.b < 0.05) {
+            emissive += vec3(5.5, 0.0, 0.0); // Stronger monster eye glow
+        }
+    }
+
+    // Improved diffuse: smoother + more ambient light (easier to see)
     float diff = dot(N, L);
-    float light = smoothstep(-0.2, 0.5, diff) * 0.6 + 0.4;
+    float light = smoothstep(-0.3, 0.6, diff) * 0.5 + 0.5; // 50% more ambient than before
     
     vec3 H = normalize(L + V);
-    float spec = pow(max(dot(N, H), 0.0), uIsWater ? 128.0 : 32.0);
-    float specMask = smoothstep(0.7, 0.8, spec) * (uIsWater ? 0.8 : 0.3);
+    float spec = pow(max(dot(N, H), 0.0), uIsWater ? 128.0 : 48.0);
+    float specMask = smoothstep(0.75, 0.85, spec) * (uIsWater ? 0.9 : 0.38);
     
+    // Dynamic point light (boss aura, muzzle, barrel fire)
+    float pointDist = length(uPointLightPos - vPos);
+    float pointAtten = max(0.0, 1.0 - pointDist / 28.0);
+    pointAtten *= pointAtten;
+    vec3 pointDir = normalize(uPointLightPos - vPos + vec3(0.001));
+    float pointDiff = max(dot(N, pointDir), 0.0);
+    vec3 pointContrib = uPointLightColor * pointDiff * pointAtten * 3.5;
+    
+    // Rim/fresnel lighting (creepy horror outline)
     float rimVal = 1.0 - max(dot(V, N), 0.0);
-    vec3 rimColor = vec3(0.3); // Viền sáng trắng mặc định cho địa hình/vật cản
+    vec3 rimColor = vec3(0.12, 0.04, 0.22); // Purple rim default
     if (length(emissive) > 0.0) {
-        rimColor = normalize(emissive) * 0.8; // Viền sáng mang màu dạ quang của vật thể phát sáng (outline dạ quang cho Bot)
+        rimColor = normalize(emissive) * 1.1;
     }
-    vec3 finalRim = rimColor * pow(rimVal, 4.0);
+    vec3 finalRim = rimColor * pow(rimVal, 3.0);
     
-    float glowFactor = smoothstep(0.4, 1.0, rimVal);
-    vec3 fakeBloom = emissive * glowFactor * 2.5;
+    // Enhanced fake bloom (stronger glow for emissive objects)
+    float glowFactor = smoothstep(0.25, 1.0, rimVal);
+    vec3 fakeBloom = emissive * glowFactor * 4.0; // Stronger than before (was 2.5)
     
-    vec3 finalColor = baseColor * light + vec3(specMask) + finalRim + emissive + fakeBloom;
+    // Surface micro-variation (breaks up flat look, fake texture)
+    float noiseVal = fract(sin(dot(floor(vPos.xz * 1.5), vec2(127.1, 311.7))) * 43758.5453);
+    float surfaceVar = 0.96 + noiseVal * 0.08;
     
-    float distFog = 1.0 - exp(-vDist * 0.007);
-    float heightFog = smoothstep(3.0, -1.0, vY);
-    float fogNoise = sin(vPos.x * 0.5 + uTime) * cos(vPos.z * 0.5 - uTime) * 0.5 + 0.5;
-    float totalFog = clamp(max(distFog, heightFog * 0.8 * fogNoise), 0.0, 1.0);
+    // Muzzle flash screen-space glow
+    vec3 muzzleGlow = vec3(uMuzzleFlash * 0.45, uMuzzleFlash * 0.28, uMuzzleFlash * 0.05);
     
-    // Giảm sương mù đối với các thành phần phát sáng để chúng có thể xuyên qua sương mù (Glow cuts through fog)
+    vec3 finalColor = baseColor * light * surfaceVar + vec3(specMask) + finalRim + emissive + fakeBloom + pointContrib + muzzleGlow;
+    
+    // IMPROVED FOG: 57% less dense (was 0.007, now 0.003) — much clearer!
+    float distFog = 1.0 - exp(-vDist * 0.003);
+    float heightFog = smoothstep(4.0, -2.0, vY) * 0.65;
+    float fogNoise = sin(vPos.x * 0.3 + uTime * 0.4) * cos(vPos.z * 0.3 - uTime * 0.3) * 0.5 + 0.5;
+    float totalFog = clamp(max(distFog * 0.88, heightFog * fogNoise), 0.0, 0.88);
+    
     float glowBrightness = max(emissive.r, max(emissive.g, emissive.b));
-    float fogReduction = clamp(glowBrightness * 0.22, 0.0, 0.85);
+    float fogReduction = clamp(glowBrightness * 0.32, 0.0, 0.88);
     float fogFactor = totalFog * (1.0 - fogReduction);
     
-    vec3 cosmicFogColor = mix(vec3(0.1, 0.0, 0.2), vec3(0.0, 0.1, 0.2), clamp(vY / 10.0, 0.0, 1.0));
+    // Horror fog: deep purple-black instead of cyan
+    vec3 horrorFogColor = mix(vec3(0.04, 0.0, 0.09), vec3(0.0, 0.04, 0.09), clamp(vY / 10.0, 0.0, 1.0));
     
-    float alpha = uIsWater ? 0.7 : 1.0;
-    outColor = vec4(mix(finalColor, cosmicFogColor, fogFactor), alpha);
+    float alpha = uIsWater ? 0.78 : 1.0;
+    outColor = vec4(mix(finalColor, horrorFogColor, fogFactor), alpha);
 }`;
 
 function createShader(src, type) {
@@ -249,6 +343,10 @@ function initGraphics() {
         time: gl.getUniformLocation(prog, "uTime"),
         isWater: gl.getUniformLocation(prog, "uIsWater"),
         isSky: gl.getUniformLocation(prog, "uIsSky"),
+        // Phase 1: New VFX uniforms
+        pointLightPos: gl.getUniformLocation(prog, "uPointLightPos"),
+        pointLightColor: gl.getUniformLocation(prog, "uPointLightColor"),
+        muzzleFlash: gl.getUniformLocation(prog, "uMuzzleFlash"),
     };
 }
 
@@ -320,17 +418,94 @@ function genHouseMesh() {
     const wallCol = [0.1, 0.1, 0.15]; // Tối tăm, màu Obsidian
     const roofCol = [0.1, 0.15, 0.2]; // Tôn gỉ màu xanh tím
     const woodCol = [0.05, 0.05, 0.05]; // Gỗ đen cháy
+    const glassCol = [0.0, 0.2, 0.3]; // Kính tối tăm
+    const yellowWarn = [0.8, 0.7, 0.1]; // Biển cảnh báo màu vàng bẩn
 
+    // Thân nhà chính
     push(getCube(wallCol, 5, 4, 5, 0, 2, 0));
     push(getCube([0.1, 0.1, 0.1], 1.5, 2.5, 5.1, 1.5, 1.25, 0)); // Vết thủng lớn
 
+    // Mái nhà xô lệch
     push(getCube(roofCol, 5.2, 0.3, 5.2, 0, 4.15, 0));
     push(getCube(roofCol, 4.0, 0.3, 4.0, -0.5, 4.45, 0)); // Mái sụp xô lệch
     push(getCube(roofCol, 2.0, 0.3, 2.0, 0, 4.75, 0));
 
+    // Gỗ gia cố hoen rỉ/nứt vỡ quanh nhà
     push(getCube(woodCol, 1.2, 2.5, 0.2, 0, 1.25, 2.5));
     push(getCube(woodCol, 2.0, 0.2, 0.2, 2.5, 0.1, 3.0));
     push(getCube(woodCol, 0.2, 0.2, 1.5, -3.0, 0.1, -2.0));
+
+    // CHI TIẾT PHASE 8:
+    // Cửa sổ bể (vỡ nứt)
+    push(getCube(glassCol, 0.8, 0.8, 0.1, -1.2, 2.2, 2.51)); // Cửa sổ trước
+    push(getCube([0.02, 0.02, 0.02], 0.1, 0.8, 0.12, -1.2, 2.2, 2.51)); // Thanh chớp vỡ
+    push(getCube(glassCol, 0.8, 0.8, 0.1, 1.2, 2.2, -2.51)); // Cửa sổ sau
+
+    // Vết nứt tường (Cubes đen mỏng)
+    push(getCube([0.02, 0.02, 0.02], 0.1, 1.8, 0.1, -2.51, 1.5, 1.0)); // Vết nứt đứng bên trái
+    push(getCube([0.02, 0.02, 0.02], 1.2, 0.1, 0.1, -2.51, 2.0, 1.5)); // Nhánh nứt ngang
+    push(getCube([0.02, 0.02, 0.02], 0.1, 1.5, 0.1, 2.51, 1.2, -1.0)); // Vết nứt bên phải
+
+    // Cột Antenna thu phát tín hiệu dị thường trên mái
+    push(getCube(woodCol, 0.1, 2.2, 0.1, -1.5, 5.0, -1.5)); // Trụ antenna chính
+    push(getCube(woodCol, 0.8, 0.06, 0.06, -1.5, 5.8, -1.5)); // Thanh ngang antenna 1
+    push(getCube(woodCol, 0.5, 0.06, 0.06, -1.5, 6.1, -1.5)); // Thanh ngang antenna 2
+
+    // Biển cảnh báo phóng xạ / khu vực cấm (Warning sign) gắn trên tường nhà
+    push(getCube(yellowWarn, 0.6, 0.6, 0.15, 0.0, 2.8, 2.52)); // Biển cảnh báo trước cửa
+    push(getCube([0.1, 0.1, 0.1], 0.4, 0.1, 0.16, 0.0, 2.8, 2.52)); // Ký hiệu đen cảnh báo
+
+    return createMesh(V, N, C);
+}
+
+function genDebrisMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const darkMetal = [0.05, 0.05, 0.05];
+    const brickCol = [0.25, 0.12, 0.1]; // Gạch vỡ đỏ
+    const concCol = [0.15, 0.15, 0.17]; // Bê tông xám đen
+
+    // 4 mảnh vụn xô lệch khác nhau xếp gần nhau tạo đống debris
+    push(getCube(brickCol, 0.6, 0.3, 0.5, -0.4, 0.15, 0.3));
+    push(getCube(concCol, 0.8, 0.4, 0.6, 0.3, 0.2, -0.4));
+    push(getCube(darkMetal, 0.3, 0.1, 1.2, 0.1, 0.05, 0.2));
+    push(getCube(brickCol, 0.5, 0.2, 0.4, -0.2, 0.1, -0.5));
+
+    return createMesh(V, N, C);
+}
+
+function genWarningSignMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const ironCol = [0.1, 0.1, 0.1]; // Cột sắt đen
+    const signCol = [0.8, 0.7, 0.1]; // Biển vàng dạ quang/bẩn
+    const symCol = [0.12, 0.12, 0.12]; // Ký hiệu đen
+
+    // Cột đỡ
+    push(getCube(ironCol, 0.1, 2.5, 0.1, 0, 1.25, 0));
+    // Biển báo
+    push(getCube(signCol, 1.2, 0.9, 0.1, 0, 2.1, 0.05));
+    // Ký hiệu cảnh báo
+    push(getCube(symCol, 0.8, 0.2, 0.12, 0, 2.1, 0.05));
+    push(getCube(symCol, 0.2, 0.5, 0.12, 0, 2.1, 0.05));
+
+    return createMesh(V, N, C);
+}
+
+function genLampPostMesh() {
+    let V = [], N = [], C = [];
+    const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
+    const ironCol = [0.15, 0.15, 0.15]; // Cột sắt
+    const lightCol = [1.0, 0.0, 0.0]; // Đèn đỏ phát sáng (Emissive do đỏ thuần)
+
+    // Cột đèn cao
+    push(getCube(ironCol, 0.18, 5.0, 0.18, 0, 2.5, 0));
+    // Cần đèn chĩa ra
+    push(getCube(ironCol, 0.18, 0.18, 1.5, 0, 5.0, -0.66));
+    // Hộp đèn
+    push(getCube(ironCol, 0.6, 0.4, 0.8, 0, 4.8, -1.3));
+    // Bóng đèn đỏ phát sáng
+    push(getCube(lightCol, 0.4, 0.25, 0.4, 0, 4.55, -1.3));
 
     return createMesh(V, N, C);
 }
@@ -798,6 +973,7 @@ function genTerrainFanMesh(x, z, startAng, arc, r) {
 const ASSETS = {};
 function initAssets() {
     ASSETS.tree = genTreeMesh(); ASSETS.rock = genRockMesh(); ASSETS.house = genHouseMesh(); ASSETS.car = genCarMesh();
+    ASSETS.debris = genDebrisMesh(); ASSETS.warningSign = genWarningSignMesh(); ASSETS.lampPost = genLampPostMesh();
     ASSETS.char = genCharMesh([0.35, 0.05, 0.65], false); // Người chơi: Tím Bóng Đêm dạ quang
     ASSETS.bot = genCharMesh([0.5, 0.5, 0.5], true, false);  // Bot kinh dị
     ASSETS.botEnraged = genCharMesh([0.5, 0.5, 0.5], true, true);  // Bot cuồng bạo
@@ -884,10 +1060,53 @@ function genPillarMesh() {
 function genRedDoorMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    const frame = [0.05, 0.02, 0.02];
-    const portal = [1.0, 0.0, 0.0]; // Máu rực
-    push(getCube(frame, 16.0, 40.0, 4.0, 0, 20.0, 0));
-    push(getCube(portal, 12.0, 36.0, 4.5, 0, 18.0, 0));
+
+    const darkGrey = [0.06, 0.06, 0.08]; // Đá Obsidian tối
+    const goldBronze = [0.22, 0.14, 0.04]; // Đồng cổ trang trí
+    const portalGlow = [1.0, 0.0, 0.0]; // Năng lượng/chữ cổ phát sáng đỏ rực
+    const portalGlowDeep = [0.45, 0.0, 0.0]; // Lõi năng lượng đỏ tối phía sau
+
+    // 1. CÁC BẬC THỀM ĐÁ OBSIDIAN (Staircase) dẫn lên cổng
+    push(getCube(darkGrey, 22.0, 1.5, 8.0, 0, 0.75, 2.0));
+    push(getCube(darkGrey, 18.0, 1.5, 6.0, 0, 2.25, 1.0));
+    push(getCube(darkGrey, 14.0, 1.5, 4.0, 0, 3.75, 0.0));
+
+    // 2. CỘT ĐÁ OBSIDIAN KHỔNG LỒ HAI BÊN (Obsidian Pillars)
+    push(getCube(darkGrey, 3.0, 42.0, 4.0, -9.0, 24.0, -1.0));
+    push(getCube(darkGrey, 3.0, 42.0, 4.0, 9.0, 24.0, -1.0));
+
+    // Cổ tự khắc chữ phát sáng trên cột (Glowing runes)
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, -7.5, 10.0, -1.0));
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, -7.5, 20.0, -1.0));
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, -7.5, 30.0, -1.0));
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, 7.5, 10.0, -1.0));
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, 7.5, 20.0, -1.0));
+    push(getCube(portalGlow, 0.3, 4.0, 4.1, 7.5, 30.0, -1.0));
+
+    // 3. XÀ NGANG VÀ SỪNG VƯƠNG MIỆN (Arch & Crown Spikes)
+    push(getCube(darkGrey, 21.0, 4.0, 5.0, 0, 45.0, -1.0));
+    push(getCube(goldBronze, 4.0, 4.0, 5.5, 0, 48.0, -0.8)); // Crest ở đỉnh cổng
+
+    // Cặp sừng gai nhọn chọc lên trời (Gai địa ngục)
+    push(getCube(darkGrey, 1.5, 8.0, 1.5, -9.0, 48.0, -1.0));
+    push(getCube(darkGrey, 1.5, 8.0, 1.5, 9.0, 48.0, -1.0));
+    push(getCube(darkGrey, 1.2, 7.0, 1.2, -11.0, 46.0, -1.0));
+    push(getCube(darkGrey, 1.2, 7.0, 1.2, 11.0, 46.0, -1.0));
+
+    // 4. LÕI NĂNG LƯỢNG XOÁY CỦA CỔNG (Crimson Energy Vortex)
+    push(getCube(portalGlowDeep, 15.0, 36.0, 1.5, 0, 24.0, -2.0));
+
+    // Đá nguyên khối lơ lửng ở giữa Cổng (Floating Center Monolith)
+    push(getCube(darkGrey, 3.5, 18.0, 3.5, 0, 24.0, -1.5));
+    push(getCube(portalGlow, 0.8, 14.0, 3.7, 0, 24.0, -1.3)); // Nhân năng lượng phát sáng của monolith
+
+    // 5. CÁC MẢNH ĐÁ VÀ KHUNG KIM LOẠI LƠ LỬNG HAI BÊN (Floating Shards)
+    push(getCube(goldBronze, 1.0, 10.0, 1.0, -12.0, 24.0, -1.0));
+    push(getCube(goldBronze, 1.0, 10.0, 1.0, 12.0, 24.0, -1.0));
+    push(getCube(goldBronze, 6.0, 1.0, 1.0, 0, 51.0, -1.0));
+    push(getCube(darkGrey, 1.0, 1.0, 5.0, -13.0, 24.0, 1.0));
+    push(getCube(darkGrey, 1.0, 1.0, 5.0, 12.0, 24.0, 1.0));
+
     return createMesh(V, N, C);
 }
 
@@ -953,7 +1172,21 @@ function genTerrain() {
             const x = offset + i * step, z = offset + j * step, x1 = x + step, z1 = z + step;
             const y00 = getHeight(x, z), y10 = getHeight(x1, z), y01 = getHeight(x, z1), y11 = getHeight(x1, z1);
             // Màu đá tối, đá phiến xanh mát (Slate Blue/Grey) tạo độ tương phản màu sắc rõ rệt với Bot đỏ ấm áp
-            const c = y00 < -8 ? [0.06, 0.08, 0.12] : (y00 < 5 ? [0.08, 0.11, 0.15] : [0.12, 0.15, 0.18]);
+            let c = y00 < -8 ? [0.06, 0.08, 0.12] : (y00 < 5 ? [0.08, 0.11, 0.15] : [0.12, 0.15, 0.18]);
+
+            // [PHASE 8] Thêm noise cho màu sắc mặt đất tạo độ sần tự nhiên
+            const colorNoise = Math.sin(x * 0.12) * Math.cos(z * 0.12);
+            c = [
+                Math.max(0.02, c[0] + colorNoise * 0.015),
+                Math.max(0.02, c[1] + colorNoise * 0.02),
+                Math.max(0.03, c[2] + colorNoise * 0.025)
+            ];
+
+            // [PHASE 8] Thêm các bãi máu loang lổ ngẫu nhiên trên mặt đất
+            const bloodNoise = Math.sin(x * 0.45) * Math.cos(z * 0.45);
+            if (y00 > -8.0 && bloodNoise > 0.88) {
+                c = [0.42, 0.03, 0.03]; // Màu máu đỏ sẫm kinh dị
+            }
 
             V.push(x, y00, z, x, y01, z1, x1, y10, z, x1, y10, z, x, y01, z1, x1, y11, z1);
             for (let k = 0; k < 6; k++) { N.push(0, 1, 0); C.push(...c); }
@@ -1090,9 +1323,114 @@ function continueStartGame() {
     }
 
 
-    STATE.player.pos = V3.create(0, getHeight(0, 0) + 100, 0); STATE.player.vel = V3.create(0, -1, 0); STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
+    // Spawn người chơi ngay trên mặt đất — bắt đầu animation ngồi dậy
+    const _spawnH = getHeight(0, 0);
+    STATE.player.pos = V3.create(0, _spawnH, 0);
+    STATE.player.vel = V3.create(0, 0, 0);
+    STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
+    STATE.player.standUpTimer = 3.0; // 3 giây animation ngồi dậy
+    STATE.player.isInvincible = true; // Bất tử trong khi đứng dậy
+    STATE.player.weaponSwitchTime = 0; // Reset equip animation
+    STATE.camera.rot.x = -0.6; // Camera nhìn lên trời lúc đang nằm
 
-    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = []; STATE.particles = []; STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null; STATE.hasRedKey = false;
+    // === EYE BLINK CINEMATIC: Chỉ chạy trong stand-up animation ===
+    // Helper: nhắm mắt rồi mở mắt theo kiểu truyền vào
+    const _blinkOverlay = document.getElementById('eye-blink-overlay');
+    const _doEyeBlink = (openClass = 'opening', closeDur = 110, openDelay = 130) => {
+        if (!_blinkOverlay) return;
+        _blinkOverlay.classList.remove('opening', 'waking', 'blinking');
+        void _blinkOverlay.offsetWidth; // Force reflow
+        _blinkOverlay.classList.add('blinking');
+        setTimeout(() => {
+            _blinkOverlay.classList.remove('blinking');
+            void _blinkOverlay.offsetWidth;
+            _blinkOverlay.classList.add(openClass);
+        }, openDelay);
+    };
+
+    // Bắt đầu: 2 mí đóng hoàn toàn (đang mê), sau đó mở chậm như tỉnh dậy
+    if (_blinkOverlay) {
+        _blinkOverlay.style.display = 'block';
+        _blinkOverlay.className = ''; // Mí đang đóng (scaleY = 0 default)
+        // Force mí đóng tức thì bằng inline style
+        const eTop = document.getElementById('eyelid-top');
+        const eBot = document.getElementById('eyelid-bottom');
+        if (eTop) eTop.style.cssText = 'transform:scaleY(1);transition:none';
+        if (eBot) eBot.style.cssText = 'transform:scaleY(1);transition:none';
+
+        // Sau 200ms: mở mắt rất chậm (tỉnh dậy từ mê)
+        setTimeout(() => {
+            if (eTop) eTop.style.cssText = '';
+            if (eBot) eBot.style.cssText = '';
+            _blinkOverlay.classList.add('waking');
+        }, 200);
+
+        // Chớp 1: lúc 1.0s (vừa mở mắt, chớp phản xạ)
+        setTimeout(() => _doEyeBlink('opening', 100, 120), 1000);
+        // Chớp 2: lúc 1.6s (ngó trái phải xong, chớp lần 2)
+        setTimeout(() => _doEyeBlink('opening', 100, 130), 1600);
+        // Chớp 3: lúc 2.3s (đang gượng đứng, chớp lần 3 hơi dài hơn)
+        setTimeout(() => _doEyeBlink('opening', 110, 160), 2300);
+        // Sau khi animation xong (3.2s): ẩn overlay hoàn toàn
+        setTimeout(() => {
+            if (_blinkOverlay) {
+                _blinkOverlay.classList.remove('opening', 'waking', 'blinking');
+                _blinkOverlay.style.display = 'none';
+                if (eTop) eTop.style.cssText = '';
+                if (eBot) eBot.style.cssText = '';
+            }
+        }, 3200);
+    }
+    // === END EYE BLINK CINEMATIC ===
+
+    // Hiện thông báo "Đang tỉnh dậy"
+    setTimeout(() => showGlobalAnnouncement('😵 ĐANG TỈNH DẬY...', 2000), 500);
+    setTimeout(() => { showGlobalAnnouncement('⚔️ BẮT ĐẦU SINH TỒN!', 2500); }, 3100);
+
+    STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = [];
+
+    // [PHASE 10] Khởi tạo Particle Object Pool tĩnh (Tránh Garbage Collection stuttering)
+    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+    const poolSize = vfx === 'low' ? 80 : (vfx === 'medium' ? 300 : 1000);
+    STATE.particles = [];
+    for (let i = 0; i < poolSize; i++) {
+        Array.prototype.push.call(STATE.particles, {
+            active: false,
+            pos: V3.create(0, 0, 0),
+            vel: V3.create(0, 0, 0),
+            color: [0, 0, 0],
+            life: 0,
+            type: 'fire'
+        });
+    }
+    // Ghi đè phương thức push của mảng để chặn việc cấp phát động
+    STATE.particles.push = function (item) {
+        for (let i = 0; i < this.length; i++) {
+            const p = this[i];
+            if (!p.active) {
+                p.active = true;
+                p.pos.x = item.pos.x; p.pos.y = item.pos.y; p.pos.z = item.pos.z;
+                p.vel.x = item.vel.x; p.vel.y = item.vel.y; p.vel.z = item.vel.z;
+                p.color[0] = item.color[0]; p.color[1] = item.color[1]; p.color[2] = item.color[2];
+                p.life = item.life;
+                p.type = item.type;
+                return;
+            }
+        }
+        // Fallback tái chế hạt cũ nhất nếu đầy pool
+        let oldest = this[0];
+        for (let i = 1; i < this.length; i++) {
+            if (this[i].life < oldest.life) oldest = this[i];
+        }
+        oldest.active = true;
+        oldest.pos.x = item.pos.x; oldest.pos.y = item.pos.y; oldest.pos.z = item.pos.z;
+        oldest.vel.x = item.vel.x; oldest.vel.y = item.vel.y; oldest.vel.z = item.vel.z;
+        oldest.color[0] = item.color[0]; oldest.color[1] = item.color[1]; oldest.color[2] = item.color[2];
+        oldest.life = item.life;
+        oldest.type = item.type;
+    };
+
+    STATE.shake = 0; STATE.obstacles = []; STATE.questItems = []; STATE.finalPaper = null; STATE.hasRedKey = false;
     // Reset QuestManager
     if (window.QuestManager) {
         window.QuestManager.totalCollected = 0;
@@ -1171,12 +1509,21 @@ function continueStartGame() {
     // Hàm kiểm tra nằm trong "Con Đường Tuyệt Vọng" (The Void Path)
     const isInPath = (x, z) => (x > -30 && x < 30 && z < 20 && z > -180);
 
+    // [PHASE 8] Tránh spawn đè lên các Khu vực Điểm nhấn (Landmark Areas)
+    const isNearLandmark = (x, z) => {
+        const distHospital = Math.sqrt((x - 80) ** 2 + (z - 80) ** 2);
+        const distCrash = Math.sqrt((x - (-60)) ** 2 + (z - 60) ** 2);
+        return distHospital < 25 || distCrash < 20;
+    };
+
     // Khởi tạo Vật cản (Cây, Nhà, Xe)
     for (let i = 0; i < (isMobile ? 25 : 60); i++) {
         const x = Math.sin(i * 132.1) * MAP_SIZE * 0.4;
         const z = Math.cos(i * 52.3) * MAP_SIZE * 0.4;
         const y = getHeight(x, z);
-        if (y > -8.5 && !isInPath(x, z)) STATE.obstacles.push({ type: 'tree', pos: { x, y: y - 0.5, z }, radius: 1.0, scale: 1.5 + Math.sin(i) * 0.5, rot: 0 });
+        if (y > -8.5 && !isInPath(x, z) && !isNearLandmark(x, z)) {
+            STATE.obstacles.push({ type: 'tree', pos: { x, y: y - 0.5, z }, radius: 1.0, scale: 1.5 + Math.sin(i) * 0.5, rot: 0 });
+        }
     }
     for (let i = 0; i < 12; i++) {
         let x, z, y;
@@ -1184,7 +1531,7 @@ function continueStartGame() {
             x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             y = getHeight(x, z);
-        } while (y <= -8.5 || isInPath(x, z));
+        } while (y <= -8.5 || isInPath(x, z) || isNearLandmark(x, z));
         STATE.obstacles.push({ type: 'house', pos: { x, y: y - 1.0, z }, radius: 4.5, rot: Math.random() * Math.PI, scale: 1 });
     }
     for (let i = 0; i < 20; i++) {
@@ -1193,10 +1540,33 @@ function continueStartGame() {
             x = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             y = getHeight(x, z);
-        } while (y <= -8.5 || isInPath(x, z));
+        } while (y <= -8.5 || isInPath(x, z) || isNearLandmark(x, z));
         STATE.obstacles.push({ type: 'car', pos: { x, y: y - 0.5, z }, radius: 2.5, rot: Math.random() * Math.PI, scale: 1 });
     }
 
+    // --- MANUALLY SPAWN LANDMARK AREAS ---
+    // Landmark 1: Abandoned Hospital tại (80, 0, 80)
+    const hospX = 80, hospZ = 80;
+    const hospY = getHeight(hospX, hospZ);
+    // Hospital Main Building (Tòa nhà đặc biệt khổng lồ)
+    STATE.obstacles.push({ type: 'house', pos: { x: hospX, y: hospY - 1.0, z: hospZ }, radius: 9.0, rot: 0.2, scale: 2.0 });
+    // Debris and warning signs around hospital
+    STATE.obstacles.push({ type: 'debris', pos: { x: hospX - 6, y: getHeight(hospX - 6, hospZ + 4) - 0.2, z: hospZ + 4 }, radius: 2.0, rot: 0.8, scale: 1.5 });
+    STATE.obstacles.push({ type: 'warningSign', pos: { x: hospX - 10, y: getHeight(hospX - 10, hospZ + 10) - 0.2, z: hospZ + 10 }, radius: 1.0, rot: 0.5, scale: 1.2 });
+    // STATE.obstacles.push({ type: 'lampPost', pos: { x: hospX + 10, y: getHeight(hospX + 10, hospZ - 10) - 0.2, z: hospZ - 10 }, radius: 1.0, rot: -0.5, scale: 1.0 });
+
+    // Landmark 2: Crash Site tại (-60, 0, 60)
+    const crashX = -60, crashZ = 60;
+    const crashY = getHeight(crashX, crashZ);
+    // Xe tông nát và đổ xô lệch
+    STATE.obstacles.push({ type: 'car', pos: { x: crashX, y: crashY - 0.4, z: crashZ }, radius: 2.5, rot: 1.2, scale: 1.1 });
+    STATE.obstacles.push({ type: 'car', pos: { x: crashX + 5, y: getHeight(crashX + 5, crashZ - 4) - 0.5, z: crashZ - 4 }, radius: 2.5, rot: -2.3, scale: 1.0 });
+    // Đống đổ nát ngổn ngang xung quanh vụ tai nạn
+    STATE.obstacles.push({ type: 'debris', pos: { x: crashX - 4, y: getHeight(crashX - 4, crashZ + 2) - 0.2, z: crashZ + 2 }, radius: 2.0, rot: 0.5, scale: 1.3 });
+    STATE.obstacles.push({ type: 'debris', pos: { x: crashX + 3, y: getHeight(crashX + 3, crashZ + 6) - 0.2, z: crashZ + 6 }, radius: 2.0, rot: -0.9, scale: 1.6 });
+    STATE.obstacles.push({ type: 'warningSign', pos: { x: crashX + 8, y: getHeight(crashX + 8, crashZ + 2) - 0.2, z: crashZ + 2 }, radius: 1.0, rot: 1.8, scale: 1.0 });
+
+    // Landmark 3: The Void Path flashing warning lights (z = -10 to -120, x = -15 and +15)
     // Spawn Cột đá Obsidian thành 2 hàng dọc (The Void Path)
     for (let i = 0; i < 12; i++) {
         const zPos = -10 - (i * 10);
@@ -1206,6 +1576,12 @@ function continueStartGame() {
         const yR = getHeight(xRight, zPos);
         STATE.obstacles.push({ type: 'pillar', pos: { x: xLeft, y: yL - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
         STATE.obstacles.push({ type: 'pillar', pos: { x: xRight, y: yR - 1.0, z: zPos }, radius: 1.5, rot: 0, scale: 1 });
+
+        // Cứ mỗi 2 cột ta spawn thêm 1 cột đèn chớp đỏ dẫn đường ghê rợn dọc 2 bên (ĐÃ XÓA THEO YÊU CẦU)
+        // if (i % 2 === 0) {
+        //     STATE.obstacles.push({ type: 'lampPost', pos: { x: xLeft + 1.5, y: yL - 0.2, z: zPos }, radius: 1.0, rot: Math.PI / 2, scale: 0.9 });
+        //     STATE.obstacles.push({ type: 'lampPost', pos: { x: xRight - 1.5, y: yR - 0.2, z: zPos }, radius: 1.0, rot: -Math.PI / 2, scale: 0.9 });
+        // }
     }
     // Đặt Cánh Cửa Đỏ Rực cố định ở góc xa bản đồ
     const doorX = 0;
@@ -1252,8 +1628,25 @@ function project3DToScreen(pos) {
     const zoomFactor = [0.3, 0.6, 0.95][p.weaponIdx];
     const fov = 1.2 - (STATE.aimLerp * zoomFactor) + (STATE.sprintLerp * 0.3);
     const projection = M4.perspective(fov, aspect, 0.1, 1000);
-    const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x;
-    const eye = V3.create(p.pos.x, p.pos.y + 1.1, p.pos.z);
+
+    // Tính chiều cao camera và độ nghiêng của đầu theo standUpTimer
+    let camHeightOffset = 1.1;
+    let standUpPitchOffset = 0;
+    if ((p.standUpTimer || 0) > 0) {
+        const elapsed = 3.0 - p.standUpTimer;
+        if (elapsed < 1.5) {
+            const ratio = elapsed / 1.5;
+            camHeightOffset = 0.15 + ratio * (0.6 - 0.15);
+            standUpPitchOffset = (1.0 - ratio) * 0.8;
+        } else {
+            const ratio = (elapsed - 1.5) / 1.5;
+            camHeightOffset = 0.6 + ratio * (1.1 - 0.6);
+            standUpPitchOffset = 0.0;
+        }
+    }
+
+    const yaw = STATE.camera.rot.y + (p.standUpYawOffset || 0), pitch = STATE.camera.rot.x + standUpPitchOffset;
+    const eye = V3.create(p.pos.x, p.pos.y + camHeightOffset, p.pos.z);
     const forward = V3.create(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch));
     const view = M4.lookAt(eye, V3.add(eye, forward), V3.create(0, 1, 0));
 
@@ -1274,8 +1667,69 @@ function project3DToScreen(pos) {
 
 function update(dt) {
     if (STATE.screen === 'pause' || STATE.inputLocked) return;
+    if (!STATE.player || !STATE.player.pos) return; // Ensure player position is initialized
+    // Phase 3: Hit-pause system
+    if (STATE.hitPause > 0) { STATE.hitPause -= dt; return; }
+
+    // === STAND-UP ANIMATION: Đếm ngược khi người chơi đang ngồi dậy ===
+    const p = STATE.player;
+    if ((p.standUpTimer || 0) > 0) {
+        p.standUpTimer -= dt;
+
+        // Animation mũi ngón: Từ 3s -> 0s, tính progress 0->1
+        const standup_progress = 1.0 - Math.max(0, p.standUpTimer) / 3.0;
+        const elapsed = 3.0 - Math.max(0, p.standUpTimer);
+
+        // === YAW: Ngó trái → phải → về giữa (pha 0.4s – 1.8s) ===
+        // elapsed 0.4→0.9s: xoay trái (yaw -= 0.32 rad max)
+        // elapsed 0.9→1.4s: xoay sang phải (yaw += 0.32 rad max)
+        // elapsed 1.4→1.9s: về giữa
+        let _yawOff = 0;
+        if (elapsed >= 0.4 && elapsed < 0.9) {
+            // Ngó trái: sin từ 0 → peak → 0 trong nửa chu kỳ
+            const t = (elapsed - 0.4) / 0.5; // 0→1
+            _yawOff = -0.32 * Math.sin(t * Math.PI);
+        } else if (elapsed >= 0.9 && elapsed < 1.4) {
+            // Ngó phải
+            const t = (elapsed - 0.9) / 0.5; // 0→1
+            _yawOff = 0.28 * Math.sin(t * Math.PI);
+        } else if (elapsed >= 1.4 && elapsed < 1.9) {
+            // Hồi về trung tâm mượt
+            const t = (elapsed - 1.4) / 0.5; // 0→1
+            _yawOff = 0.0; // Về 0 qua lerp bên dưới
+        }
+        p.standUpYawOffset = _yawOff;
+
+        // Pulse vignette mạnh lúc đang đứng dậy
+        const vignette_pulse = Math.sin(standup_progress * Math.PI) * 0.3;
+        const vignetteEl = document.getElementById('screen-vignette');
+        if (vignetteEl) vignetteEl.style.opacity = 0.4 + vignette_pulse;
+
+        // Shake camera nhẹ lúc bắt đầu đứng dậy
+        if (standup_progress < 0.4) {
+            STATE.camera.shake = 0.08 * (1.0 - standup_progress / 0.4);
+        }
+
+        if (p.standUpTimer <= 0) {
+            p.standUpTimer = 0;
+            p.standUpYawOffset = 0;
+            p.isInvincible = false; // Hết bất tử sau khi đứng dậy xong
+            p.weaponSwitchTime = 0;  // Trigger equip slide animation
+            if (vignetteEl) vignetteEl.style.opacity = '';
+            STATE.camera.shake = 0;
+            // Đảm bảo blink overlay bị ẩn khi animation kết thúc (safety fallback)
+            const _bo = document.getElementById('eye-blink-overlay');
+            if (_bo) _bo.style.display = 'none';
+        }
+        // Khóa hoàn toàn di chuyển & bắn trong lúc đứng dậy
+        return;
+    }
+    p.standUpYawOffset = 0; // Đảm bảo reset khi không trong animation
+
+    // === EYE BLINK ANIMATION REMOVED BY USER REQUEST ===
 
     if (!STATE.gameEnded && STATE.screen === 'game' && Math.random() < 0.0005) {
+
         // Random lore ambient sounds/texts if needed
     }
 
@@ -1296,18 +1750,6 @@ function update(dt) {
                 playAudio('ammo');
                 return false;
             }
-        }
-        // Aura pulse particles (floating high into the sky like a beacon)
-        if (Math.random() < 0.35) {
-            const angle = Math.random() * Math.PI * 2;
-            const r = 0.3 + Math.random() * 0.6;
-            STATE.particles.push({
-                pos: V3.create(q.pos.x + Math.cos(angle) * r, q.pos.y + 0.2, q.pos.z + Math.sin(angle) * r),
-                vel: V3.create((Math.random() - 0.5) * 0.4, 8.0 + Math.random() * 6.0, (Math.random() - 0.5) * 0.4),
-                life: 1.8 + Math.random() * 1.2,
-                color: [1.0, 0.7, 0.0], // Rực rỡ màu cam vàng dễ thấy từ xa
-                type: 'fire'
-            });
         }
         return true;
     });
@@ -1341,7 +1783,7 @@ function update(dt) {
     const dxDoor = STATE.player.pos.x - 0;
     const dzDoor = STATE.player.pos.z - (-150);
     const distToDoor = Math.sqrt(dxDoor * dxDoor + dzDoor * dzDoor);
-    
+
     if (distToDoor < 6.0) {
         if (STATE.hasRedKey) {
             nearRedDoor = true;
@@ -1398,7 +1840,6 @@ function update(dt) {
     if (STATE.player.damageFlash > 0) STATE.player.damageFlash -= dt;
     const prevCount = STATE.bots.length;
 
-    const p = STATE.player;
     let speedMult = 1.0, dmgMult = 1.0;
     if (p.powerup) {
         if (p.powerup.type === 0 || p.powerup.type === 3) speedMult = window.GAME_CONFIG.player.powerupSpeedMultiplier;
@@ -1492,7 +1933,7 @@ function update(dt) {
     if (!onPad && p.pos.y < floorH) { p.pos.y = floorH; p.vel.y = 0; p.grounded = true; } else if (!onPad) p.grounded = false;
     if (STATE.keys['Space'] && p.grounded) { p.vel.y = window.GAME_CONFIG.player.jumpPower; p.grounded = false; }
     const now = performance.now(), weapon = STATE.weapons[p.weaponIdx];
-    if (!STATE.hasRedKey && STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; }
+    if (!STATE.hasRedKey && STATE.mouse.down && now - STATE.lastShot > weapon.rate && weapon.ammo > 0) { fireWeapon(p, STATE.camera.rot, weapon, true); weapon.ammo--; STATE.lastShot = now; p.recoil = 0.1; spawnMuzzleFlash(p.pos, STATE.camera.rot); }
     if (p.weaponIdx !== p.lastWeaponIdx) {
         p.weaponSwitchTime = 0;
         p.lastWeaponIdx = p.weaponIdx;
@@ -1510,15 +1951,20 @@ function update(dt) {
         let needed = weapon.maxAmmo - weapon.ammo;
         if (weapon.res > 0) {
             p.isReloading = true; p.reloadTimer = 2.0;
+            playAudio('reload');
+            // Thêm hiệu ứng tia sáng lúc nạp đạn
+            spawnParticles(V3.add(p.pos, V3.create(0, 0.8, 0)), 5, [0.2, 0.8, 1.0], 1.5, 'smoke');
             const rd = document.getElementById('ammo-current');
-            if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.4s infinite'; }
+            if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.3s ease-in-out infinite'; rd.style.transform = 'scale(1.15)'; }
         }
     }
     // Tự động nạp khi hết đạn
     if (weapon.ammo <= 0 && weapon.res > 0 && !p.isReloading) {
         p.isReloading = true; p.reloadTimer = 2.0;
+        playAudio('reload');
+        spawnParticles(V3.add(p.pos, V3.create(0, 0.8, 0)), 5, [0.2, 0.8, 1.0], 1.5, 'smoke');
         const rd = document.getElementById('ammo-current');
-        if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.4s infinite'; }
+        if (rd) { rd.style.color = '#ff4444'; rd.style.animation = 'pulse 0.3s ease-in-out infinite'; rd.style.transform = 'scale(1.15)'; }
     }
     // Đếm nghiều nạp
     if (p.isReloading) {
@@ -1530,8 +1976,22 @@ function update(dt) {
             let needed = weapon.maxAmmo - weapon.ammo;
             if (weapon.res >= needed) { weapon.res -= needed; weapon.ammo = weapon.maxAmmo; }
             else { weapon.ammo += weapon.res; weapon.res = 0; }
+
+            // Hiệu ứng hoàn thành nạp đạn: Tia sáng xanh + camera shake nhẹ
+            spawnParticles(V3.add(p.pos, V3.create(0, 1.0, 0)), 8, [0.0, 1.0, 0.2], 0.8, 'smoke');
+            STATE.shake += 0.3;
+            playAudio('hit'); // Âm thanh hoàn thành nạp
+
             const rd = document.getElementById('ammo-current');
-            if (rd) { rd.style.color = ''; rd.style.animation = ''; }
+            if (rd) {
+                rd.style.color = '#00ff00';
+                rd.style.animation = '';
+                rd.style.transform = 'scale(1.2)';
+                // Highlight xanh lá kỉm 0.3s rồi trở lại
+                setTimeout(() => {
+                    if (rd) { rd.style.color = ''; rd.style.transform = ''; }
+                }, 300);
+            }
             const wn2 = document.getElementById('weapon-name');
             if (wn2) wn2.innerText = ['ASSAULT RIFLE', 'SMG', 'SNIPER'][p.weaponIdx] || '';
         }
@@ -1563,13 +2023,15 @@ function update(dt) {
         // --- 2. VA CHẠM THÙNG NỔ ---
         STATE.barrels.forEach(b => {
             if (b.hp > 0 && V3.dist(nextPos, V3.add(b.pos, V3.create(0, 0.8, 0))) < 4.0) {
-                b.hp -= proj.dmg; playAudio('hit'); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]);
+                b.hp -= proj.dmg; playPositionalAudio('hit', nextPos); showHitMarker(); spawnParticles(nextPos, 5, [1, 0.5, 0]);
                 proj.dead = true;
                 if (b.hp <= 0) createExplosion(b.pos);
             }
         });
 
-        if (proj.isPlayer && !proj.dead) {
+        // Bỏ qua va chạm gây dame với quái/boss nếu game quá lag (hệ số hiệu năng < 0.15) để giải phóng CPU
+        const canDealDamage = (STATE.performanceMultiplier === undefined || STATE.performanceMultiplier >= 0.15);
+        if (proj.isPlayer && !proj.dead && canDealDamage) {
             // --- 3. VA CHẠM QUÁI (BOT) ---
             STATE.bots.forEach(bot => {
                 if (proj.dead || bot.hp <= 0 || bot.isEvolvingLv2 || bot.isEvolvingLv3) return;
@@ -1583,21 +2045,23 @@ function update(dt) {
                 if (bot.isFinal) hitboxScale = 1.8;       // Lv3: to nhưng không quá ưu tiên
                 else if (bot.isHorror) hitboxScale = 1.3; // Lv2
 
-                const hitRadius = (isMobile ? 1.8 : 0.7) * hitboxScale; // Thực tế hơn trước
+                // Tăng hitbox radius để fix máy yếu không dính damage
+                const hitRadius = (isMobile ? 1.8 : 1.2) * hitboxScale; // Tăng từ 0.7 lên 1.2 cho máy chậm
                 const hitHeight = 1.8 * hitboxScale;     // Chiều cao cơ thể
                 const headY = 1.5 * hitboxScale;      // Phần đầu: chỉ từ 1.5m trở lên
 
-                if (distXZ < hitRadius && dy > -0.3 && dy < hitHeight) {
+                // Mở rộng collision detection cho máy yếu: dùng 1.3x radius để kiểm tra
+                if (distXZ < hitRadius * 1.3 && dy > -0.3 && dy < hitHeight) {
                     let dmg = proj.dmg;
                     // Headshot CHỈ tính khi đạn rõ ràng trúng vùng đầu
                     const isHead = (dy > headY && distXZ < hitRadius * 0.6);
 
                     if (isHead) {
                         dmg = Math.round(proj.dmg * 1.5);
-                        spawnParticles(nextPos, 8, [1, 1, 0], 1.5);
+                        spawnHeadshotEffect(nextPos); // Phase 3: Enhanced headshot VFX
                         if (window.QuestManager) window.QuestManager.onEvent('headshot', 1);
                     } else {
-                        spawnParticles(nextPos, 5, [1, 0, 0], 1.0);
+                        spawnBloodSplatter(nextPos, isMobile ? 10 : 18); // Phase 3: Blood splatter
                     }
 
                     bot.hp -= dmg;
@@ -1606,7 +2070,7 @@ function update(dt) {
                         STATE.player.damageDealt += dmg;
                         if (window.QuestManager) window.QuestManager.onEvent('damage', dmg);
                     }
-                    playAudio('hit');
+                    playPositionalAudio('hit', nextPos);
                     showHitMarker();
                     proj.dead = true; // Dánh dấu ngay để khỏng chế frame tiếp
                 }
@@ -1634,7 +2098,7 @@ function update(dt) {
                     spawnDamageNumber(nextPos, finalDmg, isHeadshot);
 
                     if (!proj.isUlti) STATE.player.damageDealt += finalDmg;
-                    proj.dead = true; playAudio('hit'); showHitMarker();
+                    proj.dead = true; playPositionalAudio('hit', nextPos); showHitMarker();
                     if (proj.isUlti) { STATE.shake = 10.0; b.flinchTime = 0.6; }
                     if (b.hp <= 0 && !b.dead) killBoss();
                 }
@@ -1644,6 +2108,7 @@ function update(dt) {
             // Đạn địch trúng người chơi
             if (V3.dist(nextPos, V3.add(p.pos, V3.create(0, 1, 0))) < 1.5) {
                 takeDamage(p, proj.dmg);
+                showDamageDirection(proj.pos);
                 proj.dead = true;
             }
         }
@@ -1656,6 +2121,11 @@ function update(dt) {
     STATE.projectiles = STATE.projectiles.filter(p => !p.dead);
     STATE.bots.forEach((bot, i) => {
         if (bot.hp <= 0) return; bot.fireCD -= dt; const dist = V3.dist(bot.pos, p.pos);
+
+        // [PHASE 9] Tiếng gầm rú kinh dị ngẫu nhiên từ quái vật xung quanh
+        if (Math.random() < 0.0003) {
+            playPositionalAudio('roar', bot.pos);
+        }
 
         // --- VA CHẠM GIỮA CÁC BOT (Tránh dính chùm) ---
         for (let j = i + 1; j < STATE.bots.length; j++) {
@@ -1712,23 +2182,44 @@ function update(dt) {
                 bot.isEvolvingLv2 = false;
                 bot.isEvolvingLv3 = false;
             }
-        } else if (isEnragedLv2 || isEnragedLv3 || dist < window.GAME_CONFIG.bot.detectRadius) {
+        } else if ((isEnragedLv2 || isEnragedLv3 || dist < window.GAME_CONFIG.bot.detectRadius) && !(p.standUpTimer > 0)) {
             const dir = V3.norm(V3.sub(p.pos, bot.pos));
             // TỐC ĐỘ: Tinh chỉnh theo từng cấp độ
             const speed = isEnragedLv3 ? window.GAME_CONFIG.bot.speedLv3 : (isEnragedLv2 ? window.GAME_CONFIG.bot.speedLv2 : window.GAME_CONFIG.bot.speedLv1);
             const dist2D = Math.sqrt(Math.pow(p.pos.x - bot.pos.x, 2) + Math.pow(p.pos.z - bot.pos.z, 2));
             if (dist2D > 1.5) {
-                bot.pos.x += dir.x * speed * dt;
-                bot.pos.z += dir.z * speed * dt;
+                // Tốc độ di chuyển giảm dần khi game lag (STATE.performanceMultiplier)
+                const pMult = (STATE.performanceMultiplier !== undefined ? STATE.performanceMultiplier : 1.0);
+                bot.pos.x += dir.x * speed * dt * pMult;
+                bot.pos.z += dir.z * speed * dt * pMult;
             }
-            if (dist2D < window.GAME_CONFIG.bot.attackRange && Math.abs(p.pos.y - bot.pos.y) < 3.0 && bot.fireCD <= 0) {
+            // Quái không tấn công/gây dame nếu game quá lag (hệ số hiệu năng < 0.15)
+            const canAttack = (STATE.performanceMultiplier === undefined || STATE.performanceMultiplier >= 0.15);
+            if (dist2D < window.GAME_CONFIG.bot.attackRange && Math.abs(p.pos.y - bot.pos.y) < 3.0 && bot.fireCD <= 0 && canAttack) {
                 // Sát thương: Lv1=10, Lv2=30, Lv3=60
                 let damage = window.GAME_CONFIG.bot.baseDamage;
-                if (isEnragedLv3) damage = window.GAME_CONFIG.bot.enragedDamageLv3;
-                else if (isEnragedLv2) damage = window.GAME_CONFIG.bot.enragedDamageLv2;
+                let attackColor = [1.0, 0.3, 0.0]; // Orange default
+                if (isEnragedLv3) {
+                    damage = window.GAME_CONFIG.bot.enragedDamageLv3;
+                    attackColor = [1.0, 0.0, 0.0]; // Red for Lv3
+                } else if (isEnragedLv2) {
+                    damage = window.GAME_CONFIG.bot.enragedDamageLv2;
+                    attackColor = [1.0, 0.6, 0.0]; // Orange-red for Lv2
+                }
 
-                takeDamage(p, damage);
-                playAudio('hit');
+                if (p && bot) {
+                    takeDamage(p, damage);
+                    showDamageDirection(bot.pos);
+                    playAudio('hit');
+
+                    // Hiệu ứng bot tấn công: Chỉ sinh hạt khi chất lượng đồ họa không ở mức Tối thiểu và không quá lag
+                    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+                    if (vfx !== 'low' && bot.pos) {
+                        spawnParticles(V3.add(bot.pos, V3.create(0, 1.0, 0)), 8, attackColor, 1.2, 'smoke');
+                        STATE.shake = Math.min(1.0, STATE.shake + 0.4);
+                    }
+                }
+
                 bot.fireCD = window.GAME_CONFIG.bot.attackCD;
             }
 
@@ -1738,7 +2229,18 @@ function update(dt) {
                 bot.grounded = false;
             }
         }
-        else { bot.nextMove -= dt; if (bot.nextMove <= 0) { bot.targetDir = V3.create(Math.random() - 0.5, 0, Math.random() - 0.5); bot.nextMove = 2 + Math.random() * 3; } if (bot.targetDir) { bot.pos.x += bot.targetDir.x * 3 * dt; bot.pos.z += bot.targetDir.z * 3 * dt; } }
+        else {
+            bot.nextMove -= dt;
+            if (bot.nextMove <= 0) {
+                bot.targetDir = V3.create(Math.random() - 0.5, 0, Math.random() - 0.5);
+                bot.nextMove = 2 + Math.random() * 3;
+            }
+            if (bot.targetDir) {
+                const pMult = (STATE.performanceMultiplier !== undefined ? STATE.performanceMultiplier : 1.0);
+                bot.pos.x += bot.targetDir.x * 3 * dt * pMult;
+                bot.pos.z += bot.targetDir.z * 3 * dt * pMult;
+            }
+        }
 
         // [YÊU CẦU] Giới hạn bot không ra khỏi đảo (Bán kính 190m)
         const dFromCenterSq = bot.pos.x * bot.pos.x + bot.pos.z * bot.pos.z;
@@ -1824,6 +2326,7 @@ function update(dt) {
 
     // Cập nhật hạt (Particles)
     STATE.particles.forEach(p => {
+        if (!p.active) return;
         p.pos.x += p.vel.x * dt; p.pos.y += p.vel.y * dt; p.pos.z += p.vel.z * dt;
         if (p.type === 'smoke') {
             p.vel.y += 2 * dt; // Khói bay lên nhẹ hơn vì vel ban đầu đã cao
@@ -1833,9 +2336,8 @@ function update(dt) {
             p.vel.x *= 0.98; p.vel.z *= 0.98;
         }
         p.life -= dt;
+        if (p.life <= 0) p.active = false;
     });
-    STATE.particles = STATE.particles.filter(p => p.life > 0);
-    if (STATE.particles.length > 1000) STATE.particles = STATE.particles.slice(-1000); // Giới hạn 1000 hạt để tránh lag
 
     // [CẢI TIẾN] Hiệu ứng tàn lửa rơi (Hellfire) khi đánh Boss
     if (STATE.boss && STATE.boss.active && Math.random() < 0.2) {
@@ -1987,10 +2489,12 @@ function update(dt) {
                     // [CHỈNH SỬA CHIÊU 5] Thời gian Boss "chìm" xuống (rặn chiêu)
                     b.state = 'teleport_start'; b.skillCD = window.GAME_CONFIG.boss.skill5.prepareTime;
                     spawnParticles(b.pos, 60, [0.8, 0, 0], 3.0, 'smoke'); // Hiệu ứng biến mất rực rỡ hơn
+                    playPositionalAudio('boss_warning', b.pos);
                 } else if (skill === 'chiêu 4') {
                     // [CHỈNH SỬA CHIÊU 4] Thời gian Boss gồng tay (hiện vòng cảnh báo)
                     b.state = 'pillar_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill4.prepareTime; b.pillarSpots = [];
                     b.shotCount = 0;
+                    playPositionalAudio('boss_warning', b.pos);
                 } else if (skill === 'chiêu 3') {
                     // [CHỈNH SỬA CHIÊU 3] Thời gian Boss rặn trước khi nhảy
                     b.state = 'jump_start'; b.skillCD = window.GAME_CONFIG.boss.skill3.prepareTime;
@@ -2001,6 +2505,7 @@ function update(dt) {
                     // Đồng bộ bán kính 30 với tầm sát thương
                     b.indicatorMeshParams = { x: b.targetPos.x, z: b.targetPos.z, r: window.GAME_CONFIG.boss.skill3.range };
                     b.indicatorMesh = genTerrainFollowMesh(b.indicatorMeshParams.x, b.indicatorMeshParams.z, b.indicatorMeshParams.r);
+                    playPositionalAudio('boss_warning', b.pos);
                 } else if (skill === 'chiêu 1') {
                     // [CHỈNH SỬA CHIÊU 1] Thời gian rặn trước khi lướt
                     b.state = 'dash_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill1.prepareTime;
@@ -2010,9 +2515,11 @@ function update(dt) {
                     // Rộng hơn (8) và Dài hơn (150)
                     b.dashMeshParams = { x: b.pos.x, z: b.pos.z, ang: b.targetAng, w: window.GAME_CONFIG.boss.skill1.width, l: 150 };
                     b.dashMesh = genTerrainDashMesh(b.dashMeshParams.x, b.dashMeshParams.z, b.dashMeshParams.ang, b.dashMeshParams.w, b.dashMeshParams.l);
+                    playPositionalAudio('boss_warning', b.pos);
                 } else if (skill === 'chiêu 2') {
                     // [CHỈNH SỬA CHIÊU 2] Thời gian rặn trước khi bắn
                     b.state = 'shoot_prepare'; b.skillCD = window.GAME_CONFIG.boss.skill2.prepareTime;
+                    playPositionalAudio('boss_warning', b.pos);
                 }
             } else {
                 const isRage = b.hp < b.maxHp * 0.4;
@@ -2068,6 +2575,7 @@ function update(dt) {
                 const dx = b.pos.x - p.pos.x, dz = b.pos.z - p.pos.z;
                 if (Math.sqrt(dx * dx + dz * dz) < dmgDist) {
                     takeDamage(p, window.GAME_CONFIG.boss.skill3.damage);
+                    showDamageDirection(b.pos);
                     STATE.shake = 5.0;
                 }
                 spawnParticles(b.pos, isMobile ? 50 : 400, [1, 0, 0], 2.5);
@@ -2103,6 +2611,7 @@ function update(dt) {
                 const dist = V3.dist(b.pos, p.pos);
                 if (dist < window.GAME_CONFIG.boss.skill1.width) {
                     takeDamage(p, window.GAME_CONFIG.boss.skill1.damage);
+                    showDamageDirection(b.pos);
                     STATE.shake = 8.0;
                     spawnParticles(p.pos, 30, [1, 0, 0], 2.0);
                     b.hasHit = true;
@@ -2155,6 +2664,7 @@ function update(dt) {
                     const d = Math.sqrt((p.pos.x - s.x) ** 2 + (p.pos.z - s.z) ** 2);
                     if (d < window.GAME_CONFIG.boss.skill4.pillarRange) {
                         takeDamage(p, window.GAME_CONFIG.boss.skill4.damage);
+                        showDamageDirection({ x: s.x, y: s.h, z: s.z });
                         s.hasHit = true;
                     }
                 }
@@ -2253,6 +2763,7 @@ function update(dt) {
 
                     if (d < window.GAME_CONFIG.boss.skill5.range && diff < 1.2) {
                         takeDamage(p, window.GAME_CONFIG.boss.skill5.damage);
+                        showDamageDirection(b.pos);
                         spawnParticles(p.pos, 50, [1, 0, 0], 2.0);
                         playAudio('hit');
                     }
@@ -2291,8 +2802,6 @@ function update(dt) {
                 // [CHỈNH SỬA CHIÊU 2] Sát thương mỗi viên đạn (Bác vừa chỉnh xuống 200)
                 STATE.projectiles.push({ pos: spawnPoint, dir: dir, dmg: window.GAME_CONFIG.boss.skill2.damage, speed: window.GAME_CONFIG.boss.skill2.speed, life: 3, isPlayer: false, dead: false, isBoss: true });
 
-                // HIỆU ỨNG: Té lửa tại đầu nòng
-                spawnParticles(spawnPoint, 15, [1, 0.5, 0]);
                 playAudio('shoot');
                 b.shotCount--;
                 b.skillCD = 0.1;
@@ -2308,7 +2817,10 @@ function update(dt) {
 
 
 
-        if (b.state === 'fight' && dist < 10) takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt, true); // [YÊU CẦU] Im lặng khi dính dame áp sát Boss
+        if (b.state === 'fight' && dist < 10) {
+            takeDamage(p, window.GAME_CONFIG.boss.passiveDamage * dt, true); // [YÊU CẦU] Im lặng khi dính dame áp sát Boss
+            showDamageDirection(b.pos);
+        }
 
         if (b.hp <= 0 && !b.dead) {
             killBoss();
@@ -2378,7 +2890,10 @@ function createExplosion(pos, customRange, customDamage, isFriendly = false, noC
     const range = customRange || window.GAME_CONFIG.misc.barrelExplosionRange;
     const damage = customDamage || window.GAME_CONFIG.misc.barrelExplosionDamage;
     // Player chỉ nhận 30% dame từ thùng nổ (để khỏ thùng nổ thoải mái hơn)
-    if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) takeDamage(STATE.player, damage * 0.3);
+    if (!isFriendly && V3.dist(pos, STATE.player.pos) < range) {
+        takeDamage(STATE.player, damage * 0.3);
+        showDamageDirection(pos);
+    }
     // [CƠ CHẾ MỚI] Giới hạn số bot chết để không bỏ qua giai đoạn tiến hóa
     const aliveBots = STATE.bots.filter(b => b.hp > 0);
     const initialCount = STATE.config.botCount || 25;
@@ -2431,7 +2946,11 @@ function fireWeapon(shooter, rot, weapon, isPlayer, dirOverride) {
     const spread = (isPlayer && isMobile) ? 0 : weapon.spread; // Không tản đạn trên mobile
     dir.x += (Math.random() - 0.5) * spread; dir.y += (Math.random() - 0.5) * spread; dir.z += (Math.random() - 0.5) * spread; dir = V3.norm(dir);
     STATE.projectiles.push({ pos: V3.add(shooter.pos, V3.create(0, 0.5, 0)), dir: dir, dmg: weapon.damage * (shooter.powerup && (shooter.powerup.type === 1 || shooter.powerup.type === 3) ? 2 : 1), life: 2.0, isPlayer: isPlayer, dead: false });
-    playAudio('shoot');
+    if (isPlayer) {
+        playAudio('shoot');
+    } else {
+        playPositionalAudio('shoot', shooter.pos);
+    }
 }
 
 function takeDamage(p, amt, silent = false) {
@@ -2445,15 +2964,22 @@ function takeDamage(p, amt, silent = false) {
         if (p.armor < 0) { p.hp += p.armor; p.armor = 0; }
 
         // Premium animation: Điện màu xanh dương bảo vệ phát ra từ giáp
-        spawnParticles(p.pos, 15, [0.0, 0.8, 1.0], 2.0, 'fire');
+        const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+        if (vfx !== 'low') {
+            spawnParticles(p.pos, 15, [0.0, 0.8, 1.0], 2.0, 'fire');
+        }
     } else {
         p.hp -= amt;
 
         // Premium animation: Máu đỏ phát ra khi mất máu trực tiếp
-        spawnParticles(p.pos, 15, [1.0, 0.1, 0.1], 2.0, 'fire');
+        const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+        if (vfx !== 'low') {
+            spawnParticles(p.pos, 15, [1.0, 0.1, 0.1], 2.0, 'fire');
+        }
     }
 
-    if (!isMobile) STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
+    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+    if (!isMobile && vfx !== 'low') STATE.shake = Math.min(1.5, STATE.shake + amt * 0.08);
 
     // Cooldown âm thanh trúng đòn
     const now = performance.now();
@@ -2462,17 +2988,16 @@ function takeDamage(p, amt, silent = false) {
         p.lastDamageSoundTime = now;
     }
 
-    p.damageFlash = 1.0; // [YÊU CẦU] Nháy đỏ trong 1 giây
+    p.damageFlash = 0.0; // Tắt nháy đỏ hoàn toàn
 
-    // Hiệu ứng Horror khi trúng đòn
-    document.body.classList.add('taking-damage');
-    setTimeout(() => document.body.classList.remove('taking-damage'), 100);
+    // Tắt hiệu ứng đỏ viền màn hình (Aura) để đỡ lag và chống nháy
+    // document.body.classList.add('taking-damage');
+    // setTimeout(() => document.body.classList.remove('taking-damage'), 100);
 
-    const overlay = document.getElementById('damage-overlay');
-    if (overlay) {
-        overlay.style.opacity = Math.max(0.4, 1.2 - p.hp / 1000);
-        overlay.style.background = `radial-gradient(circle, transparent 15%, rgba(${120 + Math.random() * 135}, 0, 0, 0.7) 100%)`;
-    }
+    // const overlay = document.getElementById('damage-overlay');
+    // if (overlay) {
+    //     overlay.style.opacity = '0';
+    // }
 }
 
 function showHitMarker() {
@@ -2492,8 +3017,14 @@ function showHitMarker() {
     }, 120);
 }
 function spawnParticles(pos, count, color, speedMult = 1.0, type = 'fire') {
-    // Giới hạn particles trên mobile thấp hơn để tránh lag CPU
-    if (isMobile) count = Math.min(count, 12);
+    // Giới hạn particles dựa trên chất lượng hiệu ứng đồ họa để chống lag
+    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+    if (vfx === 'low') return; // Tắt HOÀN TOÀN particles ở mức Tối thiểu để không bị hộp xanh bay
+    if (vfx === 'medium' || isMobile) {
+        count = Math.min(count, 12); // Tiết kiệm vừa phải
+    } else {
+        count = Math.min(count, 80); // Giới hạn trên để tránh lag cực đoan
+    }
     for (let i = 0; i < count; i++) {
         const spread = 0.5;
         STATE.particles.push({
@@ -2561,17 +3092,17 @@ function endGame(win) {
             const diff = window.CURRENT_DIFFICULTY || 'normal';
             const diffName = { easy: 'DỄ', normal: 'THƯỜNG', hard: 'KHÓ', extreme: 'SIÊU KHÓ' }[diff] || 'THƯỜNG';
 
-            lines.push(`--- BÁO CÁO GIẢI MÃ KHÔNG GIAN CỦA ${pName.toUpperCase()} ---`);
+            lines.push(`--- BÁO CÁO GIẢI MÃ HỒ SƠ SINH TỒN CỦA ${pName.toUpperCase()} ---`);
             lines.push(`⚙️ Chế độ hiện tại: ${diffName}`);
             lines.push(`🔑 Bí mật đã giải mã: ${completedCount}/${currentMax} (Đã nhặt hộp: ${collectedCount}/${currentMax})`);
 
             const totalUnlockedAll = window.LoreSystem ? window.LoreSystem.getTotalUnlockedCount() : completedCount;
-            lines.push(`🏆 Tổng tiến trình vũ trụ: ${totalUnlockedAll} / 24 Bí mật đã giải mã (Mọi Chế Độ)`);
+            lines.push(`🏆 Tổng tiến trình sinh tồn: ${totalUnlockedAll} / 24 Bí mật đã giải mã (Mọi Chế Độ)`);
 
             if (diff !== 'extreme') {
-                lines.push(`⚠️ [THÔNG BÁO HỆ THỐNG]: Hãy thử thách bản thân ở ĐỘ KHÓ CAO HƠN để mở khóa thêm nhiều bí mật không gian mới!`);
+                lines.push(`⚠️ [THÔNG BÁO HỆ THỐNG]: Hãy thử thách bản thân ở ĐỘ KHÓ CAO HƠN để mở khóa thêm nhiều bí mật ẩn giấu mới!`);
             } else {
-                lines.push(`🌟 [HỆ THỐNG]: Bạn đã chinh phục chế độ khó nhất và đang tiếp cận dữ liệu không gian tối mật!`);
+                lines.push(`🌟 [HỆ THỐNG]: Bạn đã chinh phục chế độ khó nhất và đang tiếp cận tài liệu sinh tồn tối mật!`);
             }
             lines.push("");
 
@@ -2593,7 +3124,7 @@ function endGame(win) {
                     "Liệu có là là tôi của trước đây mắc kẹt và để lại những chiếc hộp này chăng?",
                     "Vậy ra những kỹ năng của tôi được luyện tập qua những lần tôi mất trí nhớ và chiến đấu ở đây.",
                     "Điều gì đã xảy ra trước khi tôi đặt chân đến nơi này?, những vũ khí và trang bị rải rác khắp mọi nơi là của ai?",
-                    "tôi cần tập trung hơn để tìm ra sự thật về hòn đảo cũng như thứ gọi là CÁNH CỬA KHÔNG GIAN"
+                    "tôi cần tập trung hơn để tìm ra sự thật về hòn đảo cũng như thứ gọi là CÁNH CỬA ĐỎ"
                 ]);
             } else {
                 lines = lines.concat([
@@ -2662,7 +3193,7 @@ function endGame(win) {
                     e.stopPropagation(); // Ngăn sự kiện chạm/click lan ra màn hình gây trigger mousedown/touchstart
                     endingSpeedMode = endingSpeedMode === 3 ? 1 : endingSpeedMode + 1;
                     btnSpeedEnding.innerText = `⚡ x${endingSpeedMode}`;
-                    
+
                     // Đồng bộ ngay lập tức tốc độ hiện tại
                     const base = getEndingBaseSpeed();
                     charSpeed = base.char;
@@ -2744,7 +3275,7 @@ function showRealEndScreen(win, duration) {
         document.getElementById('end-title').innerText = "VICTORY";
         document.getElementById('end-title').style.color = "#ffd700";
     } else {
-        document.getElementById('end-title').innerText = "THUA RỒI AK CỐ LÊN!!";
+        document.getElementById('end-title').innerText = "GAME OVER!!!";
         document.getElementById('end-title').style.color = "#ff0000";
     }
     if (playAgainBtn) playAgainBtn.style.display = 'inline-block';
@@ -2755,6 +3286,56 @@ function showRealEndScreen(win, duration) {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Khởi tạo hiển thị của menu cài đặt Đồ họa & Hiệu năng
+    const resSelect = document.getElementById('graphics-resolution-select');
+    const vfxSelect = document.getElementById('graphics-vfx-select');
+
+    if (resSelect) {
+        const savedRes = localStorage.getItem('graphicsResolution') || (isMobile ? 'medium' : 'high');
+        resSelect.value = savedRes;
+
+        const resValEl = document.getElementById('graphics-resolution-val');
+        if (resValEl) {
+            if (savedRes === 'ultralow') resValEl.innerText = "Siêu Mượt (360p - 0.25x)";
+            else if (savedRes === 'low') resValEl.innerText = "Mượt (480p - 0.45x)";
+            else if (savedRes === 'medium') resValEl.innerText = "Trung bình (720p - 0.7x)";
+            else resValEl.innerText = "Cao (1080p - 1.0x)";
+        }
+
+        resSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            const resValEl = document.getElementById('graphics-resolution-val');
+            if (resValEl) {
+                if (val === 'ultralow') resValEl.innerText = "Siêu Mượt (360p - 0.25x)";
+                else if (val === 'low') resValEl.innerText = "Mượt (480p - 0.45x)";
+                else if (val === 'medium') resValEl.innerText = "Trung bình (720p - 0.7x)";
+                else resValEl.innerText = "Cao (1080p - 1.0x)";
+            }
+        });
+    }
+
+    if (vfxSelect) {
+        const savedVfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+        vfxSelect.value = savedVfx;
+
+        const vfxValEl = document.getElementById('graphics-vfx-val');
+        if (vfxValEl) {
+            if (savedVfx === 'low') vfxValEl.innerText = "Tối thiểu";
+            else if (savedVfx === 'medium') vfxValEl.innerText = "Bình thường";
+            else vfxValEl.innerText = "Tối đa";
+        }
+
+        vfxSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            const vfxValEl = document.getElementById('graphics-vfx-val');
+            if (vfxValEl) {
+                if (val === 'low') vfxValEl.innerText = "Tối thiểu";
+                else if (val === 'medium') vfxValEl.innerText = "Bình thường";
+                else vfxValEl.innerText = "Tối đa";
+            }
+        });
+    }
+
     // Logic Cài đặt HUD
 
     const btnSettings = document.getElementById('btn-settings');
@@ -2766,7 +3347,8 @@ document.addEventListener('DOMContentLoaded', () => {
         'btn-ulti', 'btn-interact', 'btn-sprint',
         'mobile-weapons', 'health-bar-container', 'armor-bar-container',
         'ammo-display', 'stats-display', 'loot-legend',
-        'minimap-container', 'btn-settings', 'quest-tracker-ui', 'kill-feed'
+        'minimap-container', 'btn-settings', 'quest-tracker-ui', 'kill-feed',
+        'ping-display' // Ping/FPS widget — kéo được trong HUD editor
     ];
     let draggedBtn = null;
 
@@ -2962,6 +3544,15 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             localStorage.setItem('hudSettings', JSON.stringify(newHUD));
 
+            // Lưu cài đặt Đồ họa & Hiệu năng
+            const resSelect = document.getElementById('graphics-resolution-select');
+            const vfxSelect = document.getElementById('graphics-vfx-select');
+            if (resSelect) localStorage.setItem('graphicsResolution', resSelect.value);
+            if (vfxSelect) localStorage.setItem('graphicsVfx', vfxSelect.value);
+            if (typeof applyGraphicsSettings === 'function') {
+                applyGraphicsSettings();
+            }
+
             // Khôi phục trạng thái bảng nhiệm vụ
             if (window.QuestManager) {
                 window.QuestManager.updateUI();
@@ -3086,8 +3677,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-// Giảm mạnh grass trên mobile để giảm draw call cực đoan
-const GRASS_PATCHES = []; for (let i = 0; i < (isMobile ? 40 : 200); i++) { const x = Math.sin(i * 12.989) * MAP_SIZE * 0.45, z = Math.cos(i * 78.233) * MAP_SIZE * 0.45, y = getHeight(x, z), scale = 0.6 + Math.random() * 0.6; GRASS_PATCHES.push({ x, y, z, scale }); }
+// Giảm mạnh grass trên mobile và chất lượng đồ hoạ thấp để giảm draw call cực đoan
+const GRASS_PATCHES = [];
+function initGrassPatches() {
+    GRASS_PATCHES.length = 0;
+    const vfx = localStorage.getItem('graphicsVfx') || (isMobile ? 'medium' : 'high');
+    let grassCount = 200;
+    if (vfx === 'low') grassCount = 15;
+    else if (vfx === 'medium' || isMobile) grassCount = 45;
+
+    for (let i = 0; i < grassCount; i++) {
+        const x = Math.sin(i * 12.989) * MAP_SIZE * 0.45;
+        const z = Math.cos(i * 78.233) * MAP_SIZE * 0.45;
+        const y = getHeight(x, z);
+        const scale = 0.6 + Math.random() * 0.6;
+        GRASS_PATCHES.push({ x, y, z, scale });
+    }
+}
+initGrassPatches();
 
 function draw() {
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -3134,11 +3741,27 @@ function draw() {
 
     const proj = M4.perspective(fov, aspect, 0.1, isMobile ? 2500 : 10000);
     // Thêm visual recoil (giật camera lên rồi tự động hồi về khi p.recoil giảm)
-    const yaw = STATE.camera.rot.y, pitch = STATE.camera.rot.x + (p.recoil * (p.weaponIdx === 2 ? 0.4 : 0.05));
+    let camHeightOffset = 1.1;
+    let standUpPitchOffset = 0;
+    if ((p.standUpTimer || 0) > 0) {
+        const elapsed = 3.0 - p.standUpTimer;
+        if (elapsed < 1.5) {
+            const ratio = elapsed / 1.5;
+            camHeightOffset = 0.15 + ratio * (0.6 - 0.15);
+            standUpPitchOffset = (1.0 - ratio) * 0.8;
+        } else {
+            const ratio = (elapsed - 1.5) / 1.5;
+            camHeightOffset = 0.6 + ratio * (1.1 - 0.6);
+            standUpPitchOffset = 0.0;
+        }
+    }
+
+    const yaw = STATE.camera.rot.y + (p.standUpYawOffset || 0);
+    const pitch = STATE.camera.rot.x + (p.recoil * (p.weaponIdx === 2 ? 0.4 : 0.05)) + standUpPitchOffset;
 
     // Giật cam chỉ trên PC (mobile tắt để mượt hơn)
     const shakeAmt = isMobile ? 0 : STATE.shake;
-    const eye = V3.create(p.pos.x + (Math.random() - 0.5) * shakeAmt, p.pos.y + 1.1 + (Math.random() - 0.5) * shakeAmt, p.pos.z);
+    const eye = V3.create(p.pos.x + (Math.random() - 0.5) * shakeAmt, p.pos.y + camHeightOffset + (Math.random() - 0.5) * shakeAmt, p.pos.z);
     const forward = V3.create(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)), center = V3.add(eye, forward), view = M4.lookAt(eye, center, V3.create(0, 1, 0));
 
     gl.uniformMatrix4fv(locs.proj, false, proj);
@@ -3149,7 +3772,43 @@ function draw() {
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive color
     gl.uniform1f(locs.time, performance.now() / 1000);
 
+    // Phase 1: Dynamic point light (boss aura, barrel fire)
+    let _plPos = [0, -500, 0], _plCol = [0, 0, 0];
+    if (STATE.boss && STATE.boss.active) {
+        const _isRage = STATE.boss.hp < STATE.boss.maxHp * 0.5;
+        _plPos = [STATE.boss.pos.x, STATE.boss.pos.y + 10, STATE.boss.pos.z];
+        _plCol = _isRage ? [2.0, 0.05, 0.0] : [1.0, 0.0, 0.25];
+    }
+    if (locs.pointLightPos) gl.uniform3fv(locs.pointLightPos, _plPos);
+    if (locs.pointLightColor) gl.uniform3fv(locs.pointLightColor, _plCol);
+    // Muzzle flash decay
+    STATE.muzzleFlashTime = Math.max(0, (STATE.muzzleFlashTime || 0) - 0.018);
+    if (locs.muzzleFlash) gl.uniform1f(locs.muzzleFlash, STATE.muzzleFlashTime / 0.08);
+
     const drawMeshActual = (mesh, pos, scale = 1, rotY = 0) => {
+        // [PHASE 8] Frustum culling đơn giản để tăng hiệu năng vẽ vật thể xa sau lưng camera
+        if (mesh !== ASSETS.sky && mesh !== ASSETS.cosmicSky) {
+            const toObj = V3.sub(pos, eye);
+            const dist = V3.len(toObj);
+
+            // [PHASE 10] LOD (Level of Detail) & Khoảng cách vẽ tối đa dựa trên loại Mesh và chất lượng hiện tại
+            const isReduced = STATE.qualityReduced;
+            if (mesh === ASSETS.grass) {
+                if (dist > (isReduced ? 40.0 : 70.0)) return;
+            } else if (mesh === ASSETS.debris || mesh === ASSETS.warningSign) {
+                if (dist > (isReduced ? 60.0 : 100.0)) return;
+            } else if (mesh === ASSETS.tree || mesh === ASSETS.rock || mesh === ASSETS.barrel || mesh === ASSETS.lampPost || mesh === ASSETS.pad) {
+                if (dist > (isReduced ? 110.0 : 180.0)) return;
+            }
+
+            if (dist > 6.0) {
+                const dirToObj = V3.norm(toObj);
+                const dot = V3.dot(forward, dirToObj);
+                // Cắt culling rộng hơn một chút (-0.25) để tránh pop-in ở khóe mắt camera
+                if (dot < -0.25) return;
+            }
+        }
+
         let m = M4.translation(pos.x, pos.y, pos.z);
         m = M4.multiply(m, M4.rotationY(rotY));
         m = M4.multiply(m, M4.scaling(scale, scale, scale));
@@ -3229,7 +3888,7 @@ function draw() {
     // Draw Final Red Key (Chìa khóa đỏ rơi)
     if (STATE.finalPaper && STATE.finalPaper.active && !STATE.finalPaper.pickedUp) {
         const bob = Math.sin(Date.now() / 250) * 0.4;
-        
+
         // 1. Vẽ chìa khóa đỏ rực rỡ
         gl.uniform3f(locs.emitColor, 1.2, 0.1, 0.1);
         drawMeshActual(ASSETS.redKey, { x: STATE.finalPaper.pos.x, y: STATE.finalPaper.pos.y + bob + 1.0, z: STATE.finalPaper.pos.z }, 12.0, Date.now() / 400);
@@ -3291,24 +3950,51 @@ function draw() {
     }
 
     // Grass:
-    if (GRASS_PATCHES.length > 0) { gl.disable(gl.CULL_FACE); GRASS_PATCHES.forEach(g => drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0)); gl.enable(gl.CULL_FACE); }
+    if (GRASS_PATCHES.length > 0) {
+        gl.disable(gl.CULL_FACE);
+        GRASS_PATCHES.forEach(g => {
+            const dx = p.pos.x - g.x;
+            const dz = p.pos.z - g.z;
+            if (dx * dx + dz * dz < 8100) { // 90 units distance culling
+                drawMeshActual(ASSETS.grass, { x: g.x, y: g.y, z: g.z }, g.scale, 0);
+            }
+        });
+        gl.enable(gl.CULL_FACE);
+    }
     STATE.pads.forEach(p => drawMeshActual(ASSETS.pad, p.pos, 2, 0));
 
-    // Vẽ vật cản (Cây, Nhà, Xe, Cột, Cửa)
+    // Vẽ vật cản (Cây, Nhà, Xe, Cột, Cửa) - Có culling tối ưu cho máy yếu
     STATE.obstacles.forEach(obs => {
+        const isRedDoor = obs.type === 'redDoor';
+        const dx = p.pos.x - obs.pos.x;
+        const dz = p.pos.z - obs.pos.z;
+        if (!isRedDoor && (dx * dx + dz * dz > 22500)) return; // 150 units distance culling
+
         if (obs.type === 'tree') drawMeshActual(ASSETS.tree, obs.pos, obs.scale, 0);
         else if (obs.type === 'house') drawMeshActual(ASSETS.house, obs.pos, obs.scale, obs.rot);
         else if (obs.type === 'car') drawMeshActual(ASSETS.car, obs.pos, obs.scale, obs.rot);
+        else if (obs.type === 'debris') drawMeshActual(ASSETS.debris, obs.pos, obs.scale, obs.rot);
+        else if (obs.type === 'warningSign') drawMeshActual(ASSETS.warningSign, obs.pos, obs.scale, obs.rot);
+        else if (obs.type === 'lampPost') {
+            // [PHASE 8] Đèn đỏ chớp tắt dẫn đường ghê rợn dọc Void Path / Landmarks
+            const isLit = (Math.floor(performance.now() / 400) % 2 === 0);
+            if (isLit) {
+                gl.uniform3f(locs.emitColor, 3.5, 0.05, 0.05); // Đỏ dạ quang rực rỡ
+            } else {
+                gl.uniform3f(locs.emitColor, 0.1, 0.0, 0.0); // Tắt đèn (tối mờ)
+            }
+            drawMeshActual(ASSETS.lampPost, obs.pos, obs.scale, obs.rot);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
+        }
         else if (obs.type === 'pillar') {
             gl.uniform3f(locs.emitColor, 0, 0.5, 0.5); // Kích hoạt Bloom cho rune
             drawMeshActual(ASSETS.pillar, obs.pos, obs.scale, obs.rot);
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
         else if (obs.type === 'redDoor') {
-            let pulse = 1.5;
             if (STATE.hasRedKey) {
-                pulse = 1.8 + Math.sin(performance.now() / 120) * 0.6; // Nhấp nháy dồn dập, cực kỳ huyền ảo
-                
+                gl.uniform3f(locs.emitColor, 0.0, 0.0, 0.456); // Magic flag: isRedDoor = true, hasKey = true
+
                 // Spawn các hạt không gian đỏ bay ra từ cánh cửa để mời gọi người chơi
                 if (Math.random() < 0.25) {
                     const cosR = Math.cos(obs.rot);
@@ -3318,7 +4004,7 @@ function draw() {
                     const localY = Math.random() * 5.0;
                     const worldX = obs.pos.x + localX * cosR;
                     const worldZ = obs.pos.z - localX * sinR;
-                    
+
                     STATE.particles.push({
                         pos: V3.create(worldX, obs.pos.y + localY, worldZ),
                         vel: V3.create(sinR * (2.0 + Math.random() * 3.0), (Math.random() - 0.5) * 0.5, cosR * (2.0 + Math.random() * 3.0)), // Bay ra phía trước cánh cửa
@@ -3327,8 +4013,9 @@ function draw() {
                         type: 'fire'
                     });
                 }
+            } else {
+                gl.uniform3f(locs.emitColor, 0.0, 0.0, 0.123); // Magic flag: isRedDoor = true, hasKey = false
             }
-            gl.uniform3f(locs.emitColor, pulse, 0.0, 0.0); // Cửa phát sáng đỏ máu
             drawMeshActual(ASSETS.redDoor, obs.pos, obs.scale, obs.rot);
             gl.uniform3f(locs.emitColor, 0, 0, 0);
         }
@@ -3342,16 +4029,20 @@ function draw() {
         drawMeshActual(mesh, { x: l.pos.x, y: l.pos.y + Math.sin(performance.now() / 200) * 0.2, z: l.pos.z }, 0.5, performance.now() / 1000);
     });
 
-    // Effects & Boss Indicators
+    // Effects & Boss Indicators (Player projectiles = Yellow, Boss = Red)
     STATE.projectiles.forEach(p => {
-        if (p.isBoss) drawMeshActual(ASSETS.bossProj, p.pos, 1, 0);
-        else drawMeshActual(ASSETS.crate, p.pos, 0.1, 0);
+        if (p.isBoss) {
+            gl.uniform3f(locs.emitColor, 2.0, 0.2, 0.2); // Boss = Red glow
+            drawMeshActual(ASSETS.bossProj, p.pos, 1, 0);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
+        } else {
+            gl.uniform3f(locs.emitColor, 1.2, 1.2, 0.2); // Player = Yellow glow
+            drawMeshActual(ASSETS.crate, p.pos, 0.2, 0);
+            gl.uniform3f(locs.emitColor, 0, 0, 0);
+        }
     });
-    STATE.particles.forEach(p => {
-        gl.uniform3f(locs.emitColor, p.color[0], p.color[1], p.color[2]);
-        const size = (p.type === 'smoke' ? 0.8 : 0.4) * p.life;
-        drawMeshActual(ASSETS.crate, p.pos, size, 0);
-    });
+    // [ĐÃ XÓA] Không render particles nữa - tránh hộp bay gây khó chịu
+    // spawnParticles() vẫn chạy cho camera shake / gameplay logic nhưng không vẽ gì
     gl.uniform3f(locs.emitColor, 0, 0, 0); // Reset emissive
     gl.uniform3f(locs.fogColor, fogCol[0], fogCol[1], fogCol[2]);
 
@@ -3436,7 +4127,6 @@ function draw() {
             mArm = M4.multiply(mArm, M4.translation(side * 3.5, 16, forward)); // Gắn chết vào khớp vai (có hỗ trợ vươn tay forward)
             mArm = M4.multiply(mArm, M4.rotationX(lift)); // Cử động cánh tay từ khớp vai
             mArm = M4.multiply(mArm, M4.scaling(armScale, armScale, armScale)); // Phóng to cánh tay từ khớp
-
             // 1. Vẽ Outline Viền Trắng xuyên vật thể (X-Ray/Wallhack) cho Boss Arm trước
             gl.disable(gl.DEPTH_TEST);
             gl.cullFace(gl.FRONT);
@@ -3501,7 +4191,7 @@ function draw() {
     }
 
     // -------------------------------------------------------------
-    // VẼ BOTS (Vẽ sau cùng để hỗ trợ viền trắng xuyên qua TẤT CẢ vật thể như Cây, Nhà, Đá...)
+    // Vẽ BOTS (Vẽ sau cùng để hỗ trợ viền trắng xuyên qua TẤT CẢ vật thể như Cây, Nhà, Đá...)
     // -------------------------------------------------------------
     STATE.bots.forEach(b => {
         const dx = p.pos.x - b.pos.x, dz = p.pos.z - b.pos.z, ang = Math.atan2(dx, dz);
@@ -3560,8 +4250,20 @@ function draw() {
         let weaponMesh = [ASSETS.pistol, ASSETS.smg, ASSETS.sniper][p.weaponIdx];
         if (p.isChargingUlti) weaponMesh = ASSETS.cannon;
         if (STATE.hasRedKey) weaponMesh = ASSETS.redKey;
-        const bob = Math.sin(performance.now() * 0.01) * 0.015 * (1 - STATE.aimLerp * 0.8); // Giảm rung khi ngắm
-        const kick = p.recoil * 0.4;
+
+        // Phase 5: Weapon animation system
+        const _wa = STATE.weaponAnim;
+        const _t = performance.now() * 0.001;
+        const _isMoving = (STATE.keys['KeyW'] || STATE.keys['KeyS'] || STATE.keys['KeyA'] || STATE.keys['KeyD']);
+        const _walkSpeed = _isMoving ? 1.0 : 0.0;
+        _wa.bobPhase += _walkSpeed * 0.15;
+        _wa.swayX += (Math.sin(_t * 0.9) * 0.018 + (_isMoving ? Math.sin(_wa.bobPhase * 7) * 0.025 : 0) - _wa.swayX) * 0.12;
+        _wa.swayY += (Math.abs(Math.sin(_wa.bobPhase * 7)) * (_isMoving ? 0.022 : 0) + Math.sin(_t * 1.3) * 0.010 - _wa.swayY) * 0.12;
+        _wa.recoilZ += (0 - _wa.recoilZ) * 0.22; // Spring back from recoil
+        if (p.recoil > 0.05) _wa.recoilZ = Math.min(_wa.recoilZ + p.recoil * 0.08, 0.12);
+
+        const bob = _wa.swayY; // Use animated bob instead of simple sin
+        const kick = p.recoil * 0.4 + _wa.recoilZ;
         const vmProj = M4.perspective(fov, aspect, 0.01, 10);
         gl.uniformMatrix4fv(locs.proj, false, vmProj);
         gl.uniformMatrix4fv(locs.view, false, M4.identity());
@@ -3578,15 +4280,44 @@ function draw() {
             scopeEl.style.display = 'none';
         }
 
-        if (!isFFScope) {
+        // Ẩn vũ khí khi đang trong animation ngồi dậy
+        const _isStandingUp = (p.standUpTimer || 0) > 0;
+
+        if (!isFFScope && !_isStandingUp) {
             // Anim rút súng (Equip animation)
             const equipOffset = (1.0 - Math.min(1.0, p.weaponSwitchTime)) * 0.5;
 
+            // === ANIMATION NẠP ĐẠN ===
+            // Phase 1 (2.0→1.2): Hạ súng xuống + xoay ra ngoài (tháo băng đạn)
+            // Phase 2 (1.2→0.5): Đẩy súng vào + xoay ngược (lắp băng đạn mới)
+            // Phase 3 (0.5→0.0): Súng trở về + bounce (kéo cơ / ready)
+            let reloadDropY = 0, reloadTiltX = 0, reloadTiltZ = 0;
+            if (p.isReloading) {
+                const rt = Math.max(0, p.reloadTimer || 0);
+                if (rt > 1.2) {
+                    const t1 = (rt - 1.2) / 0.8;
+                    reloadDropY = t1 * 0.30;
+                    reloadTiltX = t1 * 0.60;
+                    reloadTiltZ = t1 * 0.40;
+                } else if (rt > 0.5) {
+                    const t2 = (rt - 0.5) / 0.7;
+                    reloadDropY = 0.04 + t2 * 0.10;
+                    reloadTiltX = -t2 * 0.28;
+                    reloadTiltZ = t2 * 0.14;
+                } else {
+                    const t3 = rt / 0.5;
+                    reloadDropY = t3 * 0.04;
+                    reloadTiltX = 0;
+                    reloadTiltZ = 0;
+                }
+            }
+
             // Right Arm
             let armX = 0.35 - STATE.aimLerp * 0.35;
-            let armY = -0.4 + bob + STATE.aimLerp * 0.05 - equipOffset;
+            let armY = -0.4 + bob + STATE.aimLerp * 0.05 - equipOffset - reloadDropY;
             let mArm = M4.translation(armX, armY, -0.5);
             mArm = M4.multiply(mArm, M4.rotationY(-0.3 * (1 - STATE.aimLerp)));
+            if (p.isReloading) mArm = M4.multiply(mArm, M4.rotationX(reloadTiltX * 0.5));
             drawMeshRaw(ASSETS.arm, mArm);
 
             // Weapon ADS Positioning
@@ -3596,7 +4327,7 @@ function draw() {
             if (STATE.hasRedKey) targetWepY = -0.15;
 
             let wepX = STATE.hasRedKey ? 0.35 : (0.25 - STATE.aimLerp * 0.25);
-            let wepY = STATE.hasRedKey ? (-0.38 + bob - equipOffset) : (-0.3 + bob + STATE.aimLerp * (targetWepY + 0.3) - equipOffset);
+            let wepY = STATE.hasRedKey ? (-0.38 + bob - equipOffset) : (-0.3 + bob + STATE.aimLerp * (targetWepY + 0.3) - equipOffset - reloadDropY);
             let wepZ = STATE.hasRedKey ? -0.52 : (-0.6 - kick - STATE.aimLerp * 0.2);
             let mWep = M4.translation(wepX, wepY, wepZ);
 
@@ -3608,6 +4339,10 @@ function draw() {
             } else {
                 mWep = M4.multiply(mWep, M4.rotationY(-0.15 * (1 - STATE.aimLerp)));
                 if (STATE.aimLerp < 0.9) mWep = M4.multiply(mWep, M4.rotationX(0.05 * (1 - STATE.aimLerp)));
+                if (p.isReloading) {
+                    mWep = M4.multiply(mWep, M4.rotationX(reloadTiltX));
+                    mWep = M4.multiply(mWep, M4.rotationY(reloadTiltZ));
+                }
                 mWep = M4.multiply(mWep, M4.scaling(1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1));
             }
             drawMeshRaw(weaponMesh, mWep);
@@ -3647,20 +4382,24 @@ function drawMinimap(p, bots) {
     ctx.translate(-p.pos.x * scale, -p.pos.z * scale);
 
     // Vẽ viền map thực tế
-    ctx.strokeStyle = "rgba(0, 243, 255, 0.3)";
+    ctx.strokeStyle = "rgba(255, 60, 60, 0.24)";
     ctx.lineWidth = 2;
     const mapRenderSize = MAP_SIZE * scale;
     ctx.strokeRect(-mapRenderSize / 2, -mapRenderSize / 2, mapRenderSize, mapRenderSize);
 
-    // Vẽ quân địch (Chấm đỏ sáng)
-    ctx.fillStyle = "#ff0033";
-    ctx.shadowBlur = 8;
-    ctx.shadowColor = "#ff0033";
+    // Vẽ quân địch (Chấm đỏ kinh dị, không hiển thị ID)
+    ctx.fillStyle = "rgba(255, 30, 40, 0.95)";
+    ctx.shadowBlur = 6;
+    ctx.shadowColor = "rgba(255, 40, 60, 0.45)";
     bots.forEach(b => {
         if (b.hp <= 0) return;
         ctx.beginPath();
         ctx.arc(b.pos.x * scale, b.pos.z * scale, 3.5, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.strokeStyle = "rgba(255, 80, 80, 0.18)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
     });
 
     if (STATE.boss && STATE.boss.active) {
@@ -3687,7 +4426,7 @@ function drawMinimap(p, bots) {
     // Viền minimap tĩnh
     ctx.beginPath();
     ctx.arc(cx, cy, cx - 2, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(0, 243, 255, 0.6)";
+    ctx.strokeStyle = "rgba(255, 80, 80, 0.6)";
     ctx.lineWidth = 2;
     ctx.stroke();
 }
@@ -3706,21 +4445,25 @@ function showGlobalAnnouncement(text, duration = 3000) {
 function updateHUD() {
     const p = STATE.player, hpPercent = Math.max(0, (p.hp / p.maxHp) * 100), armorPercent = Math.max(0, (p.armor / p.maxArmor) * 100);
 
-    // [YÊU CẦU] Xử lý nháy đỏ khi mất máu
-    const overlay = document.getElementById('damage-overlay');
-    if (overlay) {
-        if (p.damageFlash > 0) {
-            const hpRatio = 1.0 - (p.hp / p.maxHp);
-            const intensity = p.damageFlash * (0.3 + hpRatio * 0.4);
-            overlay.style.display = 'block';
-            overlay.style.opacity = Math.min(0.6, intensity);
-            overlay.style.background = `radial-gradient(circle, transparent 20%, rgba(${150 + hpRatio * 105}, 0, 0, 0.7) 100%)`;
-        } else {
-            overlay.style.display = 'none';
-        }
-    }
+    // [YÊU CẦU] Xử lý nháy đỏ khi mất máu - Đã tắt hiệu ứng này
+    // const overlay = document.getElementById('damage-overlay');
+    // if (overlay) {
+    //     if (p.damageFlash > 0) {
+    //         const hpRatio = 1.0 - (p.hp / p.maxHp);
+    //         const intensity = p.damageFlash * (0.3 + hpRatio * 0.4);
+    //         overlay.style.display = 'block';
+    //         overlay.style.opacity = Math.min(0.6, intensity);
+    //         overlay.style.background = `radial-gradient(circle, transparent 20%, rgba(${150 + hpRatio * 105}, 0, 0, 0.7) 100%)`;
+    //     } else {
+    //         overlay.style.display = 'none';
+    //     }
+    // }
 
-    document.getElementById('health-fill').style.width = hpPercent + '%'; document.getElementById('armor-fill').style.width = armorPercent + '%';
+    document.getElementById('health-fill').style.width = hpPercent + '%';
+    document.getElementById('armor-fill').style.width = armorPercent + '%';
+    // Hiển thị số máu trong thanh HP
+    const hpTextEl = document.getElementById('health-hp-text');
+    if (hpTextEl) hpTextEl.innerText = Math.ceil(p.hp) + ' / ' + p.maxHp;
     document.getElementById('ammo-current').innerText = STATE.weapons[p.weaponIdx].ammo; document.getElementById('ammo-reserve').innerText = STATE.weapons[p.weaponIdx].res;
     document.getElementById('weapon-name').innerText = STATE.weapons[p.weaponIdx].name.toUpperCase();
     document.getElementById('alive-count').innerText = "CÒN SỐNG: " + (STATE.bots.length + 1);
@@ -3768,6 +4511,8 @@ function updateHUD() {
             b.uiFill.style.height = '100%';
             b.uiFill.style.background = '#ff0033';
             b.uiBar.appendChild(b.uiFill);
+
+            // Không hiển thị nhãn P-X cho bot nữa
 
             document.getElementById('ui-layer').appendChild(b.uiBar);
         }
@@ -3845,7 +4590,6 @@ function activateUltimate() {
         STATE.projectiles.push(proj);
         playAudio('shoot');
         STATE.shake = 5.0; // Rung cực mạnh khi bắn
-        spawnParticles(proj.pos, 50, [1, 0.8, 0], 2.0); // Nổ lớn tại nòng súng
 
         // Bất tử thêm 1s sau khi bắn để an toàn
         setTimeout(() => {
@@ -3857,20 +4601,228 @@ function activateUltimate() {
 
 
 
+// ============================================================
+// PHASE 3 & 4: VFX UPGRADE FUNCTIONS
+// ============================================================
+
+// Muzzle flash — orange particles + screen glow
+function spawnMuzzleFlash(playerPos, cameraRot) {
+    // Disabled visual muzzle flash and yellow smoke for cleaner shooting.
+    if (!playerPos || STATE.screen !== 'game') return;
+    STATE.muzzleFlashTime = 0;
+}
+
+// Blood splatter — realistic red particle burst
+function spawnBloodSplatter(pos, count) {
+    count = count || 15;
+    if (STATE.particles.length > 800) return; // Performance guard
+    for (let i = 0; i < count; i++) {
+        const speed = 1.5 + Math.random() * 5;
+        const angle = Math.random() * Math.PI * 2;
+        const upVel = Math.random() * 4.5;
+        STATE.particles.push({
+            pos: V3.create(pos.x + (Math.random() - 0.5) * 0.4, pos.y + 0.4 + Math.random() * 0.6, pos.z + (Math.random() - 0.5) * 0.4),
+            vel: V3.create(Math.cos(angle) * speed, upVel, Math.sin(angle) * speed),
+            life: 0.35 + Math.random() * 0.45,
+            color: [0.75 + Math.random() * 0.25, 0.0, 0.0], type: 'fire'
+        });
+    }
+}
+
+// Headshot special effect — golden + blood burst
+function spawnHeadshotEffect(pos) {
+    const count = isMobile ? 12 : 22;
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2.5 + Math.random() * 6;
+        STATE.particles.push({
+            pos: V3.create(pos.x, pos.y + 1.6, pos.z),
+            vel: V3.create(Math.cos(angle) * speed, Math.random() * 5 - 0.5, Math.sin(angle) * speed),
+            life: 0.4 + Math.random() * 0.45,
+            color: [1.0, 0.88, 0.0], type: 'fire' // Gold
+        });
+    }
+    spawnBloodSplatter({ x: pos.x, y: pos.y + 1.6, z: pos.z }, isMobile ? 6 : 10);
+    STATE.hitPause = 0.025; // 25ms freeze for impact feel
+    showHeadshotText();
+    playAudio('headshot');
+}
+
+// Headshot CSS text pop
+function showHeadshotText() {
+    const el = document.getElementById('headshot-text');
+    if (!el) return;
+    el.classList.add('show');
+    clearTimeout(window._hsTimer);
+    window._hsTimer = setTimeout(() => el.classList.remove('show'), 700);
+}
+
+// Directional damage indicator
+function showDamageDirection(sourcePos) {
+    return; // Đã tắt hoàn toàn theo yêu cầu người chơi
+    const el = document.getElementById('damage-directional');
+    if (!el) return;
+    const dx = sourcePos.x - STATE.player.pos.x;
+    const dz = sourcePos.z - STATE.player.pos.z;
+    const worldAngle = Math.atan2(dx, -dz);
+    const screenAngle = worldAngle - STATE.camera.rot.y;
+    const deg = ((screenAngle * 180 / Math.PI) + 360) % 360;
+    el.style.setProperty('--dmg-angle', deg + 'deg');
+    el.style.opacity = '1';
+    clearTimeout(window._dmgDirTimer);
+    window._dmgDirTimer = setTimeout(() => { if (el) el.style.opacity = '0'; }, 900);
+}
+
+// ============================================================
+
 const AudioContextClass = window.AudioContext || window.webkitAudioContext;
 const AudioCtx = AudioContextClass ? new AudioContextClass() : null;
 function playAudio(type) {
     if (!AudioCtx) return;
     if (AudioCtx.state === 'suspended') AudioCtx.resume();
     const osc = AudioCtx.createOscillator(), gain = AudioCtx.createGain(); osc.connect(gain); gain.connect(AudioCtx.destination); const now = AudioCtx.currentTime;
-    if (type === 'shoot') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1); gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1); osc.start(now); osc.stop(now + 0.1); }
-    else if (type === 'hit') { osc.type = 'square'; osc.frequency.setValueAtTime(1200, now); gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(now); osc.stop(now + 0.05); }
-    else if (type === 'pickup') { osc.type = 'sine'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(800, now + 0.1); gain.gain.setValueAtTime(0.1, now); osc.start(now); osc.stop(now + 0.15); }
-    else if (type === 'jump') { osc.type = 'triangle'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(300, now + 0.2); gain.gain.setValueAtTime(0.1, now); osc.start(now); osc.stop(now + 0.2); }
+    if (type === 'shoot') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(900, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.12); gain.gain.setValueAtTime(0.28, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12); osc.start(now); osc.stop(now + 0.12); }
+    else if (type === 'hit') { osc.type = 'square'; osc.frequency.setValueAtTime(280, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.12); gain.gain.setValueAtTime(0.18, now); gain.gain.linearRampToValueAtTime(0, now + 0.12); osc.start(now); osc.stop(now + 0.12); }
+    else if (type === 'headshot') { osc.type = 'square'; osc.frequency.setValueAtTime(1400, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.08); gain.gain.setValueAtTime(0.22, now); gain.gain.linearRampToValueAtTime(0, now + 0.12); osc.start(now); osc.stop(now + 0.15); }
+    else if (type === 'pickup') { osc.type = 'sine'; osc.frequency.setValueAtTime(440, now); osc.frequency.linearRampToValueAtTime(880, now + 0.12); gain.gain.setValueAtTime(0.12, now); osc.start(now); osc.stop(now + 0.18); }
+    else if (type === 'jump') { osc.type = 'triangle'; osc.frequency.setValueAtTime(130, now); osc.frequency.linearRampToValueAtTime(320, now + 0.22); gain.gain.setValueAtTime(0.1, now); osc.start(now); osc.stop(now + 0.22); }
+    else if (type === 'reload') {
+        // Âm thanh nạp đạn 3 giai đoạn (Web Audio synthesized)
+        // Giai đoạn 1 (t=0): Tiếng "rắc" tháo băng đạn ra — white noise ngắn + click
+        const buf1 = AudioCtx.createBuffer(1, AudioCtx.sampleRate * 0.08, AudioCtx.sampleRate);
+        const d1 = buf1.getChannelData(0);
+        for (let i = 0; i < d1.length; i++) d1[i] = (Math.random() * 2 - 1) * (1 - i / d1.length);
+        const src1 = AudioCtx.createBufferSource(); src1.buffer = buf1;
+        const g1 = AudioCtx.createGain(); g1.gain.setValueAtTime(0.22, now); g1.gain.linearRampToValueAtTime(0, now + 0.08);
+        src1.connect(g1); g1.connect(AudioCtx.destination); src1.start(now);
+
+        // Giai đoạn 2 (t=0.75): Tiếng "cạch" lắp băng mới vào — click + tone thấp
+        const o2 = AudioCtx.createOscillator(); const g2 = AudioCtx.createGain();
+        o2.type = 'square'; o2.frequency.setValueAtTime(320, now + 0.75); o2.frequency.exponentialRampToValueAtTime(90, now + 0.82);
+        g2.gain.setValueAtTime(0.0, now + 0.75); g2.gain.linearRampToValueAtTime(0.20, now + 0.76); g2.gain.linearRampToValueAtTime(0, now + 0.82);
+        o2.connect(g2); g2.connect(AudioCtx.destination); o2.start(now + 0.75); o2.stop(now + 0.82);
+
+        // Tiếng noise ngắn kèm theo
+        const buf2 = AudioCtx.createBuffer(1, AudioCtx.sampleRate * 0.06, AudioCtx.sampleRate);
+        const d2 = buf2.getChannelData(0);
+        for (let i = 0; i < d2.length; i++) d2[i] = (Math.random() * 2 - 1) * (1 - i / d2.length);
+        const src2 = AudioCtx.createBufferSource(); src2.buffer = buf2;
+        const g2b = AudioCtx.createGain(); g2b.gain.setValueAtTime(0.18, now + 0.75); g2b.gain.linearRampToValueAtTime(0, now + 0.81);
+        src2.connect(g2b); g2b.connect(AudioCtx.destination); src2.start(now + 0.75);
+
+        // Giai đoạn 3 (t=1.55): Tiếng "cách" kéo cơ — metallic click cao
+        const o3 = AudioCtx.createOscillator(); const g3 = AudioCtx.createGain();
+        o3.type = 'sawtooth'; o3.frequency.setValueAtTime(1200, now + 1.55); o3.frequency.exponentialRampToValueAtTime(300, now + 1.61);
+        g3.gain.setValueAtTime(0.0, now + 1.55); g3.gain.linearRampToValueAtTime(0.25, now + 1.555); g3.gain.linearRampToValueAtTime(0, now + 1.61);
+        o3.connect(g3); g3.connect(AudioCtx.destination); o3.start(now + 1.55); o3.stop(now + 1.62);
+
+        // Đừng dùng osc / gain mặc định — stop chúng luôn
+        osc.start(now); osc.stop(now + 0.001); gain.gain.setValueAtTime(0, now);
+    }
+}
+
+function playPositionalAudio(type, pos) {
+    if (!AudioCtx || !STATE.player.pos) return;
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+
+    const delta = V3.sub(pos, STATE.player.pos);
+    const dist = V3.len(delta);
+    const maxRange = 60.0; // Tầm nghe tối đa
+    if (dist >= maxRange) return; // Quá xa không nghe thấy gì
+
+    const vol = Math.max(0, 1.0 - dist / maxRange);
+
+    // Tính góc xoay tương đối so với hướng mặt của camera để tạo hiệu ứng Stereo Panning
+    const dx = delta.x, dz = delta.z;
+    const worldAngle = Math.atan2(dx, -dz);
+    const relativeAngle = worldAngle - STATE.camera.rot.y;
+    let panVal = Math.sin(relativeAngle); // [-1..1]
+    panVal = Math.max(-1.0, Math.min(1.0, panVal));
+
+    const osc = AudioCtx.createOscillator();
+    const gain = AudioCtx.createGain();
+
+    // Kết nối panning
+    if (AudioCtx.createStereoPanner) {
+        const panner = AudioCtx.createStereoPanner();
+        panner.pan.setValueAtTime(panVal, AudioCtx.currentTime);
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(AudioCtx.destination);
+    } else {
+        osc.connect(gain);
+        gain.connect(AudioCtx.destination);
+    }
+
+    const now = AudioCtx.currentTime;
+
+    if (type === 'shoot') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.15);
+        gain.gain.setValueAtTime(0.25 * vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+        osc.start(now);
+        osc.stop(now + 0.15);
+    }
+    else if (type === 'hit') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(250, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.1);
+        gain.gain.setValueAtTime(0.15 * vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+        osc.start(now);
+        osc.stop(now + 0.1);
+    }
+    else if (type === 'boss_warning') {
+        // Còi báo động/tiếng hú của boss (siren/howl)
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.linearRampToValueAtTime(350, now + 0.5);
+        osc.frequency.linearRampToValueAtTime(120, now + 1.0);
+        gain.gain.setValueAtTime(0.3 * vol, now);
+        gain.gain.linearRampToValueAtTime(0.3 * vol, now + 0.8);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.start(now);
+        osc.stop(now + 1.2);
+    }
+    else if (type === 'roar') {
+        // Tiếng gầm rú đe dọa từ xa của quái
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(80, now);
+        osc.frequency.linearRampToValueAtTime(45, now + 0.6);
+
+        // Thêm oscillator layer để tiếng gầm đục và ghê rợn hơn
+        const osc2 = AudioCtx.createOscillator();
+        const gain2 = AudioCtx.createGain();
+        osc2.type = 'sawtooth';
+        osc2.frequency.setValueAtTime(75, now);
+        osc2.frequency.linearRampToValueAtTime(30, now + 0.6);
+
+        if (AudioCtx.createStereoPanner) {
+            const panner2 = AudioCtx.createStereoPanner();
+            panner2.pan.setValueAtTime(panVal, now);
+            osc2.connect(gain2);
+            gain2.connect(panner2);
+            panner2.connect(AudioCtx.destination);
+        } else {
+            osc2.connect(gain2);
+            gain2.connect(AudioCtx.destination);
+        }
+        gain2.gain.setValueAtTime(0.25 * vol, now);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc2.start(now);
+        osc2.stop(now + 0.6);
+
+        gain.gain.setValueAtTime(0.3 * vol, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+        osc.start(now);
+        osc.stop(now + 0.6);
+    }
 }
 
 window.addEventListener('keydown', e => {
-    if (STATE.inputLocked) return;
+    if (STATE.inputLocked || (STATE.player && STATE.player.standUpTimer > 0)) return;
     STATE.keys[e.code] = true;
     if (e.code === 'Escape') {
         if (STATE.screen === 'game') {
@@ -3907,7 +4859,7 @@ window.addEventListener('keydown', e => {
 });
 window.addEventListener('keyup', e => STATE.keys[e.code] = false);
 window.addEventListener('mousedown', e => {
-    if (STATE.inputLocked || STATE.screen !== 'game') return;
+    if (STATE.inputLocked || STATE.screen !== 'game' || (STATE.player && STATE.player.standUpTimer > 0)) return;
     if (e.button === 0) STATE.mouse.down = true;
     if (e.button === 2) STATE.isAiming = true; // Right Click ADS
 });
@@ -3917,7 +4869,7 @@ window.addEventListener('mouseup', e => {
 });
 
 window.addEventListener('mousemove', e => {
-    if (STATE.inputLocked) return;
+    if (STATE.inputLocked || (STATE.player && STATE.player.standUpTimer > 0)) return;
     if (e.sourceCapabilities && e.sourceCapabilities.firesTouchEvents) return;
     if (!gl || !gl.canvas) return;
     if (document.pointerLockElement === gl.canvas) {
@@ -4150,11 +5102,7 @@ function checkOrientation() {
     }
 }
 window.onresize = () => {
-    if (gl && gl.canvas) {
-        const resScale = isMobile ? 0.75 : 1.0;
-        gl.canvas.width = window.innerWidth * resScale;
-        gl.canvas.height = window.innerHeight * resScale;
-    }
+    applyGraphicsSettings();
     checkOrientation();
 };
 window.addEventListener('load', checkOrientation);
@@ -4201,7 +5149,7 @@ window.addEventListener('DOMContentLoaded', () => {
         easy: '😊 Bot/Boss yếu, máu +20% | Unti: cần 1500 dame (dễ charge)',
         normal: '⚔️ Cân bằng | Unti: cần 2000 dame, dame +20%',
         hard: '🔥 Bot/Boss mạnh | Unti: cần 2600 dame, dame +40%',
-        extreme: '💀 Cực nguy hiểm | Unti: cần 3500 dame, dame +60%!',
+        extreme: '💀 Cực nguy hiểm | Unti: cần 3000 dame, dame +60%!',
     };
     function syncDiffButtons() {
         diffBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.diff === window.CURRENT_DIFFICULTY));
@@ -4244,8 +5192,8 @@ window.addEventListener('DOMContentLoaded', () => {
             const totalUnlocked = window.LoreSystem ? window.LoreSystem.getTotalUnlockedCount() : 0;
 
             achievementsSummary.innerHTML = `
-                🌟 HỒ SƠ KHÔNG GIAN CỦA <span style="color:#bf00ff; text-shadow: 0 0 8px rgba(191,0,255,0.6);">${pName.toUpperCase()}</span><br>
-                🏆 ĐÃ GIẢI MÃ: <span style="color:#00ff88;">${totalUnlocked} / 24</span> BÍ MẬT VŨ TRỤ
+                🌟 HỒ SƠ SINH TỒN CỦA <span style="color:#bf00ff; text-shadow: 0 0 8px rgba(191,0,255,0.6);">${pName.toUpperCase()}</span><br>
+                🏆 ĐÃ GIẢI MÃ: <span style="color:#00ff88;">${totalUnlocked} / 24</span> BÍ MẬT ĐẢO HOANG
             `;
 
             achievementsList.innerHTML = '';
@@ -4256,41 +5204,6 @@ window.addEventListener('DOMContentLoaded', () => {
                 { id: 'hard', name: '🟠 CHẾ ĐỘ KHÓ', count: 7, label: 'Khó' },
                 { id: 'extreme', name: '🔴 CHẾ ĐỘ CỰC KHÓ', count: 9, label: 'Cực Khó' }
             ];
-
-            const allLore = {
-                easy: [
-                    "\"Mọi thứ ngày càng tệ luồng khí tỏa ra từ Cánh Cửa Đỏ ngày càng lớn.\"",
-                    "\"Những kẻ mất trí nhớ thường lặp lại một câu duy nhất: 'Phải dừng lại, phải ngăn lại. PHẢI NGĂN LẠI BẰNG MỌI GIÁ!!'.\"",
-                    "\"Thứ đang canh gác trung tâm hòn đảo không phải cỗ máy, mà là một kẻ gác cổng vĩnh cửu.\""
-                ],
-                normal: [
-                    "\"Bản ghi cũ: Bức xạ ở đây làm biến đổi cấu trúc phân tử của sắt. Giáp trụ đang dần hòa làm một với xương thịt.\"",
-                    "\"Bản ghi cũ: Hộp tiếp tế chứa đầy Crimson nhưng không ai dám đụng vào nó.\"",
-                    "\"Bản ghi cũ: Sinh vật khổng lồ đó mang hình hài của Kẻ Gác Cổng, nhưng không ai biết liệu có phải nó hay là...\"",
-                    "\"Bản ghi cũ: Cánh Cửa Đỏ chưa bao giờ đóng lại. Nó chỉ tạm thời bị bão hòa năng lượng khi kẻ canh giữ sụp đổ.\"",
-                    "\"Bản ghi cũ: Những người đi trước đã tìm thấy lõi nguồn... nhưng không ai trở về. Lõi nguồn đó hình như có màu đỏ tía...\""
-                ],
-                hard: [
-                    "\"Mảnh ký ức phân mảnh: 'Dự án Red Gate' không phải tạo ra vũ khí, mà để mở khóa một chiều không gian cao hơn.\"",
-                    "\"Mảnh ký ức phân mảnh: Crimson là thứ chất lỏng có linh hồn. Nó chọn vật chủ, không phải ngược lại.\"",
-                    "\"Mảnh ký ức phân mảnh: Kẻ được chọn sẽ trải qua 3 giai đoạn tiến hóa. Giai đoạn cuối cùng là mất đi nhân tính hoàn toàn.\"",
-                    "\"Mảnh ký ức phân mảnh: Đừng tin vào sự tĩnh lặng của hòn đảo. Lớp sương mù kia thực chất là hàng vạn vi mạch giám sát.\"",
-                    "\"Mảnh ký ức phân mảnh: Thực thể cai quản Vòng Lặp có khả năng bóp méo không gian. Hắn ta điều khiển những cột trụ đẫm máu.\"",
-                    "\"Mảnh ký ức phân mảnh: Sự sống và cái chết ở đây không tuyến tính. Giết hắn ta có thể chỉ là bắt đầu một vòng lặp tồi tệ hơn.\"",
-                    "\"Mảnh ký ức phân mảnh: Sự giải thoát duy nhất nằm ở 'Nghịch lý Dữ liệu'. Bạn phải thu thập đủ mảnh vỡ trước khi thực thể đó bị hủy diệt.\""
-                ],
-                extreme: [
-                    "\"DỮ LIỆU CẤM: Vòng lặp hiện tại: 849,204. Tỷ lệ đồng hóa vật chủ: 99.8%. Trạng thái: Sắp thức tỉnh.\"",
-                    "\"DỮ LIỆU CẤM: Hòn đảo này không tồn tại trên Trái Đã. Nó là một vùng giả lập bị lãng quên lâu đời từ không gian khác.\"",
-                    "\"DỮ LIỆU CẤM: Bọn quái vật không cố giết bạn. Chúng thực chất đang cố bảo vệ sự an toàn của chính bạn.\"",
-                    "\"DỮ LIỆU CẤM: Phương trình hỗn mang: những chiếc hộp tăng sức mạnh đó mang chất khiến người sử dụng liên tục dần lãng quên đi mọi thứ.\"",
-                    "\"DỮ LIỆU CẤM: Khi bạn hấp thụ Crimson (Trạng thái Tím), bạn đang dần hợp nhất với tâm trí của Kẻ Gác Cổng.\"",
-                    "\"DỮ LIỆU CẤM: Giải mã thành công 'Nghịch lý Dữ liệu' sẽ gây ra một vụ nổ khái niệm, xóa bỏ sự tồn tại của hòn đảo này khỏi mọi dòng thời gian.\"",
-                    "\"DỮ LIỆU CẤM: Kẻ mà bạn gọi là 'Boss' thực chất chính là bạn ở quá khứ, người đã bị mất hoàn toàn ký ức và chỉ còn nhớ duy nhất mục tiêu ngăn chặn bạn ở hiện tại kích hoạt Cánh Cửa Đỏ.\"",
-                    "\"DỮ LIỆU CẤM: Nếu bạn đọc được dòng này, Cánh Cửa Đỏ đã bắt đầu đảo ngược quy trình. Hãy đối đầu với chính bản thân ở quá khứ hoặc nếu không đây sẽ là vòng lặp không hồi kết!!.\"",
-                    "\"DỮ LIỆU CẤM: Chiếc hộp cuối cùng chứa đựng ký ức nguyên thủy của bạn. Mở nó ra đồng nghĩa với việc cơ thể bị hợp nhất với Kẻ Gác Cổng và trở thành một với hòn đảo Vĩnh Cửu.\""
-                ]
-            };
 
             diffs.forEach(d => {
                 const completedCount = unlocked[d.id] ? unlocked[d.id].length : 0;
@@ -4311,11 +5224,14 @@ window.addEventListener('DOMContentLoaded', () => {
 
                     const isUnlocked = unlocked[d.id] && unlocked[d.id].includes(i);
                     if (isUnlocked) {
+                        const loreText = (window.LORE_BY_DIFFICULTY && window.LORE_BY_DIFFICULTY[d.id] && window.LORE_BY_DIFFICULTY[d.id][i])
+                            ? window.LORE_BY_DIFFICULTY[d.id][i].text
+                            : "🔒";
                         row.innerHTML = `
                             <div class="achievement-title-bar">
                                 <span style="color:#00ff88;">✓ BÍ MẬT PHẦN ${i + 1} (Đã Giải Mã)</span>
                             </div>
-                            <div class="achievement-desc" style="color: #eee;">${allLore[d.id][i]}</div>
+                            <div class="achievement-desc" style="color: #eee;">${loreText}</div>
                         `;
                         row.style.borderColor = 'rgba(0, 255, 136, 0.2)';
                         row.style.background = 'rgba(0, 255, 136, 0.03)';
@@ -4420,6 +5336,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }, { passive: false });
 
         aimZone.addEventListener('touchmove', e => {
+            if (STATE.player && STATE.player.standUpTimer > 0) return;
             e.preventDefault();
             for (let i = 0; i < e.changedTouches.length; i++) {
                 const t = e.changedTouches[i];
@@ -4456,7 +5373,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (btnShoot) {
         const onShootStart = e => {
-            if (window.isEditingHUD) return;
+            if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return;
             if (e.type === 'touchstart') e.preventDefault();
             STATE.mouse.down = true;
             btnShoot.classList.add('pressed');
@@ -4468,7 +5385,7 @@ window.addEventListener('DOMContentLoaded', () => {
         btnShoot.addEventListener('mousedown', onShootStart);
 
         const onShootMove = e => {
-            if (window.isEditingHUD || (!shootTouchId)) return;
+            if (window.isEditingHUD || (!shootTouchId) || (STATE.player && STATE.player.standUpTimer > 0)) return;
             if (shootTouchId === 'mouse') return;
             const touches = e.changedTouches ? e.changedTouches : [e];
             for (let i = 0; i < touches.length; i++) {
@@ -4504,21 +5421,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const btnAim = document.getElementById('btn-aim');
     if (btnAim) {
-        const onAim = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.isAiming = !STATE.isAiming; if (STATE.isAiming) btnAim.classList.add('pressed'); else btnAim.classList.remove('pressed'); };
+        const onAim = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); STATE.isAiming = !STATE.isAiming; if (STATE.isAiming) btnAim.classList.add('pressed'); else btnAim.classList.remove('pressed'); };
         btnAim.addEventListener('touchstart', onAim);
         btnAim.addEventListener('mousedown', onAim);
     }
 
     const btnUlti = document.getElementById('btn-ulti');
     if (btnUlti) {
-        const onUlti = e => { if (window.isEditingHUD) return; e.preventDefault(); activateUltimate(); };
+        const onUlti = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); activateUltimate(); };
         btnUlti.addEventListener('touchstart', onUlti);
         btnUlti.addEventListener('mousedown', onUlti);
     }
 
     const btnInteract = document.getElementById('btn-interact');
     if (btnInteract) {
-        const onInteract = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
+        const onInteract = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
         btnInteract.addEventListener('touchstart', onInteract);
         btnInteract.addEventListener('mousedown', onInteract);
     }
@@ -4526,21 +5443,21 @@ window.addEventListener('DOMContentLoaded', () => {
     // Bấm thẳng vào dòng chữ thông báo nhặt hộp trên màn hình cũng nhặt được
     const interMsg = document.getElementById('interaction-msg');
     if (interMsg) {
-        const onInteractMsg = e => { e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
+        const onInteractMsg = e => { if (STATE.player && STATE.player.standUpTimer > 0) return; e.preventDefault(); STATE.keys['KeyE'] = true; setTimeout(() => { STATE.keys['KeyE'] = false; }, 200); };
         interMsg.addEventListener('touchstart', onInteractMsg);
         interMsg.addEventListener('mousedown', onInteractMsg);
     }
 
     const btnSprint = document.getElementById('btn-sprint');
     if (btnSprint) {
-        const onSprint = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['ShiftLeft'] = !STATE.keys['ShiftLeft']; if (STATE.keys['ShiftLeft']) btnSprint.classList.add('pressed'); else btnSprint.classList.remove('pressed'); };
+        const onSprint = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); STATE.keys['ShiftLeft'] = !STATE.keys['ShiftLeft']; if (STATE.keys['ShiftLeft']) btnSprint.classList.add('pressed'); else btnSprint.classList.remove('pressed'); };
         btnSprint.addEventListener('touchstart', onSprint);
         btnSprint.addEventListener('mousedown', onSprint);
     }
 
     const btnReload = document.getElementById('btn-reload');
     if (btnReload) {
-        const onReloadStart = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['KeyR'] = true; btnReload.classList.add('pressed'); };
+        const onReloadStart = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); STATE.keys['KeyR'] = true; btnReload.classList.add('pressed'); };
         const onReloadEnd = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['KeyR'] = false; btnReload.classList.remove('pressed'); };
         btnReload.addEventListener('touchstart', onReloadStart);
         btnReload.addEventListener('mousedown', onReloadStart);
@@ -4550,7 +5467,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const btnJump = document.getElementById('btn-jump');
     if (btnJump) {
-        const onJumpStart = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['Space'] = true; };
+        const onJumpStart = e => { if (window.isEditingHUD || (STATE.player && STATE.player.standUpTimer > 0)) return; e.preventDefault(); STATE.keys['Space'] = true; };
         const onJumpEnd = e => { if (window.isEditingHUD) return; e.preventDefault(); STATE.keys['Space'] = false; };
         btnJump.addEventListener('touchstart', onJumpStart);
         btnJump.addEventListener('mousedown', onJumpStart);
@@ -4561,6 +5478,7 @@ window.addEventListener('DOMContentLoaded', () => {
     const wBtns = document.querySelectorAll('.weapon-btn');
     wBtns.forEach(btn => {
         const onWeaponSelect = e => {
+            if (STATE.player && STATE.player.standUpTimer > 0) return;
             e.preventDefault();
             if (STATE.hasRedKey) return; // Khóa đổi súng trên mobile
             const idx = parseInt(btn.getAttribute('data-idx'));
@@ -4572,3 +5490,351 @@ window.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('mousedown', onWeaponSelect);
     });
 });
+
+// ============================================================
+// PHASE 2 — ATMOSPHERIC PARTICLES & AMBIENT LIGHTING
+// ============================================================
+
+STATE.ambientTimer = 0;
+STATE.flickerTime = 0;
+STATE.flickerVal = 0;
+STATE.heartbeatTimer = 0;
+
+// Spawn floating dust/smoke particles around player
+function spawnAmbientParticles(dt) {
+    if (STATE.screen !== 'game' || !STATE.player.pos) return;
+    STATE.ambientTimer += dt;
+
+    // Adaptive rate: reduce on mobile or when FPS is low
+    const rate = isMobile ? 0.25 : 0.06;
+    if (STATE.ambientTimer < rate) return;
+    STATE.ambientTimer = 0;
+
+    // Limit total particles to avoid lag
+    if (STATE.particles.length > 700) return;
+
+    const p = STATE.player.pos;
+    const count = isMobile ? 1 : (STATE.boss && STATE.boss.active ? 3 : 2);
+
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const radius = 5 + Math.random() * 25;
+        const ox = Math.cos(angle) * radius;
+        const oz = Math.sin(angle) * radius;
+        const wx = p.x + ox;
+        const wz = p.z + oz;
+        const wy = getHeight(wx, wz) + Math.random() * 4;
+
+        // Choose particle type based on context
+        let col, life, velY, ptype;
+        if (STATE.boss && STATE.boss.active) {
+            // Boss active: red/dark smoke drifting
+            col = [0.18 + Math.random() * 0.1, 0.0, 0.04];
+            life = 3.5 + Math.random() * 2.5;
+            velY = 0.5 + Math.random() * 0.8;
+            ptype = 'smoke';
+        } else {
+            // Normal: grey/blue dust motes
+            const t = Math.random();
+            col = t < 0.5
+                ? [0.22, 0.22, 0.28]                        // Blue-grey dust
+                : [0.12 + Math.random() * 0.08, 0.06, 0.14]; // Purple mist
+            life = 4.0 + Math.random() * 3.0;
+            velY = 0.3 + Math.random() * 0.5;
+            ptype = 'smoke';
+        }
+
+        STATE.particles.push({
+            pos: V3.create(wx, wy, wz),
+            vel: V3.create(
+                (Math.random() - 0.5) * 0.6,
+                velY,
+                (Math.random() - 0.5) * 0.6
+            ),
+            life,
+            color: col,
+            type: ptype
+        });
+    }
+
+    // Barrel smoke trails when hp < 5
+    STATE.barrels.forEach(b => {
+        if (b.hp < 5 && b.hp > 0 && Math.random() < 0.3) {
+            STATE.particles.push({
+                pos: V3.create(b.pos.x + (Math.random() - 0.5) * 0.5, b.pos.y + 1.6, b.pos.z + (Math.random() - 0.5) * 0.5),
+                vel: V3.create((Math.random() - 0.5) * 0.4, 1.5 + Math.random(), (Math.random() - 0.5) * 0.4),
+                life: 2.0 + Math.random() * 1.5,
+                color: [0.25, 0.18, 0.05],
+                type: 'smoke'
+            });
+            if (Math.random() < 0.5) {
+                STATE.particles.push({
+                    pos: V3.create(b.pos.x + (Math.random() - 0.5) * 0.3, b.pos.y + 1.7, b.pos.z + (Math.random() - 0.5) * 0.3),
+                    vel: V3.create((Math.random() - 0.5) * 1.0, 2.0 + Math.random() * 1.5, (Math.random() - 0.5) * 1.0),
+                    life: 0.6 + Math.random() * 0.4,
+                    color: [1.0, 0.4 + Math.random() * 0.3, 0.0],
+                    type: 'fire'
+                });
+            }
+        }
+    });
+}
+
+// Update flicker lighting — dynamic point light pulse
+function updateFlickerLights(dt) {
+    STATE.flickerTime += dt;
+    if (STATE.boss && STATE.boss.active) {
+        // Boss active: fast red pulse
+        const f = 0.6 + Math.sin(STATE.flickerTime * 8.0) * 0.3 + Math.sin(STATE.flickerTime * 13.0) * 0.1;
+        STATE.flickerVal = f;
+        // Also update the point light to flicker around player for creepy atmosphere
+        const pl = STATE.player.pos;
+        if (locs.pointLightPos && locs.pointLightColor) {
+            // Already set in draw() but we boost it during boss phase
+        }
+    } else {
+        // Normal: slow cold blue-purple ambient pulse
+        STATE.flickerVal = 0.5 + Math.sin(STATE.flickerTime * 1.5) * 0.4;
+    }
+}
+
+// ============================================================
+// PHASE 6 — PROXIMITY GLOW FOR LOOT (integrated into draw)
+// ============================================================
+
+function getLootProximityGlow(loot, playerPos) {
+    const dist = V3.dist(playerPos, loot.pos);
+    if (dist < 3.0) return 3.5;     // Very close: strong glow
+    if (dist < 6.0) return 1.5;     // Medium: moderate glow
+    return 0.0;                      // Far: no extra glow
+}
+
+// Show pickup hint when very close to loot
+function updateLootProximityHints() {
+    if (!STATE.player || !STATE.player.pos) return;
+    const p = STATE.player.pos;
+    let nearest = null, nearDist = 99999;
+    STATE.loot.forEach(l => {
+        const d = V3.dist(p, l.pos);
+        if (d < 3.0 && d < nearDist) { nearDist = d; nearest = l; }
+    });
+    const pMsg = document.getElementById('pickup-msg');
+    if (nearest && pMsg && !pMsg.classList.contains('show')) {
+        const names = ['📦 NHẶT ĐẠN', '❤️ NHẶT MÁU', '🛡️ NHẶT GIÁP', '⚡ NHẶT BUFF'];
+        const colors = ['#ffcc00', '#ff3366', '#00d4ff', '#bf00ff'];
+        pMsg.innerText = names[nearest.type] || '📦 NHẶT';
+        pMsg.style.color = colors[nearest.type] || '#00ffaa';
+        pMsg.style.borderColor = colors[nearest.type] || '#00ffaa';
+        pMsg.style.boxShadow = `0 0 20px ${colors[nearest.type] || '#00ffaa'}55`;
+    }
+}
+
+// ============================================================
+// PHASE 9 — AUDIO ATMOSPHERE (Heartbeat + distance effects)
+// ============================================================
+
+let _heartbeatActive = false;
+let _heartbeatNodes = [];
+
+function updateAmbientAudio(dt) {
+    if (!AudioCtx || STATE.screen !== 'game') return;
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+
+    const p = STATE.player;
+    const hpRatio = p.hp / p.maxHp;
+
+    // Heartbeat sound when HP < 25%
+    STATE.heartbeatTimer -= dt;
+    if (hpRatio < 0.25 && STATE.heartbeatTimer <= 0) {
+        const interval = 0.4 + hpRatio * 1.2; // Faster when lower HP
+        STATE.heartbeatTimer = interval;
+        playHeartbeat();
+
+        // CSS pulsing class on health bar
+        const hfill = document.getElementById('health-fill');
+        if (hfill) {
+            hfill.classList.add('hp-critical-pulse');
+            setTimeout(() => hfill.classList.remove('hp-critical-pulse'), 300);
+        }
+        // HP bar container critical class
+        const hpContainer = document.getElementById('health-bar-container');
+        if (hpContainer) hpContainer.classList.add('hp-critical');
+    } else if (hpRatio >= 0.25) {
+        const hpContainer = document.getElementById('health-bar-container');
+        if (hpContainer) hpContainer.classList.remove('hp-critical');
+    }
+}
+
+function playHeartbeat() {
+    if (!AudioCtx) return;
+    if (AudioCtx.state === 'suspended') AudioCtx.resume();
+    const now = AudioCtx.currentTime;
+
+    // Low thud — heartbeat pattern: thud, thud (double beat)
+    const playThud = (startTime) => {
+        const osc = AudioCtx.createOscillator();
+        const gain = AudioCtx.createGain();
+        const filter = AudioCtx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = 180;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(55, startTime);
+        osc.frequency.exponentialRampToValueAtTime(28, startTime + 0.12);
+        gain.gain.setValueAtTime(0.0, startTime);
+        gain.gain.linearRampToValueAtTime(0.35, startTime + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.15);
+        osc.connect(filter); filter.connect(gain); gain.connect(AudioCtx.destination);
+        osc.start(startTime); osc.stop(startTime + 0.18);
+    };
+    playThud(now);
+    playThud(now + 0.18); // Double beat
+}
+
+// ============================================================
+// PHASE 10 — PERFORMANCE: ADAPTIVE QUALITY
+// ============================================================
+
+STATE.fpsHistory = [];
+STATE.qualityReduced = false;
+STATE._lastFpsCheck = 0;
+STATE._frameCount = 0;
+
+function updateAdaptiveQuality(dt) {
+    STATE._frameCount++;
+    STATE._lastFpsCheck += dt;
+    if (STATE._lastFpsCheck < 2.0) return; // Check every 2 seconds
+
+    const fps = STATE._frameCount / STATE._lastFpsCheck;
+    STATE._frameCount = 0;
+    STATE._lastFpsCheck = 0;
+
+    STATE.fpsHistory.push(fps);
+    if (STATE.fpsHistory.length > 5) STATE.fpsHistory.shift();
+
+    const avgFps = STATE.fpsHistory.reduce((a, b) => a + b, 0) / STATE.fpsHistory.length;
+
+    if (avgFps < 35 && !STATE.qualityReduced) {
+        // [PHASE 10] Giảm chất lượng: deactivate 500 particle cũ nhất (pool-safe)
+        STATE.qualityReduced = true;
+        let deactivated = 0;
+        for (let i = 0; i < STATE.particles.length && deactivated < 500; i++) {
+            if (STATE.particles[i].active) {
+                STATE.particles[i].active = false;
+                deactivated++;
+            }
+        }
+        console.log(`[AdaptiveQuality] FPS ${avgFps.toFixed(1)} — reducing quality (deactivated ${deactivated} particles)`);
+    } else if (avgFps > 52 && STATE.qualityReduced) {
+        STATE.qualityReduced = false;
+        console.log(`[AdaptiveQuality] FPS ${avgFps.toFixed(1)} — restoring full quality`);
+    }
+}
+
+// ============================================================
+// PATCH: integrate new systems into update() and draw()
+// ============================================================
+
+// Override update to also call new ambient systems
+const _origUpdate = update;
+window.update = function (dt) {
+    _origUpdate(dt);
+    if (STATE.screen === 'game' && !STATE.hitPause) {
+        spawnAmbientParticles(dt);
+        updateFlickerLights(dt);
+        updateAmbientAudio(dt);
+        updateAdaptiveQuality(dt);
+        updateLootProximityHints();
+    }
+};
+// Re-point loop to patched update
+// [PHASE 10] Batch HUD: đếm frame để chỉ cập nhật DOM mỗi 3 frame (~20ms)
+let _hudFrameCounter = 0;
+
+// --- PING / FPS INDICATOR ---
+let _pingLastTime = performance.now();
+let _pingFrameCount = 0;
+let _pingUpdateTimer = 0;
+
+function updatePingDisplay(dt) {
+    const pingEl = document.getElementById('ping-display');
+    if (!pingEl) return;
+
+    // Luôn hiện ở mọi màn hình
+    pingEl.style.display = 'block';
+
+    _pingFrameCount++;
+    _pingUpdateTimer += dt;
+
+    // Cập nhật mỗi 1 giây
+    if (_pingUpdateTimer < 1.0) return;
+
+    const fps = Math.round(_pingFrameCount / _pingUpdateTimer);
+    const frameMs = Math.round(1000 / Math.max(fps, 1));
+    _pingFrameCount = 0;
+    _pingUpdateTimer = 0;
+
+    const iconEl = document.getElementById('ping-icon');
+    const msEl = document.getElementById('ping-ms');
+    const labelEl = document.getElementById('ping-label');
+    if (!iconEl || !msEl || !labelEl) return;
+
+    // Màu + icon theo FPS
+    let color, icon;
+    if (fps >= 50) {
+        color = '#00ff88'; icon = '📶';
+    } else if (fps >= 30) {
+        color = '#ffcc00'; icon = '📶';
+    } else {
+        color = '#ff3333'; icon = '📵';
+    }
+
+    iconEl.textContent = icon;
+    iconEl.style.filter = fps >= 50 ? 'none' : (fps >= 30 ? 'sepia(1) saturate(3) hue-rotate(10deg)' : 'sepia(1) saturate(5) hue-rotate(300deg)');
+    msEl.style.color = color;
+    msEl.textContent = frameMs + ' ms';
+    labelEl.textContent = 'FPS: ' + fps;
+    pingEl.style.borderColor = color + '66';
+    pingEl.style.boxShadow = '0 0 10px ' + color + '33';
+}
+
+// --- SCROLL ĐỂ THU PHÓNG PING WIDGET (HUD editor xử lý drag) ---
+(function initPingScale() {
+    const tryInit = () => {
+        const el = document.getElementById('ping-display');
+        if (!el) { setTimeout(tryInit, 300); return; }
+        let currentScale = 1.0;
+        el.addEventListener('wheel', e => {
+            e.preventDefault();
+            currentScale = Math.max(0.4, Math.min(2.5, currentScale - e.deltaY * 0.001));
+            el.style.transform = 'scale(' + currentScale.toFixed(2) + ')';
+        }, { passive: false });
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
+    else tryInit();
+})();
+
+
+const _origLoop = window.loop;
+window.loop = function (now) {
+    if (!STATE.lastTime) STATE.lastTime = now;
+    const dt = Math.min((now - STATE.lastTime) / 1000, 0.1);
+    STATE.lastTime = now;
+    window.update(dt);
+    draw();
+    updatePingDisplay(dt); // Cập nhật ping/FPS indicator mỗi frame
+    _hudFrameCounter++;
+    if (_hudFrameCounter >= 3) {
+        updateHUD();
+        _hudFrameCounter = 0;
+    }
+    requestAnimationFrame(window.loop);
+};
+
+// ============================================================
+// PATCH: draw() — disable loot proximity glow and preserve original draw
+// ============================================================
+const _origDraw = draw;
+window.draw = function () {
+    _origDraw();
+};
+

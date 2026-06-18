@@ -2,7 +2,7 @@
 
 window.LoreSystem = {
     // Get unlocked secrets from localStorage
-    getUnlocked: function() {
+    getUnlocked: function () {
         const saved = localStorage.getItem('unlocked_space_secrets');
         if (saved) {
             try {
@@ -20,12 +20,12 @@ window.LoreSystem = {
     },
 
     // Save unlocked secrets to localStorage
-    saveUnlocked: function(unlocked) {
+    saveUnlocked: function (unlocked) {
         localStorage.setItem('unlocked_space_secrets', JSON.stringify(unlocked));
     },
 
     // Unlock a secret by difficulty and index
-    unlockSecret: function(difficulty, index) {
+    unlockSecret: function (difficulty, index) {
         const unlocked = this.getUnlocked();
         if (!unlocked[difficulty]) unlocked[difficulty] = [];
         if (!unlocked[difficulty].includes(index)) {
@@ -35,7 +35,7 @@ window.LoreSystem = {
     },
 
     // Calculate total unlocked secrets
-    getTotalUnlockedCount: function() {
+    getTotalUnlockedCount: function () {
         const unlocked = this.getUnlocked();
         let total = 0;
         ['easy', 'normal', 'hard', 'extreme'].forEach(diff => {
@@ -45,41 +45,50 @@ window.LoreSystem = {
     }
 };
 
-// Kho Lore theo độ khó: Càng khó thì thông tin bí ẩn càng tăng chi tiết và hấp dẫn!
+// Kho Lore theo độ khó: Càng khó thì thông tin bí ẩn càng// Kho Lore theo độ khó: Càng khó thì thông tin bí ẩn càng tăng chi tiết và hấp dẫn!
 const LORE_BY_DIFFICULTY = {
     easy: [
-        { idx: 0, text: "\"Mọi thứ ngày càng tệ luồng khí tỏa ra từ Cánh Cửa Đỏ ngày càng lớn.\"" },
-        { idx: 1, text: "\"Những kẻ mất trí nhớ thường lặp lại một câu duy nhất: 'Phải dừng lại, phải ngăn lại. PHẢI NGĂN LẠI BẰNG MỌI GIÁ!!'.\"" },
-        { idx: 2, text: "\"Thứ đang canh gác trung tâm hòn đảo không phải cỗ máy, mà là một kẻ gác cổng vĩnh cửu.\"" }
+        { idx: 0, text: "\"Nếu ai đó đọc bản ghi này, thì đã không còn có thể thoát ra khỏi màn sương xung quanh hòn đảo này rồi.\"" },
+        { idx: 1, text: "\"Chúng tôi không phải những người đầu tiên đặt chân lên hòn đảo này.\"" },
+        { idx: 2, text: "\"Có thứ gì đó đang quan sát chúng tôi từ trung tâm hòn đảo.\"" }
     ],
+
+
     normal: [
-        { idx: 0, text: "\"Bản ghi cũ: Bức xạ ở đây làm biến đổi cấu trúc phân tử của sắt. Giáp trụ đang dần hòa làm một với xương thịt.\"" },
-        { idx: 1, text: "\"Bản ghi cũ: Hộp tiếp tế chứa đầy Crimson nhưng không ai dám đụng vào nó.\"" },
-        { idx: 2, text: "\"Bản ghi cũ: Sinh vật khổng lồ đó mang hình hài của Kẻ Gác Cổng, nhưng không ai biết liệu có phải nó hay là...\"" },
-        { idx: 3, text: "\"Bản ghi cũ: Cánh Cửa Đỏ chưa bao giờ đóng lại. Nó chỉ tạm thời bị bão hòa năng lượng khi kẻ canh giữ sụp đổ.\"" },
-        { idx: 4, text: "\"Bản ghi cũ: Những người đi trước đã tìm thấy lõi nguồn... nhưng không ai trở về. Lõi nguồn đó hình như có màu đỏ tía...\"" }
+        { idx: 0, text: "\"Ký ức của tôi về thế giới bên ngoài đang dần biến mất.\"" },
+        { idx: 1, text: "\"Những sinh vật trên đảo dường như từng là con người.\"" },
+        { idx: 2, text: "\"Tất cả những người sống sót cuối cùng đều tìm cách tới trung tâm hòn đảo.\"" },
+        { idx: 3, text: "\"Con quái vật đó luôn xuất hiện gần một cánh cổng màu đỏ khổng lồ.\"" },
+        { idx: 4, text: "\"Chúng tôi tin rằng tiêu diệt nó là cách duy nhất để thoát khỏi nơi này.\"" }
     ],
+
     hard: [
-        { idx: 0, text: "\"Mảnh ký ức phân mảnh: 'Dự án Red Gate' không phải tạo ra vũ khí, mà để mở khóa một chiều không gian cao hơn.\"" },
-        { idx: 1, text: "\"Mảnh ký ức phân mảnh: Crimson là thứ chất lỏng có linh hồn. Nó chọn vật chủ, không phải ngược lại.\"" },
-        { idx: 2, text: "\"Mảnh ký ức phân mảnh: Kẻ được chọn sẽ trải qua 3 giai đoạn tiến hóa. Giai đoạn cuối cùng là mất đi nhân tính hoàn toàn.\"" },
-        { idx: 3, text: "\"Mảnh ký ức phân mảnh: Đừng tin vào sự tĩnh lặng của hòn đảo. Lớp sương mù kia thực chất là hàng vạn vi mạch giám sát.\"" },
-        { idx: 4, text: "\"Mảnh ký ức phân mảnh: Thực thể cai quản Vòng Lặp có khả năng bóp méo không gian. Hắn ta điều khiển những cột trụ đẫm máu.\"" },
-        { idx: 5, text: "\"Mảnh ký ức phân mảnh: Sự sống và cái chết ở đây không tuyến tính. Giết hắn ta có thể chỉ là bắt đầu một vòng lặp tồi tệ hơn.\"" },
-        { idx: 6, text: "\"Mảnh ký ức phân mảnh: Sự giải thoát duy nhất nằm ở 'Nghịch lý Dữ liệu'. Bạn phải thu thập đủ mảnh vỡ trước khi thực thể đó bị hủy diệt.\"" }
+        { idx: 0, text: "\"Tôi không còn nhớ chính xác mình tới đây bằng cách nào.\"" },
+        { idx: 1, text: "\"Những con quái vật này không chỉ săn mồi... chúng đang ngăn chúng tôi tiến sâu hơn.\"" },
+        { idx: 2, text: "\"Một số ghi chép cũ gọi sinh vật ở trung tâm là Kẻ Gác Cổng.\"" },
+        { idx: 3, text: "\"Không ai biết điều gì nằm phía sau Cánh Cửa Đỏ.\"" },
+        { idx: 4, text: "\"Những người tiến gần cánh cửa thường nghe thấy những lời thì thầm kỳ lạ.\"" },
+        { idx: 5, text: "\"Có điều gì đó không đúng. Tại sao tất cả chúng đều cố bảo vệ cánh cửa?\"" },
+        { idx: 6, text: "\"Có lẽ chúng tôi đã hiểu sai về Kẻ Gác Cổng từ đầu.\"" }
     ],
+
     extreme: [
-        { idx: 0, text: "\"DỮ LIỆU CẤM: Vòng lặp hiện tại: 849,204. Tỷ lệ đồng hóa vật chủ: 99.8%. Trạng thái: Sắp thức tỉnh.\"" },
-        { idx: 1, text: "\"DỮ LIỆU CẤM: Hòn đảo này không tồn tại trên Trái Đất. Nó là một vùng giả lập bị lãng quên lâu đời từ không gian khác.\"" },
-        { idx: 2, text: "\"DỮ LIỆU CẤM: Bọn quái vật không cố giết bạn. Chúng thực chất đang cố bảo vệ sự an toàn của chính bạn.\"" },
-        { idx: 3, text: "\"DỮ LIỆU CẤM: Phương trình hỗn mang: những chiếc hộp tăng sức mạnh đó mang chất khiến người sử dụng liên tục dần lãng quên đi mọi thứ." },
-        { idx: 4, text: "\"DỮ LIỆU CẤM: Khi bạn hấp thụ Crimson (Trạng thái Tím), bạn đang dần hợp nhất với tâm trí của Kẻ Gác Cổng.\"" },
-        { idx: 5, text: "\"DỮ LIỆU CẤM: Giải mã thành công 'Nghịch lý Dữ liệu' sẽ gây ra một vụ nổ khái niệm, xóa bỏ sự tồn tại của hòn đảo này khỏi mọi dòng thời gian.\"" },
-        { idx: 6, text: "\"DỮ LIỆU CẤM: Kẻ mà bạn gọi là 'Boss' thực chất chính là bạn ở quá khứ, người đã bị mất hoàn toàn ký ức và chỉ còn nhớ duy nhất mục tiêu ngăn chặn bạn ở hiện tại kích hoạt Cánh Cửa Đỏ.\"" },
-        { idx: 7, text: "\"DỮ LIỆU CẤM: Nếu bạn đọc được dòng này, Cánh Cửa Đỏ đã bắt đầu đảo ngược quy trình. Hãy đối đầu với chính bản thân ở quá khứ hoặc nếu không đây sẽ là vòng lặp không hồi kết!!.\"" },
-        { idx: 8, text: "\"DỮ LIỆU CẤM: Chiếc hộp cuối cùng chứa đựng ký ức nguyên thủy của bạn. Mở nó ra đồng nghĩa với việc cơ thể bị hợp nhất với Kẻ Gác Cổng và trở thành một với hòn đảo Vĩnh Cửu.\"" }
+        { idx: 0, text: "\"DỮ LIỆU HỎNG: Những người mất tích không chết. Họ bị kéo tới hòn đảo này.\"" },
+        { idx: 1, text: "\"DỮ LIỆU HỎNG: Không ai có thể rời khỏi đảo sau khi đã đặt chân tới đây.\"" },
+        { idx: 2, text: "\"DỮ LIỆU HỎNG: Tiếp xúc lâu dài với năng lượng từ Cánh Cửa Đỏ sẽ làm mất ký ức và nhân tính.\"" },
+        { idx: 3, text: "\"DỮ LIỆU HỎNG: Những kẻ thất bại sẽ dần biến thành các sinh vật đột biến.\"" },
+        { idx: 4, text: "\"DỮ LIỆU HỎNG: Kẻ Gác Cổng hiện tại từng là người đã đánh bại Kẻ Gác Cổng đời trước.\"" },
+        { idx: 5, text: "\"DỮ LIỆU HỎNG: Sau khi mở Cánh Cửa Đỏ, hắn đã tiếp xúc trực tiếp với nguồn năng lượng bên trong.\"" },
+        { idx: 6, text: "\"DỮ LIỆU HỎNG: Hắn mất dần ký ức nhưng vẫn giữ lại một mục đích duy nhất: bảo vệ cánh cửa.\"" },
+        { idx: 7, text: "\"DỮ LIỆU HỎNG: Mọi Kẻ Gác Cổng đều từng là những người tìm kiếm lối thoát khỏi hòn đảo.\"" },
+        { idx: 8, text: "\"DỮ LIỆU HỎNG: Nếu ngươi đang đọc được dòng này, chu kỳ sắp bắt đầu lại.\"" }
     ]
+
+
 };
+
+window.LORE_BY_DIFFICULTY = LORE_BY_DIFFICULTY;
+
 
 function getLoreFragments() {
     const diff = window.CURRENT_DIFFICULTY || 'normal';
@@ -340,13 +349,13 @@ window.QuestManager = {
             document.getElementById('quest-tracker-ui').classList.remove('hidden');
             const header = document.getElementById('quest-tracker-header');
             if (header) header.innerText = "NHIỆM VỤ CUỐI CÙNG";
-            
+
             // Tính khoảng cách tới redDoor (0, -150)
             const pPos = window.STATE.player.pos;
             const dx = 0 - pPos.x;
             const dz = -150 - pPos.z;
             const distToDoor = Math.round(Math.sqrt(dx * dx + dz * dz));
-            
+
             const div = document.createElement('div');
             div.className = 'quest-item';
             div.innerHTML = `

@@ -1,46 +1,59 @@
 // story.js — Cốt truyện "LOST ISLAND"
 const STORY_LINES = [
-    "--- TIN ĐỒN VỀ KHE NỨT KHÔNG GIAN ---",
-    "Từ sâu trong bóng tối, một tin đồn đáng sợ bắt đầu lan truyền về một hiện tượng dị thường không gian.",
-    "Không một ai biết nguồn gốc hay cách thức lây nhiễm của dịch bệnh bí ẩn này...",
-    "",
-    "--- TRIỆU CHỨNG KỲ LẠ & TRĂNG ĐỎ ---",
-    "Những người mắc bệnh đột ngột bị nổi những vết phát quang hình Trăng Đỏ khắp toàn thân.",
-    "Ngày càng có thêm nhiều người bị nhiễm và biến mất một cách kỳ lạ, không để lại bất kỳ dấu vết nào.",
-    "",
-    "--- LỜI THÌ THẦM BÍ ẨN ---",
-    "Sau nhiều ngày liên tục quan sát, tôi nhận thấy những người bệnh luôn thì thầm điên dại một câu duy nhất:",
-    "\"Phải ngăn lại... Ngăn lại... PHẢI NGĂN LẠI BẰNG MỌI GIÁ!...\"",
-    "Rồi đột nhiên, họ biến mất hoàn toàn vào không trung, như thể chưa từng tồn tại trên thế giới này.",
-    "",
-    "--- TỜ GIẤY TỪ HƯ KHÔNG ---",
-    "Trong sự bế tắc, một tờ giấy kỳ lạ bỗng nhiên xuất hiện từ hư không trước mắt tôi.",
-    "Nó chỉ dẫn đến một vùng đất bí ẩn, một hòn đảo hoang hoàn toàn không có tên trên bất kỳ tấm bản đồ nào.",
-    "Quyết tâm tìm ra sự thật, tôi trang bị vũ khí đầy đủ và tự mình lên đường tiến vào vùng biển cấm.",
-    "",
-    "--- SƯƠNG MÙ DÀY ĐẶC & DỊ GIỚI ---",
-    "Khi vừa tiến gần đến hòn đảo hoang, một lớp sương mù dày đặc và lạnh lẽo đột ngột bao phủ toàn bộ xung quanh.",
-    "Mọi thiết bị định vị hoàn toàn mất tín hiệu, không gian và thời gian xung quanh tôi như bị bóp méo vỡ vụn.",
-    "",
-    "--- VÒNG LẶP RƠI TỰ DO ---",
-    "Một lúc sau... tôi thấy mình đang rơi tự do từ bầu trời tím thẫm của một chiều không gian dị biệt.",
-    "Cú va chạm kinh hoàng xuống mặt đất Obsidian lạnh lẽo lại không hề gây ra cho tôi bất kỳ sát thương nào.",
-    "Phải chăng... linh hồn của tôi đã bị giam giữ trong Vòng Lặp Vĩnh Hằng này từ trước?",
-    "",
-    "--- CHIẾN TRƯỜNG PHẾ TÍCH ---",
-    "Bao quanh tôi là phế tích hoang tàn của những người đi trước đã ngã xuống.",
-    "Máu đen của quái vật, súng đạn công nghệ cao và vũ khí nằm rải rác khắp nơi.",
-    "Những sinh vật biến cấu Cyber-Space đang ngửi thấy mùi máu tươi của kẻ ngoại lai...",
-    "",
-    "--- NHIỆM VỤ DÀNH CHO TÔI! ---",
-    "1. THU THẬP các HỘP THÔNG TIN để giải mã bí ẩn Không Gian.",
-    "2. TIÊU DIỆT sinh vật đột biến và sinh tồn bằng mọi giá.",
-    "3. SĂN LÙNG Kẻ Gác Cổng để đoạt lấy Chiếc Hộp Rực Đỏ cuối cùng.",
-    "",
-    "Những Hộp Thông Tin sẽ xuất hiện nhiều hơn tùy vào từng chế độ chơi.",
-    "Hãy thử thách bản thân để giải mã thêm nhiều bí ẩn...",
-    "NẾU NGƯƠI ĐỦ MẠNH ĐỂ BƯỚC RA KHỎI ĐÂY! HAHAHA!!"
+"--- NHỮNG VỤ MẤT TÍCH BÍ ẨN ---",
+"Trong nhiều năm qua, vô số người đã mất tích ngoài khơi một cách khó hiểu.",
+"Không có tín hiệu cầu cứu. Không có xác tàu. Họ đơn giản biến mất không để lại dấu vết.",
+"",
+
+
+"--- NGƯỜI THÂN CỦA TÔI ---",
+"Một trong số những người mất tích đó là người thân của tôi.",
+"Trong những vật dụng còn sót lại, tôi tìm thấy các ghi chép về một hòn đảo không tồn tại trên bất kỳ tấm bản đồ nào.",
+"",
+
+"--- TIẾNG GỌI KỲ LẠ ---",
+"Sau đó, những giấc mơ kỳ lạ liên tục xuất hiện.",
+"Tôi nhìn thấy một hòn đảo chìm trong sương mù cùng một cánh cổng đỏ khổng lồ.",
+"Cảm giác như có thứ gì đó đang dẫn tôi tới nơi ấy.",
+"",
+
+"--- CUỘC TÌM KIẾM ---",
+"Nhiều tháng trôi qua, tôi lần theo những tọa độ bí ẩn xuất hiện trong các ghi chép.",
+"Các tọa độ liên tục thay đổi nhưng cuối cùng tôi vẫn tìm được vùng biển được nhắc đến.",
+"",
+
+"--- BIỂN SƯƠNG ---",
+"Ngay khi tiến vào khu vực đó, một màn sương dày đặc bao phủ toàn bộ con tàu.",
+"La bàn quay loạn, thiết bị định vị mất tín hiệu và liên lạc hoàn toàn biến mất.",
+"",
+
+"--- KHOẢNG TRỐNG KÝ ỨC ---",
+"Điều cuối cùng tôi nhớ là một âm thanh kỳ lạ vọng ra từ sâu trong màn sương.",
+"Sau đó... mọi thứ chìm vào bóng tối.",
+"",
+
+"--- TỈNH DẬY ---",
+"Khi mở mắt ra, tôi đã nằm trên một hòn đảo xa lạ.",
+"Xung quanh là những công trình đổ nát, vũ khí bỏ lại và dấu vết của những người từng đến đây.",
+"",
+
+"--- KHÔNG CÓ LỐI THOÁT ---",
+"Những ghi chép còn sót lại cho thấy nhiều người đã cố gắng rời khỏi hòn đảo.",
+"Nhưng không một ai thành công.",
+"",
+
+"--- NHIỆM VỤ DÀNH CHO TÔI ---",
+"1. THU THẬP các HỘP THÔNG TIN để tìm ra sự thật.",
+"2. TIÊU DIỆT sinh vật đột biến và sinh tồn bằng mọi giá.",
+"3. TIẾN ĐẾN trung tâm hòn đảo và khám phá bí mật của Cánh Cửa Đỏ.",
+"",
+
+"Những Hộp Thông Tin sẽ xuất hiện nhiều hơn tùy theo chế độ chơi.",
+"Hãy thu thập chúng để ghép lại toàn bộ câu chuyện...",
+"VÀ TÌM RA ĐIỀU GÌ ĐANG CHỜ ĐỢI PHÍA SAU CÁNH CỬA ĐỎ."
+
 ];
+
 
 window.startStory = function () {
     if (window.logToDiscord) {

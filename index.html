@@ -18,23 +18,23 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-    <title>Lost Island: Low Poly Survival Royale</title>
+    <title>The Red Door: No Escape</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
     <!-- Bootstrap 5 CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <!-- Tăng version để trình duyệt xóa Cache cũ -->
-    <link rel="stylesheet" href="style.css?v=20.5.6">
-    <link rel="stylesheet" href="hud.css?v=1.4.5">
+    <link rel="stylesheet" href="style.css?v=21.0.0">
+    <link rel="stylesheet" href="hud.css?v=21.0.0">
 </head>
 
 <body>
     <!-- SẢNH CHỜ (SPLASH SCREEN) -->
     <div id="splash-screen">
-        <h1 class="splash-title">LOST ISLAND<br><span
-                style="font-size: 0.35em; letter-spacing: 5px; color:#ffcc00; font-weight:900; display:block; margin-top:5px;">SURVIVAL
-                ROYALE</span></h1>
+        <h1 class="splash-title">THE RED DOOR<br><span
+                style="font-size: 0.35em; letter-spacing: 5px; color:#ff0033; font-weight:900; display:block; margin-top:5px;">NO
+                ESCAPE</span></h1>
         <div class="splash-loading-container">
             <div class="splash-text">ĐANG KHỞI TẠO THẾ GIỚI... <span id="splash-percent">0</span>%</div>
             <div class="splash-bar-bg">
@@ -46,54 +46,102 @@
 
     <!-- MÀN HÌNH HƯỚNG DẪN LẦN ĐẦU CHƠI (Bootstrap Responsive) -->
     <div id="first-time-instruction-screen" class="d-none">
-        <div class="horror-vignette" style="position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,0.98); z-index: 1;"></div>
-        
+        <div class="horror-vignette"
+            style="position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 120px rgba(0,0,0,0.98); z-index: 1;">
+        </div>
+
         <div class="container-fluid d-flex justify-content-center align-items-center h-100 p-0" style="z-index: 2;">
             <div class="row w-100 justify-content-center m-0 align-items-center">
-                <div class="col-11 col-sm-9 col-md-8 col-lg-6 p-0" style="max-width: 580px;">
+                <div class="col-11 col-sm-9 col-md-8 col-lg-6 p-0" style="max-width: 600px;">
                     <div class="card border-info text-white shadow-lg">
                         <div class="card-body text-center">
                             <h3 class="instruction-title">📖 HƯỚNG DẪN SINH TỒN</h3>
-                            
+
                             <div class="instruction-scroll-content">
                                 <!-- HỘP NHIỆM VỤ CHÍNH ĐƯỢC LÀM NỔI BẬT -->
                                 <div class="mission-alert">
                                     <span class="mission-alert-title">🎯 NHIỆM VỤ BẮT BUỘC CỦA BẠN:</span><br>
                                     <ul class="mission-list text-start">
-                                        <li class="mb-1">💀 <b style="color: #ff5555;">Tiêu diệt sạch quái vật</b> đột biến trên đảo để tích lũy điểm và triệu hồi Kẻ Gác Cổng.</li>
-                                        <li class="mb-1">📦 <b style="color: #ffcc00;">Nhặt các Hộp Thông Tin (Màu Vàng)</b> phát sáng để giải mã cốt truyện bí mật của đảo.</li>
-                                        <li class="mb-0">🔑 <b style="color: #00ff88;">Tìm Chìa Khóa Đỏ</b> thu được sau khi diệt Boss để kích hoạt mở <b style="color: #ff3333;">Cổng Đỏ</b> trốn thoát vĩnh viễn!</li>
+                                        <li class="mb-1">💀 <b style="color: #ff5555;">Tiêu diệt sạch quái vật</b> đột
+                                            biến trên đảo để tích lũy điểm và triệu hồi Kẻ Gác Cổng.</li>
+                                        <li class="mb-1">📦 <b style="color: #ffcc00;">Nhặt các Hộp Thông Tin (Màu
+                                                Vàng)</b> phát sáng để giải mã cốt truyện bí mật của đảo.</li>
+                                        <li class="mb-0">🔑 <b style="color: #00ff88;">Tìm Chìa Khóa Đỏ</b> thu được sau
+                                            khi diệt Boss để kích hoạt mở <b style="color: #ff3333;">Cổng Đỏ</b> trốn
+                                            thoát vĩnh viễn!</li>
                                     </ul>
                                 </div>
 
-                                <p class="mb-2 border-bottom border-secondary pb-2">
-                                    <span style="color: #ffcc00; font-weight: 700;">💡 CHIÊU CUỐI (ULTIMATE):</span><br>
-                                    • Gây đủ sát thương lên quái vật để sạc đầy năng lượng cho chiêu cuối <b>ULTIMATE</b>.
-                                </p>
-                                <p class="mb-2 border-bottom border-secondary pb-2">
-                                    <span style="color: #00e676; font-weight: 700;">🎮 KÍCH HOẠT KỸ NĂNG:</span><br>
-                                    • Sử dụng phím <span class="badge bg-secondary">E</span> (trên PC) hoặc chạm vào nút <b>ULTIMATE</b> ảo (trên Mobile) để kích hoạt pháo năng lượng hủy diệt.
-                                </p>
-                                <p class="mb-2 border-bottom border-secondary pb-2">
-                                    <span style="color: #38bdf8; font-weight: 700;">⚙️ TÙY CHỈNH NÚT & THÔNG SỐ (SETTINGS):</span><br>
-                                    • Hãy bấm vào biểu tượng <b>Cài đặt (⚙️)</b> ở góc trên bên phải màn hình để mở bảng HUD Settings. Bạn có thể tự do <b>kéo thả vị trí, thay đổi kích thước các nút bấm, tùy chỉnh độ nhạy</b> hoặc cấu hình các biến thông số sao cho phù hợp nhất trên cả PC lẫn Mobile.
-                                </p>
-                                <p class="mb-2 border-bottom border-secondary pb-2">
-                                    <span style="color: #f43f5e; font-weight: 700;">🔥 KẺ CANH CỬA ĐỎ (BOSS):</span><br>
-                                    • Khi số lượng quái vật trên đảo giảm xuống thấp, Boss tối thượng sẽ trồi lên. Boss có lượng máu cực lớn và các chiêu thức diện rộng nguy hiểm, hãy giữ khoảng cách!
-                                </p>
-                                <p class="mb-2 border-bottom border-secondary pb-2">
-                                    <span style="color: #a855f7; font-weight: 700;">📦 HÒM TIẾP TẾ & VŨ KHÍ:</span><br>
-                                    • Nhặt các hòm tiếp tế rơi ngẫu nhiên để bổ sung Đạn (Vàng), Hồi máu (Xanh lá), Giáp (Xanh dương) hoặc nâng cấp lên các loại súng mạnh hơn (Súng máy SMG, Súng tỉa Sniper, Súng phóng lựu).
-                                </p>
-                                <p class="mb-0 pb-1">
-                                    <span style="color: #fb923c; font-weight: 700;">💀 ĐỊNH VỊ QUA VẬT CẢN (X-RAY):</span><br>
-                                    • Quái vật có <b>viền hào quang phát sáng trắng xuyên vật thể</b>. Bạn có thể nhìn thấy vị trí của chúng ngay cả khi bị cản trở bởi đá, cây cối hay nhà cửa.
+                                <div
+                                    style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 6px; text-align: left;">
+                                    <span style="color: #ffcc00; font-weight: 700; font-size: 13px;">⌨️ PHÍM ĐIỀU KHIỂN
+                                        (PC):</span>
+                                    <div style="font-size: 12px; margin-top: 8px; line-height: 1.6;">
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">W</kbd>
+                                            <kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">A</kbd>
+                                            <kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">S</kbd>
+                                            <kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">D</kbd>
+                                            — <span style="color: #aaa;">Di chuyển</span>
+                                        </div>
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">SHIFT</kbd>
+                                            — <span style="color: #aaa;">Chạy</span></div>
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">SPACE</kbd>
+                                            — <span style="color: #aaa;">Nhảy</span></div>
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">R</kbd>
+                                            — <span style="color: #aaa;">Nạp đạn</span></div>
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">E</kbd>
+                                            — <span style="color: #aaa;">Nhặt / Ultimate</span></div>
+                                        <div><kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">1</kbd>
+                                            <kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">2</kbd>
+                                            <kbd
+                                                style="background: #222; border: 1px solid #555; padding: 2px 5px; border-radius: 3px;">3</kbd>
+                                            — <span style="color: #aaa;">Đổi súng</span>
+                                        </div>
+                                        <div><span style="color: #ffcc00;">🖱️ Chuột Trái</span> — <span
+                                                style="color: #aaa;">Bắn</span> | <span style="color: #ffcc00;">Chuột
+                                                Phải</span> — <span style="color: #aaa;">Ngắm</span> | <span
+                                                style="color: #ffcc00;">Lăn Chuột</span> — <span
+                                                style="color: #aaa;">Lựa súng</span></div>
+                                    </div>
+                                </div>
+
+                                <div
+                                    style="margin-top: 12px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 6px; text-align: left;">
+                                    <span style="color: #00e676; font-weight: 700; font-size: 13px;">📱 MOBILE:</span>
+                                    <div style="font-size: 12px; margin-top: 8px; line-height: 1.6;">
+                                        <div>🎮 <span style="color: #aaa;">Joystick trái</span> — <span
+                                                style="color: #ffcc00;">Di chuyển</span></div>
+                                        <div>👆 <span style="color: #aaa;">Vuốt nửa phải</span> — <span
+                                                style="color: #ffcc00;">Xoay camera</span></div>
+                                        <div>Các nút ảo: <span style="color: #ffcc00;">BẮN</span>, <span
+                                                style="color: #ffcc00;">NGẮM</span>, <span
+                                                style="color: #ffcc00;">NHẢY</span>, <span
+                                                style="color: #ffcc00;">NẠP</span>, <span
+                                                style="color: #ffcc00;">CHẠY</span></div>
+                                    </div>
+                                </div>
+
+                                <p class="mb-2 border-bottom border-secondary pb-2"
+                                    style="margin-top: 12px; font-size: 12px;">
+                                    <span style="color: #38bdf8; font-weight: 700;">⚙️ TÙY CHỈNH HUD:</span> Bấm biểu
+                                    tượng <b>⚙️</b> để mở bảng cài đặt, tự do kéo thả vị trí, thay đổi kích thước các
+                                    nút.
                                 </p>
                             </div>
 
                             <div class="button-container d-grid">
-                                <button id="btn-confirm-instruction" class="btn btn-secondary text-white fw-bold py-2 py-sm-3" disabled>
+                                <button id="btn-confirm-instruction"
+                                    class="btn btn-secondary text-white fw-bold py-2 py-sm-3" disabled>
                                     BẮT ĐẦU CHƠI (10s)
                                 </button>
                             </div>
@@ -109,7 +157,7 @@
 
     <!-- QUEST TRACKER -->
     <div id="quest-tracker-ui" class="hidden">
-        <div id="quest-tracker-header">NHIỆM VỤ TÂM LINH</div>
+        <div id="quest-tracker-header">NHIỆM VỤ</div>
         <div id="quest-list"></div>
     </div>
 
@@ -140,6 +188,15 @@
 
     <!-- Damage Overlay -->
     <div id="damage-overlay"></div>
+    <div id="damage-directional"></div>
+    <div id="muzzle-flash-overlay"></div>
+    <div id="screen-vignette"></div>
+    <!-- Eye Blink Overlay (chỉ dùng trong stand-up animation) -->
+    <div id="eye-blink-overlay" style="display:none">
+        <div id="eyelid-top"></div>
+        <div id="eyelid-bottom"></div>
+    </div>
+    <div id="headshot-text">HEADSHOT!</div>
     <div id="powerup-overlay"></div>
     <div id="global-announcement"></div>
 
@@ -176,6 +233,7 @@
 
         <div id="health-bar-container">
             <div id="health-fill"></div>
+            <span id="health-hp-text"></span>
         </div>
         <div id="armor-bar-container">
             <div id="armor-fill"></div>
@@ -247,15 +305,45 @@
         <div id="minimap-container">
             <canvas id="minimap"></canvas>
         </div>
+        <!-- PING widget đã được chuyển ra ngoài ui-layer bên dưới -->
+    </div>
+
+    <!-- PING / FPS INDICATOR — luôn hiện, kéo được, cuộn để thu phóng -->
+    <div id="ping-display" style="
+        position: fixed;
+        top: 152px;
+        left: 20px;
+        z-index: 99999;
+        background: rgba(5,10,20,0.88);
+        border: 1px solid rgba(0,243,255,0.4);
+        border-radius: 10px;
+        padding: 6px 10px;
+        font-family: 'Outfit', monospace;
+        font-size: 11px;
+        font-weight: 700;
+        pointer-events: auto;
+        min-width: 78px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 2px 14px rgba(0,0,0,0.6);
+        cursor: grab;
+        user-select: none;
+        transform-origin: top left;
+        transition: border-color 0.3s, box-shadow 0.3s;
+    ">
+        <div id="ping-icon" style="font-size:16px; line-height:1;">&#x1F4F6;</div>
+        <div id="ping-ms" style="color:#00ffcc; letter-spacing:1px; margin-top:3px; font-size:13px;">-- ms</div>
+        <div id="ping-label" style="color:#888; font-size:9px; margin-top:1px;">FPS: --</div>
+        <div style="font-size:8px; color:#444; margin-top:3px; pointer-events:none;">&#x2195; scroll to resize</div>
     </div>
 
     <!-- Main Menu -->
     <div id="main-menu" class="menu-screen">
         <div class="cosmic-particles"></div>
         <div class="menu-inner container-fluid px-3">
-            <h1 class="menu-title">LOST ISLAND<br><span
-                    style="font-size: 0.35em; letter-spacing: 5px; color:#ffcc00; font-weight:900; display:block; margin-top:5px;">SURVIVAL
-                    ROYALE</span></h1>
+            <h1 class="menu-title">THE RED DOOR<br><span
+                    style="font-size: 0.35em; letter-spacing: 5px; color:#ff0033; font-weight:900; display:block; margin-top:5px;">NO
+                    ESCAPE</span></h1>
 
             <!-- Nhập tên (gộp vào cột trái phía dưới) -->
             <!-- 2 cột ngang cố định: trái 7 phản định + phải 5 nút -->
@@ -301,7 +389,8 @@
                     <button id="btn-open-feedback" class="menu-btn menu-btn-feedback"
                         style="font-size:10px; padding:7px 6px;">💬 Góp ý</button>
                     <button id="btn-open-achievements" class="menu-btn"
-                        style="font-size:10px; padding:7px 6px; background: rgba(191, 0, 255, 0.25); border-color: #bf00ff; color: #fff;">🏆 Bí mật</button>
+                        style="font-size:10px; padding:7px 6px; background: rgba(191, 0, 255, 0.25); border-color: #bf00ff; color: #fff;">🏆
+                        Bí mật</button>
                 </div>
             </div>
 
@@ -309,13 +398,40 @@
             <button id="btn-join-discord" class="menu-btn" style="display:none;">💬 JOIN DISCORD</button>
 
             <div class="menu-guide"
-                style="font-size: 9px; line-height: 1.5; text-align: left; padding: 6px; background: rgba(0,0,0,0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
-                <b style="color: #00e676;">💻 MÁY TÍNH:</b> WASD (Di chuyển) | Chuột Trái (Bắn) | Chuột Phải (Ngắm) |
-                Chuột Giữa (Lướt) <br>
-                SHIFT (Chạy) | SPACE (Nhảy) | 1,2,3 (Đổi súng) | R (Nạp đạn) | Bấm E (Để nhặt hộp hoặc dùng kĩ năng
-                ULTIMATE)<br>
-                <b style="color: #ff9900;">📱 ĐIỆN THOẠI:</b> Vuốt nửa phải để ngắm | Dùng di chuyển | Bấm các
-                nút ảo để Bắn, Nhảy, Chạy, Nạp đạn và xài ULTIMATE
+                style="font-size: 9px; line-height: 1.6; text-align: left; padding: 8px; background: rgba(0,0,0,0.6); border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                <b style="color: #00e676;">💻 PC:</b>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">W</kbd>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">A</kbd>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">S</kbd>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">D</kbd>
+                (Chuyển) |
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">SHIFT</kbd>
+                (Chạy) |
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">SPACE</kbd>
+                (Nhảy) |
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">E</kbd>
+                (Nhặt/Ultimate) |
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">R</kbd>
+                (Nạp) |
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">1</kbd>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">2</kbd>
+                <kbd
+                    style="background: #222; border: 1px solid #444; padding: 1px 3px; border-radius: 2px; font-size: 8px;">3</kbd>
+                (Súng) |
+                <span style="color: #ffcc00;">🖱️ Trái</span> (Bắn) | <span style="color: #ffcc00;">🖱️ Phải</span>
+                (Ngắm) <br>
+                <b style="color: #ff9900;">📱 MOBILE:</b> 🎮 Joystick (Chuyển) | 👆 Vuốt phải (Xoay) | Nút ảo: BẮN,
+                NGẮM, NHẢY, NẠP, CHẠY, ULTIMATE
             </div>
             <div class="menu-update">Ver 0.4 Premium Edition</div>
         </div>
@@ -324,73 +440,153 @@
     <!-- SÁCH HƯỚNG DẪN -->
     <div id="guide-modal" class="hidden">
         <div class="guide-content p-3 p-sm-4">
-            <h4 style="color: #ffcc00; margin-bottom: 8px; font-weight:900; letter-spacing: 1.5px; text-shadow: 0 0 12px rgba(255,204,0,0.3); font-size: clamp(14px, 4vw, 18px); text-align: center;">📖 SỔ TAY SINH TỒN</h4>
-            
-            <div style="max-height: 40vh; overflow-y: auto; text-align: left; padding-right: 5px; margin-bottom: 10px;">
+            <h4
+                style="color: #ffcc00; margin-bottom: 12px; font-weight:900; letter-spacing: 1.5px; text-shadow: 0 0 12px rgba(255,204,0,0.3); font-size: clamp(14px, 4vw, 18px); text-align: center;">
+                📖 ĐIỀU KHIỂN GAME</h4>
+
+            <div style="max-height: 50vh; overflow-y: auto; text-align: left; padding-right: 5px; margin-bottom: 10px;">
                 <div class="guide-section">
-                    <h3 style="color: #00ffcc;">🎮 HỆ THỐNG ĐIỀU KHIỂN</h3>
-                    <p>• <b>PC:</b> WASD (Di chuyển), SHIFT (Chạy), SPACE (Nhảy), E (Nhặt / Dùng ULTIMATE), CTRL (Ẩn/Hiện chuột), 1/2/3 (Đổi súng).</p>
-                    <p>• <b>Mobile:</b> Dùng Joystick trái để di chuyển, Vuốt nửa phải xoay Camera, Nút ULTIMATE sẽ hiển thị sáng lên khi bạn tích đủ sát thương.</p>
-                    <p>• <b>Cài đặt HUD (⚙️):</b> Bấm vào biểu tượng ⚙️ trên màn hình để mở bảng tùy chỉnh. Bạn có thể thay đổi kích thước, độ nhạy và kéo thả vị trí các nút bấm sao cho vừa tay nhất!</p>
+                    <h3 style="color: #00ffcc; font-size: 14px;">⌨️ PHÍM BÀNNÀ PHÍM (PC)</h3>
+                    <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; margin-top: 8px;">
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 4px;">W</kbd>
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 4px;">A</kbd>
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 4px;">S</kbd>
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">D</kbd>
+                            <span style="color: #aaa;">Di chuyển</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">SHIFT</kbd>
+                            <span style="color: #aaa;">Chạy nhanh</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">SPACE</kbd>
+                            <span style="color: #aaa;">Nhảy</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">R</kbd>
+                            <span style="color: #aaa;">Nạp đạn</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">E</kbd>
+                            <span style="color: #aaa;">Nhặt đồ / Dùng ULTIMATE</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 8px;">1</kbd>
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 8px;">2</kbd>
+                            <kbd
+                                style="background: #222; border: 1px solid #555; padding: 3px 6px; border-radius: 3px; margin-right: 20px;">3</kbd>
+                            <span style="color: #aaa;">Đổi súng (Lực, SMG, Tỉa)</span>
+                        </div>
+                        <div style="font-size: 12px;">
+                            <span style="color: #ffcc00;">🖱️ Chuột Trái</span> — <span style="color: #aaa;">Bắn</span>
+                            |
+                            <span style="color: #ffcc00;">🖱️ Chuột Phải</span> — <span style="color: #aaa;">Ngắm</span>
+                            |
+                            <span style="color: #ffcc00;">🖱️ Lăn</span> — <span style="color: #aaa;">Lựa súng</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="guide-section">
-                    <h3 style="color: #ffcc00;">⚔️ CHIẾN THUẬT & NHIỆM VỤ</h3>
-                    <p>• <b>Kỹ năng Nộ (ULTIMATE):</b> Nhấn <b>[E]</b> hoặc nút ULTIMATE để hóa đại bác bất tử. Phát bắn từ Ultimate sẽ khiến Boss bị choáng.</p>
-                    <p>• <b>Nhiệm vụ Tâm linh:</b> Thu thập các hộp phát sáng trên bản đồ và hoàn thành yêu cầu để giải mã cốt truyện (Lore) bị ẩn giấu.</p>
-                    <p>• <b>Thùng Nổ:</b> Các thùng đỏ gây sát thương diện rộng cực lớn. Dụ quái lại gần và bắn nổ để clear map nhanh chóng!</p>
+                    <h3 style="color: #00e676; font-size: 14px;">📱 MOBILE - NÚT TRÊN MÀN HÌNH</h3>
+                    <div style="background: rgba(0,0,0,0.4); padding: 10px; border-radius: 6px; margin-top: 8px;">
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span style="color: #ffcc00;">🎮 JOYSTICK TRÁI</span> — <span style="color: #aaa;">Di chuyển
+                                nhân vật</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span style="color: #ffcc00;">👆 VUỐT NỬAAI PHẢI</span> — <span style="color: #aaa;">Xoay
+                                camera & ngắm</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span
+                                style="background: rgba(255,100,100,0.4); padding: 2px 6px; border-radius: 3px; border: 1px solid #ff6464;">BẮN</span>
+                            (Góc phải dưới) — <span style="color: #aaa;">Bắn</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span
+                                style="background: rgba(0,100,255,0.4); padding: 2px 6px; border-radius: 3px; border: 1px solid #0064ff;">NGẮM</span>
+                            — <span style="color: #aaa;">Ngắm độc lập</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span
+                                style="background: rgba(0,200,255,0.4); padding: 2px 6px; border-radius: 3px; border: 1px solid #00c8ff;">NHẢY</span>
+                            — <span style="color: #aaa;">Nhảy cao</span>
+                        </div>
+                        <div style="margin-bottom: 8px; font-size: 12px;">
+                            <span
+                                style="background: rgba(255,150,0,0.4); padding: 2px 6px; border-radius: 3px; border: 1px solid #ff9600;">NẠP</span>
+                            — <span style="color: #aaa;">Nạp đạn</span>
+                        </div>
+                        <div style="font-size: 12px;">
+                            <span
+                                style="background: rgba(200,100,0,0.4); padding: 2px 6px; border-radius: 3px; border: 1px solid #c86400;">CHẠY</span>
+                            — <span style="color: #aaa;">Chạy nhanh (Toggle)</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="guide-section">
-                    <h3 style="color: #00ff88;">📜 DANH SÁCH NHIỆM VỤ TÂM LINH</h3>
-                    <p style="margin-bottom: 5px; color: #bbb;">Các yêu cầu nhiệm vụ khi mở hộp thông tin (Được tích lũy sẵn chỉ số diệt quái từ đầu trận):</p>
-                    <p style="margin: 2px 0;">• 💀 <b>Diệt quái:</b> Hạ gục số lượng quái đột biến yêu cầu.</p>
-                    <p style="margin: 2px 0;">• 💥 <b>Nổ thùng:</b> Dẫn dụ quái lại gần thùng đỏ rồi bắn nổ để gây sát thương lớn.</p>
-                    <p style="margin: 2px 0;">•🎯 <b>Headshot:</b> Bắn trúng đầu quái bằng các loại súng.</p>
-                    <p style="margin: 2px 0;">• ⚡ <b>Sử dụng Ultimate:</b> Kích hoạt kỹ năng tối thượng Ultimate.</p>
-                    <p style="margin: 2px 0;">• 📦 <b>Nhặt bùa:</b> Tìm và nhặt các bình bùa kỹ năng màu Cam.</p>
-                    <p style="margin: 2px 0;">• 🟣 <b>Dạng Siêu Cấp:</b> Nhặt Combo Tím và duy trì trạng thái.</p>
-                    <p style="margin: 2px 0;">• ⏱️ <b>Sống sót:</b> Né tránh quái và sống sót qua số giây yêu cầu.</p>
-                    <p style="margin: 2px 0;">• 🩸 <b>Hồi phục:</b> Thu thập các bình cứu sinh để hồi máu.</p>
+                    <h3 style="color: #38bdf8; font-size: 14px;">⚙️ CHỈNH CÀI ĐẶT</h3>
+                    <p style="margin: 0; font-size: 12px; color: #bbb;">Bấm biểu tượng <span
+                            style="color: #ffcc00; font-weight: 700;">⚙️</span> ở góc trên bên phải để:</p>
+                    <ul style="margin: 8px 0 0 15px; font-size: 12px; padding: 0;">
+                        <li>Kéo thả vị trí các nút</li>
+                        <li>Thay đổi kích thước nút</li>
+                        <li>Chỉnh độ nhạy camera</li>
+                        <li>Cấu hình các tham số game</li>
+                    </ul>
                 </div>
 
                 <div class="guide-section">
-                    <h3 style="color: #bf00ff;">✨ HỆ THỐNG BÙA LỢI (POWER-UPS)</h3>
-                    <p>• <b>⚡ Tăng Tốc (Cyan):</b> Nhặt bình bùa để chạy nhanh hơn trong 15 giây.</p>
-                    <p>• <b>🔥 X2 Sát Thương (Cam):</b> Gấp đôi sát thương mọi loại súng trong 15 giây.</p>
-                    <p>• <b>🟣 SIÊU CẤP (Combo Tím):</b> Nhặt 2 loại bùa khác nhau để vào trạng thái <b>SIÊU CẤP</b> (Vừa nhanh vừa mạnh) trong 20 giây. Nhặt thêm bùa sẽ reset thời gian về 20 giây!</p>
-                </div>
-
-                <div class="guide-section">
-                    <h3 style="color: #ff3333;">🔥 KẺ CANH CÁNH CỬA ĐỎ</h3>
-                    <p>• <b>Cảnh báo đỏ:</b> Khi vùng đất bị ô uế, một vòng đỏ sẽ xuất hiện. Hãy nhấn <b>SHIFT</b> để chạy thoát thật nhanh.</p>
-                    <p>• <b>Vực thẳm:</b> Kẻ canh gác sẽ liên tục vặn xoắn không gian để đè nát bạn.</p>
-                    <p>• <b>Hòm Tiếp Tế:</b> Hòm Máu/Giáp sẽ hồi lại sau mỗi 20 giây, hãy tận dụng chúng để cầm cự.</p>
-                </div>
-
-                <div class="guide-section">
-                    <h3 style="color: #0088ff;">💡 MẸO NHỎ</h3>
-                    <p>• <b>Thả diều (Kiting):</b> Vừa chạy vừa bắn để giữ khoảng cách an toàn với Bot Lv2.</p>
-                    <p>• <b>Headshot:</b> Bắn vào đầu để gây x1.5 sát thương. Cực kỳ hiệu quả khi dùng súng Tỉa (Sniper).</p>
-                    <p>• <b>Lợi thế địa hình:</b> Nhảy lên nóc các công trình hoặc xe cộ để hạn chế hướng tấn công của kẻ địch.</p>
+                    <h3 style="color: #ffcc00; font-size: 14px;">CHÚT VỀ GAME</h3>
+                    <ul style="margin: 8px 0 0 15px; font-size: 12px; padding: 0;">
+                        <li><span style="color: #ff5555;"> Quái vật</span> — Quái vật có 3 dạng biến đổi theo số lượng
+                        </li>
+                        <li><span style="color: #ffcc00;"> Hộp Vàng</span> — Nhặt Tăng số lượng đạn</li>
+                        <li><span style="color: #00ff88;"> Hộp Xanh Lá</span> — Hồi máu</li>
+                        <li><span style="color: #0088ff;"> Hộp Xanh Dương</span> — Tăng giáp</li>
+                        <li><span style="color: #ffaa00;"> Hộp Cam</span> — Nâng cấp sát thương, tốc chạy x2</li>
+                        <li><span style="color: #ffcc00;"> Hộp Vàng lớn</span> — Nhặt để mở khóa cốt truyện</li>
+                        <li><span style="color: #ff0000;"> Chìa Khóa Đỏ</span> — Mở cánh cửa thoát sau khi đánh bại
+                            Boss!</li>
+                    </ul>
                 </div>
             </div>
 
-            <button id="close-guide-btn" class="menu-btn mt-2 mx-auto" style="width: auto; max-width: 140px; padding: 6px 30px; font-size: clamp(11px, 2.5vw, 13px); display: block;">ĐÓNG</button>
+            <button id="close-guide-btn" class="menu-btn mt-2 mx-auto"
+                style="width: auto; max-width: 140px; padding: 6px 30px; font-size: clamp(11px, 2.5vw, 13px); display: block;">ĐÓNG</button>
         </div>
     </div>
 
     <!-- ACHIEVEMENTS/LORE DATABASE MODAL -->
     <div id="achievements-modal" class="hidden">
         <div class="achievements-content p-3 p-sm-4">
-            <h4 style="color: #bf00ff; margin-bottom: 8px; font-weight:900; letter-spacing: 1.5px; text-shadow: 0 0 12px rgba(191,0,255,0.4); font-size: clamp(12px, 3.2vw, 15px); text-align: center;">🏆 BẢN GHI KHÔNG GIAN</h4>
-            <div id="achievements-player-summary" style="font-size: clamp(9px, 2.2vw, 11px); color:#ffcc00; font-weight:700; margin-bottom: 8px; text-align:center;"></div>
-            
-            <div id="achievements-list-container" style="max-height: 40vh; overflow-y: auto; text-align: left; padding-right: 5px; font-size: clamp(9px, 2.2vw, 10px); margin-bottom: 10px;">
+            <h4
+                style="color: #bf00ff; margin-bottom: 8px; font-weight:900; letter-spacing: 1.5px; text-shadow: 0 0 12px rgba(191,0,255,0.4); font-size: clamp(12px, 3.2vw, 15px); text-align: center;">
+                🏆 BẢN GHI KHÔNG GIAN</h4>
+            <div id="achievements-player-summary"
+                style="font-size: clamp(9px, 2.2vw, 11px); color:#ffcc00; font-weight:700; margin-bottom: 8px; text-align:center;">
+            </div>
+
+            <div id="achievements-list-container"
+                style="max-height: 40vh; overflow-y: auto; text-align: left; padding-right: 5px; font-size: clamp(9px, 2.2vw, 10px); margin-bottom: 10px;">
                 <!-- Dữ liệu thành tựu load động từ localStorage -->
             </div>
-            
-            <button id="close-achievements-btn" class="menu-btn mt-2 mx-auto" style="width: auto; max-width: 140px; padding: 6px 30px; font-size: clamp(11px, 2.5vw, 13px); background: rgba(191,0,255,0.2); border-color:#bf00ff; display: block;">ĐÓNG</button>
+
+            <button id="close-achievements-btn" class="menu-btn mt-2 mx-auto"
+                style="width: auto; max-width: 140px; padding: 6px 30px; font-size: clamp(11px, 2.5vw, 13px); background: rgba(191,0,255,0.2); border-color:#bf00ff; display: block;">ĐÓNG</button>
         </div>
     </div>
 
@@ -446,12 +642,12 @@
 
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="preload.js?v=19.1.5"></script>
-    <script src="story.js?v=19.1.5"></script>
-    <script src="lore.js?v=19.1.5"></script>
-    <script src="stats.js?v=19.1.5"></script>
-    <script src="game.js?v=19.1.5"></script>
-    <script src="discord.js?v=19.1.5"></script>
+    <script src="preload.js?v=20.1.0"></script>
+    <script src="story.js?v=20.1.0"></script>
+    <script src="lore.js?v=20.1.0"></script>
+    <script src="stats.js?v=20.1.0"></script>
+    <script src="game.js?v=20.1.0"></script>
+    <script src="discord.js?v=20.1.0"></script>
 
     <!-- Script giảm thông báo truy cập: request Fullscreen trước Pointer Lock -->
     <script>
@@ -582,6 +778,47 @@
                                 </div>
                                 <input type="range" id="sensitivity-slider" class="form-range" min="0.1" max="10.0"
                                     step="0.1" value="2.1" style="height: 10px;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CÀI ĐẶT ĐỒ HOẠ & HIỆU NĂNG -->
+                <div class="mb-2 w-100">
+                    <button class="btn btn-sm w-100 mb-1 text-white" type="button" data-bs-toggle="collapse"
+                        data-bs-target="#graphicsCollapse" aria-expanded="false" aria-controls="graphicsCollapse"
+                        style="font-size: 8px; padding: 3px 6px; font-weight: bold; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); border-radius: 4px;">
+                        ▼ ĐỒ HỌA & HIỆU NĂNG
+                    </button>
+                    <div class="collapse" id="graphicsCollapse">
+                        <div class="card card-body p-1"
+                            style="background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">
+                            <!-- ĐỘ PHÂN GIẢI (RESOLUTION SCALE) -->
+                            <div class="mb-2">
+                                <div class="d-flex justify-content-between mb-1" style="font-size:8px;">
+                                    <span>ĐỘ PHÂN GIẢI</span><span id="graphics-resolution-val"
+                                        style="color:#ffcc00;">Mượt (720p)</span>
+                                </div>
+                                <select id="graphics-resolution-select" class="form-select form-select-sm"
+                                    style="font-size: 8px; padding: 2px; background: #111; color: #fff; border: 1px solid #444; height: auto;">
+                                    <option value="ultralow">Siêu Mượt (360p - 0.25x)</option>
+                                    <option value="low">Mượt (480p - 0.45x)</option>
+                                    <option value="medium" selected>Trung bình (720p - 0.7x)</option>
+                                    <option value="high">Cao (1080p - 1.0x)</option>
+                                </select>
+                            </div>
+                            <!-- VFX QUALITY -->
+                            <div class="mb-1">
+                                <div class="d-flex justify-content-between mb-1" style="font-size:8px;">
+                                    <span>HIỆU ỨNG ĐỒ HỌA</span><span id="graphics-vfx-val" style="color:#00ccff;">Bình
+                                        thường</span>
+                                </div>
+                                <select id="graphics-vfx-select" class="form-select form-select-sm"
+                                    style="font-size: 8px; padding: 2px; background: #111; color: #fff; border: 1px solid #444; height: auto;">
+                                    <option value="low">Tối thiểu (Tắt hiệu ứng / Ít hạt)</option>
+                                    <option value="medium" selected>Bình thường</option>
+                                    <option value="high">Tối đa (Đẹp mắt)</option>
+                                </select>
                             </div>
                         </div>
                     </div>
