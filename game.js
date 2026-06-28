@@ -1328,64 +1328,12 @@ function continueStartGame() {
     STATE.player.pos = V3.create(0, _spawnH, 0);
     STATE.player.vel = V3.create(0, 0, 0);
     STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
-    STATE.player.standUpTimer = 3.0; // 3 giây animation ngồi dậy
-    STATE.player.isInvincible = true; // Bất tử trong khi đứng dậy
+    STATE.player.standUpTimer = 0; // Đã xóa animation ngồi dậy
+    STATE.player.isInvincible = false;
     STATE.player.weaponSwitchTime = 0; // Reset equip animation
-    STATE.camera.rot.x = -0.6; // Camera nhìn lên trời lúc đang nằm
+    STATE.camera.rot.x = 0; // Camera nhìn thẳng
 
-    // === EYE BLINK CINEMATIC: Chỉ chạy trong stand-up animation ===
-    // Helper: nhắm mắt rồi mở mắt theo kiểu truyền vào
-    const _blinkOverlay = document.getElementById('eye-blink-overlay');
-    const _doEyeBlink = (openClass = 'opening', closeDur = 110, openDelay = 130) => {
-        if (!_blinkOverlay) return;
-        _blinkOverlay.classList.remove('opening', 'waking', 'blinking');
-        void _blinkOverlay.offsetWidth; // Force reflow
-        _blinkOverlay.classList.add('blinking');
-        setTimeout(() => {
-            _blinkOverlay.classList.remove('blinking');
-            void _blinkOverlay.offsetWidth;
-            _blinkOverlay.classList.add(openClass);
-        }, openDelay);
-    };
-
-    // Bắt đầu: 2 mí đóng hoàn toàn (đang mê), sau đó mở chậm như tỉnh dậy
-    if (_blinkOverlay) {
-        _blinkOverlay.style.display = 'block';
-        _blinkOverlay.className = ''; // Mí đang đóng (scaleY = 0 default)
-        // Force mí đóng tức thì bằng inline style
-        const eTop = document.getElementById('eyelid-top');
-        const eBot = document.getElementById('eyelid-bottom');
-        if (eTop) eTop.style.cssText = 'transform:scaleY(1);transition:none';
-        if (eBot) eBot.style.cssText = 'transform:scaleY(1);transition:none';
-
-        // Sau 200ms: mở mắt rất chậm (tỉnh dậy từ mê)
-        setTimeout(() => {
-            if (eTop) eTop.style.cssText = '';
-            if (eBot) eBot.style.cssText = '';
-            _blinkOverlay.classList.add('waking');
-        }, 200);
-
-        // Chớp 1: lúc 1.0s (vừa mở mắt, chớp phản xạ)
-        setTimeout(() => _doEyeBlink('opening', 100, 120), 1000);
-        // Chớp 2: lúc 1.6s (ngó trái phải xong, chớp lần 2)
-        setTimeout(() => _doEyeBlink('opening', 100, 130), 1600);
-        // Chớp 3: lúc 2.3s (đang gượng đứng, chớp lần 3 hơi dài hơn)
-        setTimeout(() => _doEyeBlink('opening', 110, 160), 2300);
-        // Sau khi animation xong (3.2s): ẩn overlay hoàn toàn
-        setTimeout(() => {
-            if (_blinkOverlay) {
-                _blinkOverlay.classList.remove('opening', 'waking', 'blinking');
-                _blinkOverlay.style.display = 'none';
-                if (eTop) eTop.style.cssText = '';
-                if (eBot) eBot.style.cssText = '';
-            }
-        }, 3200);
-    }
-    // === END EYE BLINK CINEMATIC ===
-
-    // Hiện thông báo "Đang tỉnh dậy"
-    setTimeout(() => showGlobalAnnouncement('😵 ĐANG TỈNH DẬY...', 2000), 500);
-    setTimeout(() => { showGlobalAnnouncement('⚔️ BẮT ĐẦU SINH TỒN!', 2500); }, 3100);
+    showGlobalAnnouncement('⚔️ BẮT ĐẦU SINH TỒN!', 2500);
 
     STATE.bots = []; STATE.loot = []; STATE.barrels = []; STATE.pads = []; STATE.projectiles = [];
 
