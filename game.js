@@ -4318,7 +4318,6 @@ function draw() {
             let mArm = M4.translation(armX, armY, -0.5);
             mArm = M4.multiply(mArm, M4.rotationY(-0.3 * (1 - STATE.aimLerp)));
             if (p.isReloading) mArm = M4.multiply(mArm, M4.rotationX(reloadTiltX * 0.5));
-            drawMeshRaw(ASSETS.arm, mArm);
 
             // Weapon ADS Positioning
             let targetWepY = -0.12;
@@ -4332,10 +4331,9 @@ function draw() {
             let mWep = M4.translation(wepX, wepY, wepZ);
 
             if (STATE.hasRedKey) {
-                // Cầm thẳng tiến về phía trước từ tay phải của người chơi, nằm chính xác trên phần tay trắng
-                mWep = M4.multiply(mWep, M4.rotationY(-0.15)); // Xoay nhẹ sang trái để lộ rõ răng cưa chìa khóa
-                mWep = M4.multiply(mWep, M4.rotationX(0.0));   // Cầm thẳng tắp về phía trước, không hướng lên trên
-                mWep = M4.multiply(mWep, M4.scaling(3.8, 3.8, 3.8)); // Phóng to đáng kể, gần bằng kích thước lúc rớt
+                mWep = M4.multiply(mWep, M4.rotationY(-0.15));
+                mWep = M4.multiply(mWep, M4.rotationX(0.0));
+                mWep = M4.multiply(mWep, M4.scaling(3.8, 3.8, 3.8));
             } else {
                 mWep = M4.multiply(mWep, M4.rotationY(-0.15 * (1 - STATE.aimLerp)));
                 if (STATE.aimLerp < 0.9) mWep = M4.multiply(mWep, M4.rotationX(0.05 * (1 - STATE.aimLerp)));
@@ -4345,7 +4343,34 @@ function draw() {
                 }
                 mWep = M4.multiply(mWep, M4.scaling(1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1));
             }
-            drawMeshRaw(weaponMesh, mWep);
+
+            // === Render vũ khí/cánh tay trong vmScene (scene riêng, identity view) ===
+            // Ưu điểm: vmCamera có near=0.01 tránh clip, depth riêng không bị che bởi terrain
+            if (window.vmObjects && window.vmScene) {
+                // Ẩn tất cả vmObjects trước
+                Object.values(window.vmObjects).forEach(o => { if (o) o.visible = false; });
+
+                // Hiện Arm
+                if (window.vmObjects.arm) {
+                    window.vmObjects.arm.visible = true;
+                    window.vmObjects.arm.matrix.fromArray(mArm);
+                    window.vmObjects.arm.matrixAutoUpdate = false;
+                    window.vmObjects.arm.matrixWorldNeedsUpdate = true;
+                }
+
+                // Hiện Weapon
+                const weaponKeys = ['pistol', 'smg', 'sniper'];
+                let vmWepKey = weaponKeys[p.weaponIdx] || 'pistol';
+                if (p.isChargingUlti) vmWepKey = 'cannon';
+                if (STATE.hasRedKey) vmWepKey = 'redKey';
+                const vmWep = window.vmObjects[vmWepKey];
+                if (vmWep) {
+                    vmWep.visible = true;
+                    vmWep.matrix.fromArray(mWep);
+                    vmWep.matrixAutoUpdate = false;
+                    vmWep.matrixWorldNeedsUpdate = true;
+                }
+            }
         }
 
 
@@ -4354,6 +4379,34 @@ function draw() {
 
     drawMinimap(p, STATE.bots);
 
+    // --- THREE.JS Render Update ---
+    if (window.scene && window.renderer) {
+        try {
+            // Sương mù + background
+            window.scene.fog = new THREE.FogExp2(new THREE.Color(fogCol[0], fogCol[1], fogCol[2]), 0.003);
+            window.scene.background = new THREE.Color(bgCol[0], bgCol[1], bgCol[2]);
+
+            // 1. Render main scene
+            if (window.composer) {
+                window.composer.render();
+            } else {
+                window.renderer.render(window.scene, window.camera);
+            }
+
+            // 2. Render viewmodel (arm + weapon) trên cùng với depth riêng
+            if (window.vmScene && window.vmCamera) {
+                window.vmCamera.fov = fov * (180 / Math.PI);
+                window.vmCamera.aspect = aspect;
+                window.vmCamera.updateProjectionMatrix();
+                window.renderer.autoClear = false;
+                window.renderer.clearDepth();
+                window.renderer.render(window.vmScene, window.vmCamera);
+                window.renderer.autoClear = true;
+            }
+        } catch (e) {
+            console.error("RENDER ERROR:", e);
+        }
+    }
 }
 
 function drawMinimap(p, bots) {
@@ -5042,15 +5095,19 @@ function spawnHakariDance() {
 }
 
 function loop(now) {
-    if (!STATE.lastTime) STATE.lastTime = now;
-    const dt = Math.min((now - STATE.lastTime) / 1000, 0.1);
-    STATE.lastTime = now;
+    try {
+        if (!STATE.lastTime) STATE.lastTime = now;
+        const dt = Math.min((now - STATE.lastTime) / 1000, 0.1);
+        STATE.lastTime = now;
 
-    update(dt);
-    draw();
-    updateHUD();
-    // Dùng window.loop để chạy qua wrapper đồng bộ khán giả mỗi frame
-    requestAnimationFrame(window.loop || loop);
+        update(dt);
+        draw();
+        updateHUD();
+        // Dùng window.loop để chạy qua wrapper đồng bộ khán giả mỗi frame
+        requestAnimationFrame(window.loop || loop);
+    } catch (e) {
+        console.error("MAIN LOOP ERROR", e);
+    }
 }
 window.loop = loop;
 
@@ -5396,10 +5453,15 @@ window.addEventListener('DOMContentLoaded', () => {
                     const dy = t.clientY - lastShootPos.y;
                     lastShootPos.x = t.clientX;
                     lastShootPos.y = t.clientY;
+                    
+                    // Deadzone: Ignore finger wobbles less than 3px to avoid camera jump when clicking
+                    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+
                     const cdx = Math.max(-100, Math.min(100, dx));
                     const cdy = Math.max(-100, Math.min(100, dy));
-                    STATE.camera.rot.y += cdx * 0.005 * (window.aimSensitivity || 1.0);
-                    STATE.camera.rot.x -= cdy * 0.005 * (window.aimSensitivity || 1.0);
+                    // Reduced aim sensitivity on shoot drag to 0.001 to prevent screen from snapping/flying upwards
+                    STATE.camera.rot.y += cdx * 0.001 * (window.aimSensitivity || 1.0);
+                    STATE.camera.rot.x -= cdy * 0.001 * (window.aimSensitivity || 1.0);
                     STATE.camera.rot.x = Math.max(-1.5, Math.min(1.5, STATE.camera.rot.x));
                 }
             }
