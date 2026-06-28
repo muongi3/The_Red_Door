@@ -1181,6 +1181,31 @@ function getHeight(x, z) {
     y -= d * d * 20; return y < -10 ? -10 : y;
 }
 
+function getTerrainNormal(x, z) {
+    const eps = 0.2;
+    const hL = getHeight(x - eps, z);
+    const hR = getHeight(x + eps, z);
+    const hD = getHeight(x, z - eps);
+    const hU = getHeight(x, z + eps);
+    const nx = -(hR - hL) / (2 * eps);
+    const nz = -(hU - hD) / (2 * eps);
+    const len = Math.sqrt(nx * nx + 1.0 + nz * nz);
+    return len > 0 ? V3.create(nx / len, 1.0 / len, nz / len) : V3.create(0, 1, 0);
+}
+
+function makeAlignedMatrix(pos, normal, scale = 1.0) {
+    const U = V3.norm(normal);
+    const temp = Math.abs(U.x) < 0.9 ? V3.create(1, 0, 0) : V3.create(0, 0, 1);
+    const R = V3.norm(V3.cross(temp, U));
+    const F = V3.norm(V3.cross(U, R));
+    return new Float32Array([
+        R.x * scale, R.y * scale, R.z * scale, 0,
+        U.x * scale, U.y * scale, U.z * scale, 0,
+        F.x * scale, F.y * scale, F.z * scale, 0,
+        pos.x, pos.y, pos.z, 1
+    ]);
+}
+
 function genTerrain() {
     let V = [], N = [], C = [];
     const step = MAP_SIZE / MAP_RES, offset = -MAP_SIZE / 2;
@@ -1520,7 +1545,9 @@ function continueStartGame() {
             z = (Math.random() - 0.5) * MAP_SIZE * 0.8;
             y = getHeight(x, z);
         } while (y <= -8.5);
-        STATE.pads.push({ pos: V3.create(x, y, z) });
+        const padNormal = getTerrainNormal(x, z);
+        // Nhích pad lên trên mặt đất một tí (0.05) để tránh Z-fighting với địa hình dốc
+        STATE.pads.push({ pos: V3.create(x, y + 0.05, z), normal: padNormal });
     }
 
     // Hàm kiểm tra nằm trong "Con Đường Tuyệt Vọng" (The Void Path)
@@ -2004,7 +2031,17 @@ function update(dt) {
             if (obs.type === 'house' && p.pos.y >= obs.pos.y + 3.0) floorH = Math.max(floorH, obs.pos.y + 4.5); // Nóc nhà
         }
     }
-    let onPad = false; for (let pad of STATE.pads) if (V3.dist(p.pos, pad.pos) < 3 && Math.abs(p.pos.y - pad.pos.y) < 2) { p.vel.y = 30; p.grounded = false; onPad = true; playAudio('jump'); break; }
+    let onPad = false;
+    for (let pad of STATE.pads) {
+        if (V3.dist(p.pos, pad.pos) < 3 && Math.abs(p.pos.y - pad.pos.y) < 2) {
+            const normal = pad.normal || V3.create(0, 1, 0);
+            p.vel = V3.mul(normal, 30); // Đẩy người chơi dọc theo véc-tơ pháp tuyến dốc của bệ nhảy
+            p.grounded = false;
+            onPad = true;
+            playAudio('jump');
+            break;
+        }
+    }
     if (!onPad && p.pos.y < floorH) { p.pos.y = floorH; p.vel.y = 0; p.grounded = true; } else if (!onPad) p.grounded = false;
     if (STATE.keys['Space'] && p.grounded) { p.vel.y = window.GAME_CONFIG.player.jumpPower; p.grounded = false; }
     const now = performance.now(), weapon = STATE.weapons[p.weaponIdx];
@@ -4054,7 +4091,10 @@ function draw() {
         });
         gl.enable(gl.CULL_FACE);
     }
-    STATE.pads.forEach(p => drawMeshActual(ASSETS.pad, p.pos, 2, 0));
+    STATE.pads.forEach(p => {
+        const mat = makeAlignedMatrix(p.pos, p.normal || V3.create(0, 1, 0), 2);
+        drawMeshRaw(ASSETS.pad, mat);
+    });
 
     // Vẽ vật cản (Cây, Nhà, Xe, Cột, Cửa) - Có culling tối ưu cho máy yếu
     STATE.obstacles.forEach(obs => {
