@@ -6081,7 +6081,11 @@ function updatePingDisplay(dt) {
     const pingEl = document.getElementById('ping-display');
     if (!pingEl) return;
 
-    // Luôn hiện ở mọi màn hình
+    // Ẩn bảng Wifi nếu đang ở màn hình Menu (chỉ hiện khi đang trong game hoặc đang sửa HUD)
+    if (STATE.screen !== 'game' && !window.isEditingHUD) {
+        pingEl.style.display = 'none';
+        return;
+    }
     pingEl.style.display = 'block';
 
     _pingFrameCount++;
