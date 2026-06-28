@@ -4318,6 +4318,7 @@ function draw() {
             let mArm = M4.translation(armX, armY, -0.5);
             mArm = M4.multiply(mArm, M4.rotationY(-0.3 * (1 - STATE.aimLerp)));
             if (p.isReloading) mArm = M4.multiply(mArm, M4.rotationX(reloadTiltX * 0.5));
+            drawMeshRaw(ASSETS.arm, mArm);
 
             // Weapon ADS Positioning
             let targetWepY = -0.12;
@@ -4331,9 +4332,10 @@ function draw() {
             let mWep = M4.translation(wepX, wepY, wepZ);
 
             if (STATE.hasRedKey) {
-                mWep = M4.multiply(mWep, M4.rotationY(-0.15));
-                mWep = M4.multiply(mWep, M4.rotationX(0.0));
-                mWep = M4.multiply(mWep, M4.scaling(3.8, 3.8, 3.8));
+                // Cầm thẳng tiến về phía trước từ tay phải của người chơi, nằm chính xác trên phần tay trắng
+                mWep = M4.multiply(mWep, M4.rotationY(-0.15)); // Xoay nhẹ sang trái để lộ rõ răng cưa chìa khóa
+                mWep = M4.multiply(mWep, M4.rotationX(0.0));   // Cầm thẳng tắp về phía trước, không hướng lên trên
+                mWep = M4.multiply(mWep, M4.scaling(3.8, 3.8, 3.8)); // Phóng to đáng kể, gần bằng kích thước lúc rớt
             } else {
                 mWep = M4.multiply(mWep, M4.rotationY(-0.15 * (1 - STATE.aimLerp)));
                 if (STATE.aimLerp < 0.9) mWep = M4.multiply(mWep, M4.rotationX(0.05 * (1 - STATE.aimLerp)));
@@ -4343,34 +4345,7 @@ function draw() {
                 }
                 mWep = M4.multiply(mWep, M4.scaling(1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1, 1 + STATE.aimLerp * 0.1));
             }
-
-            // === Render vũ khí/cánh tay trong vmScene (scene riêng, identity view) ===
-            // Ưu điểm: vmCamera có near=0.01 tránh clip, depth riêng không bị che bởi terrain
-            if (window.vmObjects && window.vmScene) {
-                // Ẩn tất cả vmObjects trước
-                Object.values(window.vmObjects).forEach(o => { if (o) o.visible = false; });
-
-                // Hiện Arm
-                if (window.vmObjects.arm) {
-                    window.vmObjects.arm.visible = true;
-                    window.vmObjects.arm.matrix.fromArray(mArm);
-                    window.vmObjects.arm.matrixAutoUpdate = false;
-                    window.vmObjects.arm.matrixWorldNeedsUpdate = true;
-                }
-
-                // Hiện Weapon
-                const weaponKeys = ['pistol', 'smg', 'sniper'];
-                let vmWepKey = weaponKeys[p.weaponIdx] || 'pistol';
-                if (p.isChargingUlti) vmWepKey = 'cannon';
-                if (STATE.hasRedKey) vmWepKey = 'redKey';
-                const vmWep = window.vmObjects[vmWepKey];
-                if (vmWep) {
-                    vmWep.visible = true;
-                    vmWep.matrix.fromArray(mWep);
-                    vmWep.matrixAutoUpdate = false;
-                    vmWep.matrixWorldNeedsUpdate = true;
-                }
-            }
+            drawMeshRaw(weaponMesh, mWep);
         }
 
 
