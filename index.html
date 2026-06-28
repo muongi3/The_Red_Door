@@ -311,7 +311,7 @@
     <!-- PING / FPS INDICATOR — luôn hiện, kéo được, cuộn để thu phóng -->
     <div id="ping-display" style="
         position: fixed;
-        top: 152px;
+        top: 230px;
         left: 20px;
         z-index: 99999;
         background: rgba(5,10,20,0.88);
@@ -329,6 +329,7 @@
         cursor: grab;
         user-select: none;
         transform-origin: top left;
+        transform: scale(var(--btn-scale, 1.0));
         transition: border-color 0.3s, box-shadow 0.3s;
     ">
         <div id="ping-icon" style="font-size:16px; line-height:1;">&#x1F4F6;</div>
