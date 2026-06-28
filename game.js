@@ -173,6 +173,8 @@ uniform mat4 uProj;
 uniform mat4 uView;
 uniform mat4 uModel;
 uniform bool uInstanced;
+uniform bool uIsGrass;
+uniform float uTime;
 
 out vec3 vNorm;
 out vec3 vPos;
@@ -183,6 +185,14 @@ out float vY;
 void main() {
     mat4 model = uInstanced ? aInstMod : uModel;
     vec4 worldPos = model * vec4(aPos, 1.0);
+    
+    // === DYNAMIC WIND GRASS ===
+    if (uIsGrass && aPos.y > 0.05) {
+        float sway = sin(uTime * 2.5 + worldPos.x * 0.8 + worldPos.z * 0.8) * 0.25 * aPos.y;
+        worldPos.x += sway;
+        worldPos.z += sway * 0.6;
+    }
+
     vPos = worldPos.xyz;
     vY = aPos.y;
     vNorm = mat3(model) * aNorm;
@@ -343,6 +353,7 @@ function initGraphics() {
         time: gl.getUniformLocation(prog, "uTime"),
         isWater: gl.getUniformLocation(prog, "uIsWater"),
         isSky: gl.getUniformLocation(prog, "uIsSky"),
+        isGrass: gl.getUniformLocation(prog, "uIsGrass"),
         // Phase 1: New VFX uniforms
         pointLightPos: gl.getUniformLocation(prog, "uPointLightPos"),
         pointLightColor: gl.getUniformLocation(prog, "uPointLightColor"),
@@ -1951,6 +1962,43 @@ function update(dt) {
     // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
     let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
+
+    // === STRAFE TILT: Camera nghiêng nhẹ khi di chuyển ngang (AAA FPS feel) ===
+    const targetTilt = (STATE.keys['KeyA'] ? 1 : 0) - (STATE.keys['KeyD'] ? 1 : 0);
+    STATE.strafeTilt = (STATE.strafeTilt || 0) + (targetTilt * 0.035 - (STATE.strafeTilt || 0)) * 6.0 * dt;
+
+    // === LANDING IMPACT: Camera dập + bụi khi rơi từ bật nhảy/nhảy cao (không tính lúc tỉnh dậy) ===
+    if (!p._prevVelY) p._prevVelY = 0;
+    if (!p._landingDip) p._landingDip = 0;
+    if (p._prevVelY < -8 && p.grounded && (p.standUpTimer || 0) <= 0) {
+        // Rơi mạnh — tạo hiệu ứng va chạm
+        const impactForce = Math.min(Math.abs(p._prevVelY) / 30, 1.0);
+        p._landingDip = impactForce * 0.25; // Camera dập xuống
+        // Spawn bụi đất khi đáp
+        for (let i = 0; i < 8; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 1.5 + Math.random() * 3;
+            spawnParticles(V3.create(
+                p.pos.x + Math.cos(ang) * 0.5,
+                p.pos.y + 0.1,
+                p.pos.z + Math.sin(ang) * 0.5
+            ), 1, [0.35, 0.28, 0.18], 0.8 + Math.random() * 0.5);
+        }
+    }
+    p._prevVelY = p.vel.y;
+    // Landing dip recovery (hồi phục camera dập)
+    if (p._landingDip > 0.001) {
+        p._landingDip *= (1.0 - 8.0 * dt); // Decay nhanh
+    } else {
+        p._landingDip = 0;
+    }
+
+    // === FOOTSTEP DUST: Bụi nhẹ bay lên khi chạy trên đất ===
+    if (p.grounded && V3.len(move) > 0.3 && Math.random() < 0.15) {
+        const dustX = p.pos.x + (Math.random() - 0.5) * 0.6;
+        const dustZ = p.pos.z + (Math.random() - 0.5) * 0.6;
+        spawnParticles(V3.create(dustX, p.pos.y + 0.05, dustZ), 1, [0.3, 0.25, 0.18], 0.4 + Math.random() * 0.3);
+    }
     if (p.isChargingUlti) {
         move.x = 0; move.z = 0;
         // Hiệu ứng Aura xoay chậm quanh người chơi (Vòng xoáy năng lượng)
@@ -2426,7 +2474,25 @@ function update(dt) {
             window.QuestManager.onEvent('kill', killsMade);
         }
         const n = performance.now(); if (n - p.lastKillTime < 5000) p.streak += killsMade; else p.streak = killsMade; p.lastKillTime = n;
-        const sm = document.getElementById('streak-msg'); if (p.streak > 1) { sm.innerText = p.streak === 2 ? "DOUBLE KILL!" : (p.streak === 3 ? "TRIPLE KILL!" : "RAMPAGE!"); sm.style.transform = "translate(-50%, -50%) scale(1.5)"; setTimeout(() => sm.style.transform = "translate(-50%, -50%) scale(0)", 1500); }
+        
+        // === ENHANCED KILL STREAK ===
+        const sm = document.getElementById('streak-msg'); 
+        if (p.streak > 1) { 
+            const msgs = {
+                2: {t: "DOUBLE KILL!", s: 1.5, c: "#fff"},
+                3: {t: "TRIPLE KILL!", s: 1.8, c: "#ffaa00"},
+                4: {t: "DOMINATING!", s: 2.0, c: "#ff5500"},
+                5: {t: "RAMPAGE!", s: 2.2, c: "#ff0000"},
+                6: {t: "UNSTOPPABLE!", s: 2.5, c: "#ff0055"},
+                7: {t: "GODLIKE!", s: 2.8, c: "#aa00ff"}
+            };
+            const tier = msgs[p.streak] || {t: "HOLY SH!T", s: 3.5, c: "#ffffff"};
+            sm.innerText = tier.t; 
+            sm.style.color = tier.c;
+            sm.style.textShadow = `0 0 10px ${tier.c}`;
+            sm.style.transform = `translate(-50%, -50%) scale(${tier.s}) rotate(${Math.random()*10 - 5}deg)`; 
+            setTimeout(() => sm.style.transform = "translate(-50%, -50%) scale(0)", 1500); 
+        }
         const feed = document.getElementById('kill-feed'); feed.innerHTML += `<div>Enemy eliminated</div>`; setTimeout(() => feed.removeChild(feed.firstChild), 3000);
         spawnParticles(p.pos, 20, [Math.random(), Math.random(), Math.random()]);
     }
@@ -3813,6 +3879,16 @@ function draw() {
     const p = STATE.player;
     if (!p || !p.pos) return;
 
+    // === LOW HEALTH ADRENALINE (Nhịp tim chớp đỏ + rung mờ khi máu < 30%) ===
+    let heartbeatPulse = 0;
+    if (p.hp > 0 && p.hp <= p.maxHp * 0.3) {
+        const time = performance.now() / 1000;
+        const beat = Math.pow(Math.sin(time * 8.0) * Math.sin(time * 4.0), 4.0);
+        heartbeatPulse = beat * 0.4;
+        document.getElementById('damage-overlay').style.opacity = heartbeatPulse.toFixed(2);
+        STATE.shake = (STATE.shake || 0) + heartbeatPulse * 0.05;
+    }
+
     // CHUYỂN ĐỔI KHÔNG KHÍ: Chiều tà (Bot) vs Kinh dị (Boss)
     let fogCol = [0.6, 0.3, 0.2]; // Trả lại màu cam chiều tà mặc định (u ám)
     let bgCol = [0.7, 0.4, 0.3];  // Trả lại bầu trời buổi chiều cũ
@@ -3889,10 +3965,18 @@ function draw() {
     const yaw = STATE.camera.rot.y + (p.standUpYawOffset || 0);
     const pitch = STATE.camera.rot.x + (p.recoil * (p.weaponIdx === 2 ? 0.4 : 0.05)) + standUpPitchOffset;
 
+    // === LANDING DIP: Camera dập xuống khi hạ cánh ===
+    const landingDip = p._landingDip || 0;
+
     // Giật cam chỉ trên PC (mobile tắt để mượt hơn)
     const shakeAmt = isMobile ? 0 : STATE.shake;
-    const eye = V3.create(p.pos.x + (Math.random() - 0.5) * shakeAmt, p.pos.y + camHeightOffset + (Math.random() - 0.5) * shakeAmt, p.pos.z);
-    const forward = V3.create(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)), center = V3.add(eye, forward), view = M4.lookAt(eye, center, V3.create(0, 1, 0));
+    const eye = V3.create(p.pos.x + (Math.random() - 0.5) * shakeAmt, p.pos.y + camHeightOffset - landingDip + (Math.random() - 0.5) * shakeAmt, p.pos.z);
+    const forward = V3.create(Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)), center = V3.add(eye, forward);
+
+    // === STRAFE TILT: Camera nghiêng khi strafe (roll) ===
+    const tiltAmt = STATE.strafeTilt || 0;
+    const upVec = V3.norm(V3.create(tiltAmt, 1.0, 0)); // Nghiêng up-vector sang trái/phải
+    const view = M4.lookAt(eye, center, upVec);
 
     gl.uniformMatrix4fv(locs.proj, false, proj);
     gl.uniformMatrix4fv(locs.view, false, view);
@@ -3943,8 +4027,10 @@ function draw() {
         m = M4.multiply(m, M4.rotationY(rotY));
         m = M4.multiply(m, M4.scaling(scale, scale, scale));
         gl.uniformMatrix4fv(locs.model, false, m);
+        if (locs.isGrass) gl.uniform1i(locs.isGrass, mesh === ASSETS.grass);
         gl.bindVertexArray(mesh.vao);
         gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
+        if (locs.isGrass && mesh === ASSETS.grass) gl.uniform1i(locs.isGrass, false);
     };
     const drawMeshRaw = (mesh, matrix) => {
         gl.uniformMatrix4fv(locs.model, false, matrix);
