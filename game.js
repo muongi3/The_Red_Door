@@ -949,8 +949,25 @@ function genGrassMesh() {
 function genJumpPadMesh() {
     let V = [], N = [], C = [];
     const push = (m) => { V.push(...m.v); N.push(...m.n); C.push(...m.c); };
-    push(getCube([0.2, 0.2, 0.2], 1.5, 0.2, 1.5, 0, 0.1, 0));
-    push(getCube([0.0, 1.0, 0.0], 1.3, 0.1, 1.3, 0, 0.25, 0));
+    
+    // 1. Đế kim loại tối công nghiệp (Dark industrial metal base plate)
+    push(getCube([0.08, 0.08, 0.1], 1.6, 0.15, 1.6, 0, 0.075, 0));
+    
+    // 2. Viền vàng công nghệ (Tech golden border)
+    push(getCube([0.8, 0.65, 0.0], 1.5, 0.2, 1.5, 0, 0.18, 0));
+    
+    // 3. Thảm đệm nhảy màu vàng chanh sáng (Lemon yellow center pad)
+    push(getCube([1.0, 0.85, 0.0], 1.2, 0.25, 1.2, 0, 0.22, 0));
+    
+    // 4. Lõi năng lượng cam phát sáng ở giữa (Glowing orange energy core)
+    push(getCube([1.0, 0.45, 0.0], 0.4, 0.28, 0.4, 0, 0.24, 0));
+    
+    // 5. Bốn góc định vị kim loại đen (4 black corner brackets)
+    push(getCube([0.05, 0.05, 0.05], 0.3, 0.26, 0.3, 0.6, 0.20, 0.6));
+    push(getCube([0.05, 0.05, 0.05], 0.3, 0.26, 0.3, -0.6, 0.20, 0.6));
+    push(getCube([0.05, 0.05, 0.05], 0.3, 0.26, 0.3, 0.6, 0.20, -0.6));
+    push(getCube([0.05, 0.05, 0.05], 0.3, 0.26, 0.3, -0.6, 0.20, -0.6));
+    
     return createMesh(V, N, C);
 }
 
