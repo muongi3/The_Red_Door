@@ -174,6 +174,7 @@ uniform mat4 uView;
 uniform mat4 uModel;
 uniform bool uInstanced;
 uniform bool uIsGrass;
+uniform bool uIsTree;
 uniform float uTime;
 
 out vec3 vNorm;
@@ -191,6 +192,13 @@ void main() {
         float sway = sin(uTime * 2.5 + worldPos.x * 0.8 + worldPos.z * 0.8) * 0.25 * aPos.y;
         worldPos.x += sway;
         worldPos.z += sway * 0.6;
+    }
+
+    // === DYNAMIC WIND TREE (Lá cây rung rinh) ===
+    if (uIsTree && aPos.y > 2.0) { // Chỉ rung từ trên cao 2.0 (tán lá)
+        float sway = sin(uTime * 1.5 + worldPos.x * 0.4 + worldPos.z * 0.4) * 0.06 * (aPos.y - 2.0);
+        worldPos.x += sway;
+        worldPos.z += sway * 0.8;
     }
 
     vPos = worldPos.xyz;
@@ -354,6 +362,7 @@ function initGraphics() {
         isWater: gl.getUniformLocation(prog, "uIsWater"),
         isSky: gl.getUniformLocation(prog, "uIsSky"),
         isGrass: gl.getUniformLocation(prog, "uIsGrass"),
+        isTree: gl.getUniformLocation(prog, "uIsTree"),
         // Phase 1: New VFX uniforms
         pointLightPos: gl.getUniformLocation(prog, "uPointLightPos"),
         pointLightColor: gl.getUniformLocation(prog, "uPointLightColor"),
@@ -2474,25 +2483,7 @@ function update(dt) {
             window.QuestManager.onEvent('kill', killsMade);
         }
         const n = performance.now(); if (n - p.lastKillTime < 5000) p.streak += killsMade; else p.streak = killsMade; p.lastKillTime = n;
-        
-        // === ENHANCED KILL STREAK ===
-        const sm = document.getElementById('streak-msg'); 
-        if (p.streak > 1) { 
-            const msgs = {
-                2: {t: "DOUBLE KILL!", s: 1.5, c: "#fff"},
-                3: {t: "TRIPLE KILL!", s: 1.8, c: "#ffaa00"},
-                4: {t: "DOMINATING!", s: 2.0, c: "#ff5500"},
-                5: {t: "RAMPAGE!", s: 2.2, c: "#ff0000"},
-                6: {t: "UNSTOPPABLE!", s: 2.5, c: "#ff0055"},
-                7: {t: "GODLIKE!", s: 2.8, c: "#aa00ff"}
-            };
-            const tier = msgs[p.streak] || {t: "HOLY SH!T", s: 3.5, c: "#ffffff"};
-            sm.innerText = tier.t; 
-            sm.style.color = tier.c;
-            sm.style.textShadow = `0 0 10px ${tier.c}`;
-            sm.style.transform = `translate(-50%, -50%) scale(${tier.s}) rotate(${Math.random()*10 - 5}deg)`; 
-            setTimeout(() => sm.style.transform = "translate(-50%, -50%) scale(0)", 1500); 
-        }
+
         const feed = document.getElementById('kill-feed'); feed.innerHTML += `<div>Enemy eliminated</div>`; setTimeout(() => feed.removeChild(feed.firstChild), 3000);
         spawnParticles(p.pos, 20, [Math.random(), Math.random(), Math.random()]);
     }
@@ -4028,9 +4019,11 @@ function draw() {
         m = M4.multiply(m, M4.scaling(scale, scale, scale));
         gl.uniformMatrix4fv(locs.model, false, m);
         if (locs.isGrass) gl.uniform1i(locs.isGrass, mesh === ASSETS.grass);
+        if (locs.isTree) gl.uniform1i(locs.isTree, mesh === ASSETS.tree);
         gl.bindVertexArray(mesh.vao);
         gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
         if (locs.isGrass && mesh === ASSETS.grass) gl.uniform1i(locs.isGrass, false);
+        if (locs.isTree && mesh === ASSETS.tree) gl.uniform1i(locs.isTree, false);
     };
     const drawMeshRaw = (mesh, matrix) => {
         gl.uniformMatrix4fv(locs.model, false, matrix);
