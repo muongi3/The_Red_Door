@@ -3589,8 +3589,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'btn-ulti', 'btn-interact', 'btn-sprint',
         'mobile-weapons', 'health-bar-container', 'armor-bar-container',
         'ammo-display', 'stats-display', 'loot-legend',
-        'minimap-container', 'btn-settings', 'quest-tracker-ui', 'kill-feed',
-        'ping-display' // Ping/FPS widget — kéo được trong HUD editor
+        'minimap-container', 'btn-settings', 'quest-tracker-ui', 'kill-feed'
     ];
     let draggedBtn = null;
 
@@ -6072,74 +6071,6 @@ window.update = function (dt) {
 // [PHASE 10] Batch HUD: đếm frame để chỉ cập nhật DOM mỗi 3 frame (~20ms)
 let _hudFrameCounter = 0;
 
-// --- PING / FPS INDICATOR ---
-let _pingLastTime = performance.now();
-let _pingFrameCount = 0;
-let _pingUpdateTimer = 0;
-
-function updatePingDisplay(dt) {
-    const pingEl = document.getElementById('ping-display');
-    if (!pingEl) return;
-
-    // Ẩn bảng Wifi nếu đang ở màn hình Menu (chỉ hiện khi đang trong game hoặc đang sửa HUD)
-    if (STATE.screen !== 'game' && !window.isEditingHUD) {
-        pingEl.style.display = 'none';
-        return;
-    }
-    pingEl.style.display = 'block';
-
-    _pingFrameCount++;
-    _pingUpdateTimer += dt;
-
-    // Cập nhật mỗi 1 giây
-    if (_pingUpdateTimer < 1.0) return;
-
-    const fps = Math.round(_pingFrameCount / _pingUpdateTimer);
-    const frameMs = Math.round(1000 / Math.max(fps, 1));
-    _pingFrameCount = 0;
-    _pingUpdateTimer = 0;
-
-    const iconEl = document.getElementById('ping-icon');
-    const msEl = document.getElementById('ping-ms');
-    const labelEl = document.getElementById('ping-label');
-    if (!iconEl || !msEl || !labelEl) return;
-
-    // Màu + icon theo FPS
-    let color, icon;
-    if (fps >= 50) {
-        color = '#00ff88'; icon = '📶';
-    } else if (fps >= 30) {
-        color = '#ffcc00'; icon = '📶';
-    } else {
-        color = '#ff3333'; icon = '📵';
-    }
-
-    iconEl.textContent = icon;
-    iconEl.style.filter = fps >= 50 ? 'none' : (fps >= 30 ? 'sepia(1) saturate(3) hue-rotate(10deg)' : 'sepia(1) saturate(5) hue-rotate(300deg)');
-    msEl.style.color = color;
-    msEl.textContent = frameMs + ' ms';
-    labelEl.textContent = 'FPS: ' + fps;
-    pingEl.style.borderColor = color + '66';
-    pingEl.style.boxShadow = '0 0 10px ' + color + '33';
-}
-
-// --- SCROLL ĐỂ THU PHÓNG PING WIDGET (HUD editor xử lý drag) ---
-(function initPingScale() {
-    const tryInit = () => {
-        const el = document.getElementById('ping-display');
-        if (!el) { setTimeout(tryInit, 300); return; }
-        let currentScale = 1.0;
-        el.addEventListener('wheel', e => {
-            e.preventDefault();
-            currentScale = Math.max(0.5, Math.min(2.0, currentScale - e.deltaY * 0.001));
-            el.style.transform = 'scale(' + currentScale.toFixed(2) + ')';
-        }, { passive: false });
-    };
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tryInit);
-    else tryInit();
-})();
-
-
 const _origLoop = window.loop;
 window.loop = function (now) {
     if (!STATE.lastTime) STATE.lastTime = now;
@@ -6147,7 +6078,6 @@ window.loop = function (now) {
     STATE.lastTime = now;
     window.update(dt);
     draw();
-    updatePingDisplay(dt); // Cập nhật ping/FPS indicator mỗi frame
     _hudFrameCounter++;
     if (_hudFrameCounter >= 3) {
         updateHUD();

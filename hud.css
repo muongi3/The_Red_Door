@@ -755,7 +755,6 @@
 
   /* Toạ độ mặc định chuẩn Laptop giống ảnh */
   #minimap-container { top: 15px; left: 15px; bottom: auto; right: auto; }
-  #ping-display { top: calc(15px + var(--map-size) + 12px); left: 15px; bottom: auto; right: auto; }
   #loot-legend { top: calc(15px + var(--map-size) + 12px + 60px); left: 15px; bottom: auto; right: auto; }
   #quest-tracker-ui { top: 15px; left: calc(15px + var(--map-size) + 15px); bottom: auto; right: auto; }
   #btn-sprint { top: calc(15px + var(--map-size) + 12px + 60px); left: calc(15px + 105px); bottom: auto; right: auto; }
@@ -790,7 +789,6 @@
 
   /* Toạ độ mặc định chuẩn Mobile gọn gàng chống vỡ */
   #minimap-container { top: 10px; left: 10px; bottom: auto; right: auto; }
-  #ping-display { top: calc(10px + var(--map-size) + 8px); left: 10px; bottom: auto; right: auto; }
   #loot-legend { top: calc(10px + var(--map-size) + 8px + 45px); left: 10px; bottom: auto; right: auto; }
   #quest-tracker-ui { top: 10px; left: calc(10px + var(--map-size) + 10px); bottom: auto; right: auto; }
   #btn-sprint { top: calc(10px + var(--map-size) + 8px + 45px); left: calc(10px + 65px); bottom: auto; right: auto; }
