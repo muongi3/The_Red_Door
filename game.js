@@ -22,7 +22,7 @@ window.STATE = {
     screen: 'menu', lastTime: 0, camera: { pos: V3.create(0, 10, 20), rot: { x: 0, y: 0 } }, keys: {},
     mouse: { x: 0, y: 0, down: false, rightDown: false }, projectiles: [], particles: [], loot: [], powerups: [], bots: [], barrels: [], pads: [], obstacles: [], questItems: [],
 
-    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0, standUpTimer: 0, blinkTimer: 0, blinkDuration: 0.15, blinkInterval: 4.5 },
+    player: { pos: null, vel: V3.create(0, 0, 0), hp: window.GAME_CONFIG.player.maxHp, maxHp: window.GAME_CONFIG.player.maxHp, armor: 0, maxArmor: window.GAME_CONFIG.player.maxArmor, grounded: false, weaponIdx: 0, lastWeaponIdx: 0, weaponSwitchTime: 1.0, sprintLerp: 0, recoil: 0, kills: 0, alive: true, streak: 0, lastKillTime: 0, powerup: { type: null, time: 0 }, damageDealt: 0, isInvincible: false, lastDamageSoundTime: 0, standUpTimer: 0, blinkTimer: 0, blinkDuration: 0.15, blinkInterval: 4.5, stamina: 100, maxStamina: 100, staminaRegenDelay: 0 },
     weapons: [
         { name: "Pistol", ...window.GAME_CONFIG.weapons.pistol, ammo: window.GAME_CONFIG.weapons.pistol.maxAmmo, type: 0 },
         { name: "SMG", ...window.GAME_CONFIG.weapons.smg, ammo: window.GAME_CONFIG.weapons.smg.maxAmmo, type: 1 },
@@ -1410,6 +1410,7 @@ function continueStartGame() {
     STATE.player.pos = V3.create(0, _spawnH, 0);
     STATE.player.vel = V3.create(0, 0, 0);
     STATE.player.alive = true; STATE.player.kills = 0; STATE.player.streak = 0; STATE.player.damageFlash = 0;
+    STATE.player.stamina = 100; STATE.player.maxStamina = 100; STATE.player.staminaRegenDelay = 0;
     STATE.player.standUpTimer = 8.0; // 8 giây animation tỉnh dậy realistic & tự nhiên
     STATE.player.isInvincible = true; // Bất tử trong khi đang nằm/đứng dậy
     STATE.player.weaponSwitchTime = 0;
@@ -1987,10 +1988,46 @@ function update(dt) {
         if (p.powerup.type === 0 || p.powerup.type === 3) speedMult = window.GAME_CONFIG.player.powerupSpeedMultiplier;
         if (p.powerup.type === 1 || p.powerup.type === 3) dmgMult = 2.0;
     }
-    if (STATE.keys['ShiftLeft']) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
+    let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
+    const isMoving = (move.x !== 0 || move.z !== 0);
+
+    // === HỆ THỐNG THỂ LỰC (STAMINA) ===
+    if (p.stamina === undefined) { p.stamina = 100; p.maxStamina = 100; p.staminaRegenDelay = 0; }
+    
+    // Nếu bấm chạy, đang di chuyển và không cầm súng ngắm (weaponIdx 2) và đã tỉnh dậy
+    if (STATE.keys['ShiftLeft'] && isMoving && p.weaponIdx !== 2 && (p.standUpTimer || 0) <= 0) {
+        if (p.stamina > 0) {
+            p.stamina -= (100 / 6.0) * dt; // 6 giây để cạn kiệt
+            p.staminaRegenDelay = 0.5; // Chờ 0.5s sau khi dừng chạy mới hồi
+            if (p.stamina <= 0) {
+                p.stamina = 0;
+                STATE.keys['ShiftLeft'] = false; // Buộc dừng chạy
+                const btnSprint = document.getElementById('btn-sprint');
+                if (btnSprint) btnSprint.classList.remove('pressed');
+            }
+        } else {
+            STATE.keys['ShiftLeft'] = false;
+            const btnSprint = document.getElementById('btn-sprint');
+            if (btnSprint) btnSprint.classList.remove('pressed');
+        }
+    } else {
+        // Hồi phục thể lực
+        if (p.staminaRegenDelay > 0) {
+            p.staminaRegenDelay -= dt;
+        } else if (p.stamina < p.maxStamina) {
+            p.stamina += (100 / 3.0) * dt; // 3 giây để hồi đầy
+            if (p.stamina > p.maxStamina) p.stamina = p.maxStamina;
+        }
+    }
+    
+    // Cập nhật giao diện UI thanh thể lực
+    const staminaFill = document.getElementById('stamina-fill');
+    if (staminaFill) staminaFill.style.width = (p.stamina / p.maxStamina * 100) + '%';
+
+    if (STATE.keys['ShiftLeft'] && p.stamina > 0) speedMult *= window.GAME_CONFIG.player.sprintMultiplier;
+    
     // GIẢM TỐC ĐỘ: Đi bộ 8, Chạy nhanh 12 (8 * 1.5)
     const moveSpeed = (p.weaponIdx === 2 ? window.GAME_CONFIG.player.sniperSpeed : window.GAME_CONFIG.player.walkSpeed) * speedMult;
-    let move = V3.create(0, 0, 0); if (STATE.keys['KeyW']) move.z -= 1; if (STATE.keys['KeyS']) move.z += 1; if (STATE.keys['KeyA']) move.x -= 1; if (STATE.keys['KeyD']) move.x += 1;
 
     // === STRAFE TILT: Camera nghiêng nhẹ khi di chuyển ngang (AAA FPS feel) ===
     const targetTilt = (STATE.keys['KeyA'] ? 1 : 0) - (STATE.keys['KeyD'] ? 1 : 0);
