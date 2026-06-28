@@ -1687,8 +1687,8 @@ function update(dt) {
         // 1.0–2.0s: Eyes open, still lying, tiny head micro-movements
         // 2.0–3.0s: Very slowly place hand on ground, head starts tilting forward
         // 3.0–4.0s: Push upper body up to supported sitting (slow, groggy)
-        // 4.0–5.5s: Sitting position, looking around (head turns left then right)
-        // 5.5–7.2s: Standing up gradually (longest phase, most effort)
+        // 4.0–6.0s: Sitting position, looking around (head turns left then right)
+        // 6.0–7.2s: Standing up gradually (longest phase, most effort)
         // 7.2–8.0s: Spine straightens, settle into idle pose
         if (elapsed < 1.0) {
             // Unconscious — subtle breathing micro-movement
@@ -1707,12 +1707,12 @@ function update(dt) {
             // Pushing up to sitting — main effort
             const t = easeInOut((elapsed - 3.0) / 1.0);
             STATE.camera.rot.x = -0.9 + t * 0.75; // -0.9 → -0.15
-        } else if (elapsed < 5.5) {
+        } else if (elapsed < 6.0) {
             // Sitting, looking around
             STATE.camera.rot.x = -0.15;
         } else if (elapsed < 7.2) {
             // Standing up — gradual, realistic
-            const t = easeInOut((elapsed - 5.5) / 1.7);
+            const t = easeInOut((elapsed - 6.0) / 1.2);
             STATE.camera.rot.x = -0.15 + t * 0.15; // -0.15 → 0
         } else {
             // Final settle — tiny overshoot correction
@@ -1720,25 +1720,25 @@ function update(dt) {
             STATE.camera.rot.x = 0.02 * (1 - t); // tiny overshoot → 0
         }
 
-        // === YAW OFFSET: Look left → pause → look right (4.0s–5.5s) ===
+        // === YAW OFFSET: Look left → pause → look right (4.0s–6.0s) ===
         let _yawOff = 0;
-        if (elapsed >= 4.0 && elapsed < 4.5) {
+        if (elapsed >= 4.0 && elapsed < 4.6) {
             // Turn head left slowly
-            const t = easeInOut((elapsed - 4.0) / 0.5);
+            const t = easeInOut((elapsed - 4.0) / 0.6);
             _yawOff = -0.38 * t;
-        } else if (elapsed >= 4.5 && elapsed < 4.7) {
+        } else if (elapsed >= 4.6 && elapsed < 4.9) {
             // Pause at left — scanning environment
             _yawOff = -0.38;
-        } else if (elapsed >= 4.7 && elapsed < 5.2) {
+        } else if (elapsed >= 4.9 && elapsed < 5.6) {
             // Turn from left to right — smooth sweep
-            const t = easeInOut((elapsed - 4.7) / 0.5);
+            const t = easeInOut((elapsed - 4.9) / 0.7);
             _yawOff = -0.38 + t * 0.70; // -0.38 → +0.32
-        } else if (elapsed >= 5.2 && elapsed < 5.35) {
+        } else if (elapsed >= 5.6 && elapsed < 5.8) {
             // Pause at right — brief check
             _yawOff = 0.32;
-        } else if (elapsed >= 5.35 && elapsed < 5.5) {
+        } else if (elapsed >= 5.8 && elapsed < 6.0) {
             // Return to center
-            const t = easeInOut((elapsed - 5.35) / 0.15);
+            const t = easeInOut((elapsed - 5.8) / 0.2);
             _yawOff = 0.32 * (1 - t); // 0.32 → 0
         }
         p.standUpYawOffset = _yawOff;
@@ -1761,9 +1761,9 @@ function update(dt) {
             // Push-up effort shake
             const intensity = Math.sin((elapsed - 3.0) / 1.0 * Math.PI) * 0.035;
             STATE.camera.shake = intensity;
-        } else if (elapsed >= 5.5 && elapsed < 6.5) {
+        } else if (elapsed >= 6.0 && elapsed < 7.0) {
             // Standing effort shake (lighter)
-            const intensity = Math.sin((elapsed - 5.5) / 1.0 * Math.PI) * 0.02;
+            const intensity = Math.sin((elapsed - 6.0) / 1.0 * Math.PI) * 0.02;
             STATE.camera.shake = intensity;
         } else {
             STATE.camera.shake = 0;
@@ -3810,8 +3810,8 @@ function draw() {
         // 0.0–2.0s: Lying on ground (height = 0.15)
         // 2.0–3.0s: Placing hand and slight head raise (0.15 → 0.25)
         // 3.0–4.0s: Pushing up to sitting (0.25 → 0.55)
-        // 4.0–5.5s: Sitting position (height = 0.55)
-        // 5.5–7.2s: Standing up gradually (0.55 → 1.1)
+        // 4.0–6.0s: Sitting position (height = 0.55)
+        // 6.0–7.2s: Standing up gradually (0.55 → 1.1)
         // 7.2–8.0s: Settle (height = 1.1)
         if (elapsed < 2.0) {
             camHeightOffset = 0.15;
@@ -3821,10 +3821,10 @@ function draw() {
         } else if (elapsed < 4.0) {
             const t = easeInOut((elapsed - 3.0) / 1.0);
             camHeightOffset = 0.25 + t * 0.30; // 0.25 → 0.55
-        } else if (elapsed < 5.5) {
+        } else if (elapsed < 6.0) {
             camHeightOffset = 0.55;
         } else if (elapsed < 7.2) {
-            const t = easeInOut((elapsed - 5.5) / 1.7);
+            const t = easeInOut((elapsed - 6.0) / 1.2);
             camHeightOffset = 0.55 + t * 0.55; // 0.55 → 1.1
         } else {
             camHeightOffset = 1.1;
